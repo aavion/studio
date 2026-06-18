@@ -8,10 +8,8 @@ use App\Api\Http\ApiRequestContext;
 use App\Core\Message\Message;
 use App\Entity\ApiKey;
 use App\Security\ApiKeyStatus;
-use App\Security\ApiKeyVault;
 use App\Security\SecurityMessageCode;
 use App\Security\SecurityMessageKey;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
@@ -24,8 +22,7 @@ use Symfony\Component\Security\Http\Authenticator\Passport\SelfValidatingPasspor
 final class ApiKeyAuthenticator extends AbstractAuthenticator
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
-        private readonly ApiKeyVault $apiKeyVault,
+        private readonly ApiKeyCredentialResolver $credentials,
         private readonly ApiSecurityHandler $securityHandler,
         private readonly ApiRequestMethodPolicy $methodPolicy = new ApiRequestMethodPolicy(),
     ) {
@@ -34,18 +31,12 @@ final class ApiKeyAuthenticator extends AbstractAuthenticator
     public function supports(Request $request): ?bool
     {
         return $this->methodPolicy->isApiV1Request($request)
-            && $this->hasBearerAuthorizationScheme($request);
+            && $this->credentials->supportsBearer($request);
     }
 
     public function authenticate(Request $request): Passport
     {
-        $plainKey = $this->bearerToken($request);
-
-        if (null === $plainKey) {
-            throw $this->authenticationFailed();
-        }
-
-        $apiKey = $this->apiKeyFor($plainKey);
+        $apiKey = $this->credentials->resolve($request);
 
         if (!$apiKey instanceof ApiKey) {
             throw $this->authenticationFailed();
@@ -75,55 +66,6 @@ final class ApiKeyAuthenticator extends AbstractAuthenticator
     public function onAuthenticationFailure(Request $request, AuthenticationException $exception): ?Response
     {
         return $this->securityHandler->authenticationFailure($request, $exception);
-    }
-
-    private function bearerToken(Request $request): ?string
-    {
-        $authorization = $request->headers->get('Authorization');
-
-        if (!is_string($authorization) || 1 !== preg_match('/^Bearer\s+(.+)$/i', $authorization, $matches)) {
-            return null;
-        }
-
-        $token = trim($matches[1]);
-
-        return '' !== $token && strlen($token) <= 512 ? $token : null;
-    }
-
-    private function hasBearerAuthorizationScheme(Request $request): bool
-    {
-        $authorization = $request->headers->get('Authorization');
-
-        return is_string($authorization) && 1 === preg_match('/^Bearer(?:\s+|$)/i', $authorization);
-    }
-
-    private function apiKeyFor(string $plainKey): ?ApiKey
-    {
-        $prefix = $this->prefix($plainKey);
-
-        if (null === $prefix) {
-            return null;
-        }
-
-        $apiKey = $this->entityManager->getRepository(ApiKey::class)->findOneBy([
-            'prefix' => $prefix,
-            'hmacHash' => $this->apiKeyVault->hmac($plainKey),
-        ]);
-
-        return $apiKey instanceof ApiKey ? $apiKey : null;
-    }
-
-    private function prefix(string $plainKey): ?string
-    {
-        $dotPosition = strpos($plainKey, '.');
-
-        if (false === $dotPosition) {
-            return null;
-        }
-
-        $prefix = substr($plainKey, 0, $dotPosition);
-
-        return 1 === preg_match('/^[A-Za-z0-9_-]{4,16}$/', $prefix) ? $prefix : null;
     }
 
     private function authenticationFailed(): ApiAuthenticationException

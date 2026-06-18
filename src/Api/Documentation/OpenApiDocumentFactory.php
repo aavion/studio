@@ -409,6 +409,7 @@ final readonly class OpenApiDocumentFactory
             'backend-admin-packages' => ['summary' => 'Backend Admin Packages', 'description' => 'Administrative package management and lifecycle resources.', 'parent' => 'backend-admin', 'kind' => 'nav'],
             'backend-admin-permissions' => ['summary' => 'Backend Admin Permissions', 'description' => 'Endpoint access and API key capability matrix resources.', 'parent' => 'backend-admin', 'kind' => 'nav'],
             'backend-admin-scheduler' => ['summary' => 'Backend Admin Scheduler', 'description' => 'Administrative scheduler task and run resources.', 'parent' => 'backend-admin', 'kind' => 'nav'],
+            'backend-admin-security' => ['summary' => 'Backend Admin Security', 'description' => 'Administrative security configuration, signals, and auto-ban resources.', 'parent' => 'backend-admin', 'kind' => 'nav'],
             'backend-admin-settings' => ['summary' => 'Backend Admin Settings', 'description' => 'Administrative settings sections and values.', 'parent' => 'backend-admin', 'kind' => 'nav'],
             'backend-admin-statistics' => ['summary' => 'Backend Admin Statistics', 'description' => 'Administrative access statistics resources.', 'parent' => 'backend-admin', 'kind' => 'nav'],
             'backend-admin-themes' => ['summary' => 'Backend Admin Themes', 'description' => 'Administrative frontend and backend theme resources.', 'parent' => 'backend-admin', 'kind' => 'nav'],

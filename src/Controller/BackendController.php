@@ -300,6 +300,7 @@ final class BackendController extends AbstractController
 
         $request->attributes->set('_system_form_values', $result->values());
         $request->attributes->set('_system_form_errors', $result->errors());
+        $this->alerts->addAlert(UiAlertTranslation::error('admin.settings.form.errors.save_failed'), UiAlertDelivery::Direct);
 
         return null;
     }

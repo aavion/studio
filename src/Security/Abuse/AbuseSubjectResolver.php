@@ -121,7 +121,7 @@ final readonly class AbuseSubjectResolver
             return $this->schedulerCredentialSubject(trim($matches[1]));
         }
 
-        $auth = $request->query->get('auth');
+        $auth = $this->scalarQueryValue($request, 'auth');
 
         return is_string($auth) ? $this->schedulerCredentialSubject(trim($auth)) : null;
     }
@@ -154,11 +154,11 @@ final readonly class AbuseSubjectResolver
         }
 
         if ($this->matchesExactSegments($segments, 'user', 'login')) {
-            return $this->submittedAccountSubject('login', $request->request->get('username'));
+            return $this->submittedAccountSubject('login', $this->scalarRequestValue($request, 'username'));
         }
 
         if ($this->matchesExactSegments($segments, 'user', 'register')) {
-            return $this->submittedAccountSubject('registration_email', $request->request->get('email'), email: true);
+            return $this->submittedAccountSubject('registration_email', $this->scalarRequestValue($request, 'email'), email: true);
         }
 
         if ($this->matchesSegments($segments, 'user', 'invitation') && null !== ($submittedToken = $this->tokenSegment($segments, 2))) {
@@ -166,7 +166,7 @@ final readonly class AbuseSubjectResolver
         }
 
         if ($this->matchesExactSegments($segments, 'user', 'reset-password')) {
-            return $this->submittedAccountSubject('password_reset_email', $request->request->get('email'), email: true);
+            return $this->submittedAccountSubject('password_reset_email', $this->scalarRequestValue($request, 'email'), email: true);
         }
 
         if ($this->matchesSegments($segments, 'user', 'reset-password') && null !== ($submittedToken = $this->tokenSegment($segments, 2))) {
@@ -237,6 +237,20 @@ final readonly class AbuseSubjectResolver
         return new AbuseSubject(AbuseSubjectType::SubmittedAccount, $this->bucket($scope, $normalized), false, [
             'scope' => $scope,
         ]);
+    }
+
+    private function scalarRequestValue(Request $request, string $name): mixed
+    {
+        $value = $request->request->all()[$name] ?? null;
+
+        return is_scalar($value) ? $value : null;
+    }
+
+    private function scalarQueryValue(Request $request, string $name): mixed
+    {
+        $value = $request->query->all()[$name] ?? null;
+
+        return is_scalar($value) ? $value : null;
     }
 
     private function bucket(string $scope, string $value): string

@@ -264,6 +264,11 @@ final class RequestIntentClassifierTest extends TestCase
             RequestFamily::Browser,
             RequestIntent::RecoveryLogin,
         ];
+        yield 'localized recovery login bypass uses recovery intent' => [
+            self::localizedRequest('/de/user/login?bypass=1', 'GET', 'de'),
+            RequestFamily::Browser,
+            RequestIntent::RecoveryLogin,
+        ];
         yield 'recovery login bypass post stays login intent' => [
             Request::create('/user/login?bypass=1', 'POST'),
             RequestFamily::Browser,

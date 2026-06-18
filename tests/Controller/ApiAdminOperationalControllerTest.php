@@ -14,6 +14,8 @@ use App\Core\Operation\OperationMessageKey;
 use App\Core\Workflow\WorkflowResult;
 use App\Entity\ApiKey;
 use App\Security\ApiKeyStatus;
+use App\Security\AutoBan\AutoBanStore;
+use App\Security\AutoBan\AutoBanSubject;
 use App\Security\ApiKeyVault;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -51,6 +53,71 @@ final class ApiAdminOperationalControllerTest extends WebTestCase
             self::assertResponseIsSuccessful($path);
             $payload = $this->jsonPayload($client->getResponse()->getContent());
             self::assertArrayHasKey('data', $payload, $path);
+        }
+    }
+
+    public function testAdminSecurityAutoBansAreOwnerGated(): void
+    {
+        $client = self::createClient();
+        $adminKey = $this->createPlainApiKey('apiautobanadm');
+
+        $client->request('GET', '/api/v1/admin/security/auto-bans', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$adminKey,
+        ]);
+
+        self::assertResponseStatusCodeSame(403);
+        $payload = $this->jsonPayload($client->getResponse()->getContent());
+        self::assertSame(AccessLevel::OWNER, $payload['error']['context']['required_access_level']);
+        self::assertSame(AccessLevel::ADMIN, $payload['error']['context']['actor_access_level']);
+        self::assertSame('listAdminSecurityAutoBans', $payload['error']['context']['operation_id']);
+    }
+
+    public function testAdminSecurityAutoBansListDetailAndResetAreExposedByApi(): void
+    {
+        $client = self::createClient();
+        $plainKey = $this->createPlainApiKey('apiautobanown', ApiKeyStatus::ReadWrite, AccessLevel::OWNER);
+        $store = self::getContainer()->get(AutoBanStore::class);
+        self::assertInstanceOf(AutoBanStore::class, $store);
+        foreach ($store->activeBans() as $active) {
+            $store->reset($active->key());
+        }
+
+        $subject = new AutoBanSubject(AutoBanSubject::VISITOR, 'api-auto-ban-visitor');
+        $ban = $store->ban($subject, 3600, ['score' => 100, 'signal_count' => 2]);
+        self::assertNotNull($ban);
+
+        try {
+            $client->request('GET', '/api/v1/admin/security/auto-bans', server: [
+                'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            ]);
+
+            self::assertResponseIsSuccessful();
+            $payload = $this->jsonPayload($client->getResponse()->getContent());
+            self::assertSame(1, $payload['meta']['count']);
+            self::assertSame('security_auto_ban', $payload['data'][0]['type']);
+            self::assertSame('/api/v1/admin/security/auto-bans/'.$ban->key(), $payload['data'][0]['links']['self']);
+            self::assertSame('/api/v1/admin/security/auto-bans/'.$ban->key().'/reset', $payload['data'][0]['links']['reset']);
+
+            $client->request('GET', '/api/v1/admin/security/auto-bans/'.$ban->key(), server: [
+                'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            ]);
+
+            self::assertResponseIsSuccessful();
+            $payload = $this->jsonPayload($client->getResponse()->getContent());
+            self::assertSame($ban->key(), $payload['data']['id']);
+            self::assertArrayHasKey('signals', $payload['data']['relationships']);
+
+            $client->request('POST', '/api/v1/admin/security/auto-bans/'.$ban->key().'/reset', server: [
+                'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
+            ]);
+
+            self::assertResponseIsSuccessful();
+            $payload = $this->jsonPayload($client->getResponse()->getContent());
+            self::assertSame($ban->key(), $payload['data']['id']);
+            self::assertSame('auto_ban.reset_released', $payload['meta']['messages'][0]['code']);
+            self::assertNull($store->active($subject));
+        } finally {
+            $store->reset($ban->key());
         }
     }
 
@@ -442,16 +509,30 @@ final class ApiAdminOperationalControllerTest extends WebTestCase
             self::assertArrayHasKey($path, $payload['paths']);
         }
 
+        foreach (['/admin/security/auto-bans', '/admin/security/auto-bans/{key}', '/admin/security/auto-bans/{key}/reset'] as $path) {
+            self::assertArrayHasKey($path, $payload['paths']);
+        }
+
         self::assertSame(['backend-admin', 'backend-admin-backups'], $payload['paths']['/admin/backups']['get']['tags']);
         self::assertSame(['backend-admin', 'backend-admin-logs'], $payload['paths']['/admin/logs']['get']['tags']);
         self::assertSame(['backend-admin', 'backend-admin-operations'], $payload['paths']['/admin/operations']['get']['tags']);
         self::assertSame(['backend-admin', 'backend-admin-scheduler'], $payload['paths']['/admin/scheduler']['get']['tags']);
+        self::assertSame(['backend-admin', 'backend-admin-security'], $payload['paths']['/admin/security/auto-bans']['get']['tags']);
+        self::assertSame('resetAdminSecurityAutoBan', $payload['paths']['/admin/security/auto-bans/{key}/reset']['post']['operationId']);
+        self::assertSame(AccessLevel::OWNER, $payload['paths']['/admin/security/auto-bans']['get']['x-access']['required_access_level']);
         self::assertSame(['backend-admin', 'backend-admin-statistics'], $payload['paths']['/admin/statistics']['get']['tags']);
         self::assertSame(['backend-admin', 'backend-admin-themes'], $payload['paths']['/admin/themes']['get']['tags']);
         self::assertSame(
             ['application', 'message', 'audit', 'access', 'security_signal'],
             $payload['paths']['/admin/logs/{log}']['get']['parameters'][0]['schema']['enum'],
         );
+        self::assertContains([
+            'name' => 'backend-admin-security',
+            'summary' => 'Backend Admin Security',
+            'description' => 'Administrative security configuration, signals, and auto-ban resources.',
+            'parent' => 'backend-admin',
+            'kind' => 'nav',
+        ], $payload['tags']);
         self::assertContains([
             'name' => 'backend-admin-operations',
             'summary' => 'Backend Admin Operations',
@@ -461,9 +542,9 @@ final class ApiAdminOperationalControllerTest extends WebTestCase
         ], $payload['tags']);
     }
 
-    private function createPlainApiKey(string $prefix, ApiKeyStatus $status = ApiKeyStatus::ReadOnly): string
+    private function createPlainApiKey(string $prefix, ApiKeyStatus $status = ApiKeyStatus::ReadOnly, int $accessLevel = AccessLevel::ADMIN): string
     {
-        $user = $this->createUserWithLevel(AccessLevel::ADMIN, $prefix.'user', 'current-password');
+        $user = $this->createUserWithLevel($accessLevel, $prefix.'user', 'current-password');
         $vault = self::getContainer()->get(ApiKeyVault::class);
         $plainKey = $vault->generatePlainKey($prefix);
         $apiKey = new ApiKey(

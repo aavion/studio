@@ -26,9 +26,20 @@ final class SecurityControllerTest extends WebTestCase
         self::assertSelectorTextContains('h1', 'Sign in');
         self::assertSelectorExists('form[action="/user/login"][method="post"]');
         self::assertSelectorExists('input[name="_csrf_token"]');
+        self::assertSelectorNotExists('input[name="_auto_ban_recovery_token"]');
         self::assertSelectorTextContains('a[href="/user/reset-password"]', 'Forgot password?');
         self::assertSelectorNotExists('.system-frontend-error-reference');
         self::assertSelectorNotExists('a[href="/user/register"]');
+    }
+
+    public function testRecoveryLoginRouteRendersAutoBanRecoveryMarker(): void
+    {
+        $client = self::createClient();
+        $client->request('GET', '/user/login?bypass=1');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('form[action="/user/login"][method="post"]');
+        self::assertSelectorExists('input[name="_auto_ban_recovery_token"]');
     }
 
     public function testLoginFormAuthenticatesUserAccount(): void

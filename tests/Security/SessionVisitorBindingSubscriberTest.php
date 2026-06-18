@@ -15,6 +15,7 @@ use App\Security\Abuse\AbuseSubjectResolver;
 use App\Security\Abuse\ActionCostCatalogue;
 use App\Security\Abuse\RequestIntentClassifier;
 use App\Security\Abuse\SecuritySignalRecorder;
+use App\Security\AutoBan\AutoBanRequestSubscriber;
 use App\Security\SessionVisitorBindingSubscriber;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
@@ -136,6 +137,43 @@ final class SessionVisitorBindingSubscriberTest extends TestCase
         self::assertSame(1, $context['change_count']);
         self::assertIsString($context['ip_bucket']);
         self::assertNotSame('', $context['ip_bucket']);
+    }
+
+    public function testItDoesNotOverrideAutoBanResponsesOrRecordSignals(): void
+    {
+        $tokenStorage = new TokenStorage();
+        $user = $this->user();
+        $tokenStorage->setToken(new UsernamePasswordToken($user, 'main', $user->getRoles()));
+        $auditLogger = new RecordingSessionAuditLogger();
+        $generator = new VisitorIdGenerator('test-secret');
+        $request = Request::create('/admin', server: ['REMOTE_ADDR' => '203.0.113.42']);
+        $request->attributes->set(AutoBanRequestSubscriber::PASSIVE_SIGNAL_SKIP_ATTRIBUTE, true);
+        $session = new Session(new MockArraySessionStorage());
+        $session->set(SessionVisitorBindingSubscriber::SESSION_VISITOR_ID, 'previousVisitorId1234');
+        $request->setSession($session);
+        $connection = $this->signalConnection();
+        $event = new RequestEvent(new SessionBindingTestKernel(), $request, HttpKernelInterface::MAIN_REQUEST);
+        $event->setResponse(new Response('blocked', Response::HTTP_FORBIDDEN));
+
+        (new SessionVisitorBindingSubscriber(
+            $tokenStorage,
+            $generator,
+            $auditLogger,
+            new AbuseRequestInspector(
+                new AbuseSubjectResolver($generator, $tokenStorage, 'test-secret'),
+                new RequestIntentClassifier(),
+                new ActionCostCatalogue(),
+            ),
+            new SecuritySignalRecorder($connection, new DatabaseLogRetentionPolicy($connection)),
+            new AccessRequestMetadata(),
+        ))->onKernelRequest($event);
+
+        self::assertSame(Response::HTTP_FORBIDDEN, $event->getResponse()?->getStatusCode());
+        self::assertSame('blocked', $event->getResponse()?->getContent());
+        self::assertNotNull($tokenStorage->getToken());
+        self::assertSame('previousVisitorId1234', $session->get(SessionVisitorBindingSubscriber::SESSION_VISITOR_ID));
+        self::assertSame([], $auditLogger->records);
+        self::assertSame(0, (int) $connection->fetchOne('SELECT COUNT(*) FROM security_signal_event'));
     }
 
     public function testItKeepsSessionsWhenTheBoundVisitorMatches(): void

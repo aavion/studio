@@ -154,7 +154,7 @@ final class MessageKeyTest extends TestCase
             TranslationMessageKey::class => ['TRANSLATION_'],
             NavigationMessageKey::class => ['MENU_'],
             SchedulerMessageKey::class => ['SCHEDULER_'],
-            SecurityMessageKey::class => ['ACL_', 'USER_', 'ACCOUNT_', 'API_KEY_', 'RATE_LIMIT_'],
+            SecurityMessageKey::class => ['ACL_', 'USER_', 'ACCOUNT_', 'API_KEY_', 'RATE_LIMIT_', 'AUTO_BAN_'],
             SetupMessageKey::class => ['SETUP_'],
             ViewMessageKey::class => ['VIEW_'],
         ];
@@ -187,7 +187,7 @@ final class MessageKeyTest extends TestCase
             TranslationMessageKey::class => ['message.translation.'],
             NavigationMessageKey::class => ['message.menu.'],
             SchedulerMessageKey::class => ['message.scheduler.'],
-            SecurityMessageKey::class => ['message.acl.', 'message.user.', 'message.account_', 'message.api_key.', 'message.rate_limit.'],
+            SecurityMessageKey::class => ['message.acl.', 'message.user.', 'message.account_', 'message.api_key.', 'message.rate_limit.', 'message.auto_ban.'],
             SetupMessageKey::class => ['message.setup.'],
             ViewMessageKey::class => ['message.view.'],
         ];

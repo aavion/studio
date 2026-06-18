@@ -99,6 +99,12 @@ final class RateLimitEnforcerTest extends TestCase
 
         self::assertFalse($result->isAllowed());
         self::assertSame('security.rate.recovery_login', $result->diagnosticsLabel());
+
+        $localizedRecovery = $this->request('/de/user/login?bypass=1');
+        $localizedRecovery->attributes->set('_route', 'user_login');
+        $localizedRecovery->attributes->set('_locale', 'de');
+
+        self::assertFalse($enforcer->check($localizedRecovery, RateLimitEnforcementStage::Ordinary)->isAllowed());
     }
 
     public function testPanicRecoveryLoginRenderAndSubmitFitBudgets(): void

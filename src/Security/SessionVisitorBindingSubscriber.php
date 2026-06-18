@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Security;
 
 use App\Core\Access\AccessActor;
+use App\Core\Access\AccessLevel;
 use App\Core\Log\AccessRequestMetadata;
 use App\Core\Log\AuditLoggerInterface;
 use App\Core\Statistics\VisitorIdGenerator;
@@ -12,7 +13,10 @@ use App\Entity\UserAccount;
 use App\Security\Abuse\AbuseRequestInspector;
 use App\Security\Abuse\AbuseSubjectType;
 use App\Security\Abuse\SecuritySignalRecorder;
-use DateTimeImmutable;
+use App\Security\AutoBan\AutoBanPolicy;
+use App\Security\AutoBan\AutoBanRequestSubscriber;
+use Symfony\Component\Clock\ClockInterface;
+use Symfony\Component\Clock\NativeClock;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Exception\SessionNotFoundException;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -41,6 +45,8 @@ final readonly class SessionVisitorBindingSubscriber implements EventSubscriberI
         private ?AbuseRequestInspector $abuseInspector = null,
         private ?SecuritySignalRecorder $securitySignals = null,
         private ?AccessRequestMetadata $accessRequestMetadata = null,
+        private ?AutoBanPolicy $autoBanPolicy = null,
+        private ClockInterface $clock = new NativeClock(),
     ) {
     }
 
@@ -65,7 +71,7 @@ final readonly class SessionVisitorBindingSubscriber implements EventSubscriberI
 
     public function onKernelRequest(RequestEvent $event): void
     {
-        if (!$event->isMainRequest()) {
+        if (!$event->isMainRequest() || $event->hasResponse()) {
             return;
         }
 
@@ -76,6 +82,10 @@ final readonly class SessionVisitorBindingSubscriber implements EventSubscriberI
         }
 
         $request = $event->getRequest();
+        if ($request->attributes->getBoolean(AutoBanRequestSubscriber::PASSIVE_SIGNAL_SKIP_ATTRIBUTE)) {
+            return;
+        }
+
         $session = $this->session($request);
 
         if (null === $session) {
@@ -96,7 +106,7 @@ final readonly class SessionVisitorBindingSubscriber implements EventSubscriberI
         }
 
         $changeCount = max(0, (int) $session->get(self::SESSION_VISITOR_CHANGE_COUNT, 0)) + 1;
-        $changedAt = (new DateTimeImmutable())->format(DATE_ATOM);
+        $changedAt = $this->clock->now()->format(DATE_ATOM);
 
         $session->set(self::SESSION_PREVIOUS_VISITOR_ID, $boundVisitorId);
         $session->set(self::SESSION_VISITOR_CHANGED_AT, $changedAt);
@@ -182,6 +192,38 @@ final readonly class SessionVisitorBindingSubscriber implements EventSubscriberI
                     'ip_bucket' => $ipBucket?->identifier(),
                 ],
             );
+
+            $accessLevel = $subjects->first(AbuseSubjectType::User)?->context()['access_level'] ?? AccessLevel::PUBLIC;
+            $trustedLevel = $this->autoBanPolicy?->trustedAccessLevel() ?? AutoBanPolicy::DEFAULT_TRUSTED_ACCESS_LEVEL;
+            if (is_numeric($accessLevel) && (int) $accessLevel >= $trustedLevel) {
+                return;
+            }
+
+            foreach (array_filter([$visitor, $ipBucket]) as $sourceSubject) {
+                $this->securitySignals->record(
+                    'session',
+                    'security.signal.session_visitor_mismatch',
+                    $sourceSubject->type()->value,
+                    $sourceSubject->identifier(),
+                    ipDerived: $sourceSubject->ipDerived(),
+                    severity: 'ERROR',
+                    confidence: 90,
+                    requestFamily: $profile->family()->value,
+                    requestIntent: $profile->intent()->value,
+                    requestId: $this->accessRequestMetadata?->requestId($request) ?? 'n/a',
+                    visitorId: $visitor?->identifier() ?? $currentVisitorId,
+                    path: $this->accessRequestMetadata?->sanitizedPath($request) ?? $profile->path(),
+                    route: $profile->route(),
+                    context: [
+                        'previous_visitor_id' => $previousVisitorId,
+                        'current_visitor_id' => $currentVisitorId,
+                        'change_count' => $changeCount,
+                        'changed_at' => $changedAt,
+                        'ip_bucket' => $ipBucket?->identifier(),
+                        'source_signal' => true,
+                    ],
+                );
+            }
         } catch (Throwable) {
             return;
         }

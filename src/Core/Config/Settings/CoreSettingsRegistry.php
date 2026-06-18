@@ -14,6 +14,7 @@ use App\Core\Statistics\AccessStatisticsPolicy;
 use App\Form\FormInputType;
 use App\Localization\TranslationLanguageCatalog;
 use App\Security\Abuse\SuspiciousProbePathMatcher;
+use App\Security\AutoBan\AutoBanPolicy;
 use App\Security\RateLimit\RateLimitPolicyCatalogue;
 use App\Security\RateLimit\RateLimitProfile;
 use App\Security\UserFlowConfig;
@@ -65,12 +66,12 @@ final readonly class CoreSettingsRegistry
             ], validation: ['required' => true], sortOrder: 10),
             new CoreSettingDefinition('users', UserFlowConfig::DEFAULT_ACL_GROUP_KEY, 'admin.settings.fields.default_acl_group.label', '', ConfigValueType::String, sortOrder: 20),
             new CoreSettingDefinition('users', UserFlowConfig::USERNAME_CHANGE_ENABLED_KEY, 'admin.settings.fields.username_change_enabled.label', false, ConfigValueType::Boolean, sortOrder: 30),
-            new CoreSettingDefinition('users', UserFlowConfig::ACCOUNT_LINK_TTL_HOURS_KEY, 'admin.settings.fields.account_link_ttl_hours.label', UserFlowConfig::DEFAULT_ACCOUNT_LINK_TTL_HOURS, ConfigValueType::Integer, FormInputType::Number, help: 'admin.settings.fields.account_link_ttl_hours.help', validation: ['min' => 1, 'max' => 168], sortOrder: 40),
+            new CoreSettingDefinition('users', UserFlowConfig::ACCOUNT_LINK_TTL_HOURS_KEY, 'admin.settings.fields.account_link_ttl_hours.label', UserFlowConfig::DEFAULT_ACCOUNT_LINK_TTL_HOURS, ConfigValueType::Integer, FormInputType::Number, help: 'admin.settings.fields.account_link_ttl_hours.help', validation: ['min' => UserFlowConfig::MIN_ACCOUNT_LINK_TTL_HOURS, 'max' => UserFlowConfig::MAX_ACCOUNT_LINK_TTL_HOURS], sortOrder: 40),
             new CoreSettingDefinition('users', UserFlowConfig::REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY, 'admin.settings.fields.registration_admin_notification_email.label', '', ConfigValueType::String, validation: ['max_length' => 180], sortOrder: 50),
             new CoreSettingDefinition('users', UserFlowConfig::SECURITY_NOTIFICATION_EMAIL_KEY, 'admin.settings.fields.security_notification_email.label', '', ConfigValueType::String, validation: ['max_length' => 180], sortOrder: 60),
-            new CoreSettingDefinition('users', UserFlowConfig::DELETED_USER_RETENTION_DAYS_KEY, 'admin.settings.fields.deleted_user_retention_days.label', UserFlowConfig::DEFAULT_DELETED_USER_RETENTION_DAYS, ConfigValueType::Integer, FormInputType::Number, help: 'admin.settings.fields.deleted_user_retention_days.help', validation: ['min' => 1, 'max' => 3650], sortOrder: 70),
+            new CoreSettingDefinition('users', UserFlowConfig::DELETED_USER_RETENTION_DAYS_KEY, 'admin.settings.fields.deleted_user_retention_days.label', UserFlowConfig::DEFAULT_DELETED_USER_RETENTION_DAYS, ConfigValueType::Integer, FormInputType::Number, help: 'admin.settings.fields.deleted_user_retention_days.help', validation: ['min' => UserFlowConfig::MIN_DELETED_USER_RETENTION_DAYS, 'max' => UserFlowConfig::MAX_DELETED_USER_RETENTION_DAYS], sortOrder: 70),
             new CoreSettingDefinition('users', 'user.menu.enabled', 'admin.settings.fields.user_menu_enabled.label', true, ConfigValueType::Boolean, sortOrder: 80),
-            new CoreSettingDefinition('users', 'user.menu.sort_order', 'admin.settings.fields.user_menu_sort_order.label', 900, ConfigValueType::Integer, FormInputType::Number, validation: ['min' => 0, 'max' => 9999], sortOrder: 90),
+            new CoreSettingDefinition('users', 'user.menu.sort_order', 'admin.settings.fields.user_menu_sort_order.label', UserFlowConfig::DEFAULT_MENU_SORT_ORDER, ConfigValueType::Integer, FormInputType::Number, validation: ['min' => UserFlowConfig::MIN_MENU_SORT_ORDER, 'max' => UserFlowConfig::MAX_MENU_SORT_ORDER], sortOrder: 90),
 
             new CoreSettingDefinition('mail', 'mail.enabled', 'admin.settings.fields.mail_enabled.label', false, ConfigValueType::Boolean, sortOrder: 10),
             new CoreSettingDefinition('mail', 'mail.from_address', 'admin.settings.fields.mail_from_address.label', 'admin@localhost', ConfigValueType::String, validation: ['max_length' => 180], sortOrder: 20),
@@ -94,6 +95,32 @@ final readonly class CoreSettingsRegistry
             ], validation: ['required' => true], metadata: [
                 'access_feature' => 'admin.settings.security',
             ], sortOrder: 35),
+            new CoreSettingDefinition('security', AutoBanPolicy::ENABLED_KEY, 'admin.settings.fields.auto_ban_enabled.label', AutoBanPolicy::DEFAULT_ENABLED, ConfigValueType::Boolean, help: 'admin.settings.fields.auto_ban_enabled.help', metadata: [
+                'access_feature' => 'admin.settings.security',
+                'minimum_access_level' => AccessLevel::OWNER,
+            ], sortOrder: 36),
+            new CoreSettingDefinition('security', AutoBanPolicy::TRUSTED_ACCESS_LEVEL_KEY, 'admin.settings.fields.auto_ban_trusted_access_level.label', AutoBanPolicy::DEFAULT_TRUSTED_ACCESS_LEVEL, ConfigValueType::Integer, FormInputType::Select, help: 'admin.settings.fields.auto_ban_trusted_access_level.help', options: [
+                (string) AccessLevel::USER => 'admin.settings.options.access_level.user',
+                (string) AccessLevel::MODERATOR => 'admin.settings.options.access_level.moderator',
+                (string) AccessLevel::AUTHOR => 'admin.settings.options.access_level.author',
+                (string) AccessLevel::PUBLISHER => 'admin.settings.options.access_level.publisher',
+                (string) AccessLevel::CURATOR => 'admin.settings.options.access_level.curator',
+                (string) AccessLevel::MANAGER => 'admin.settings.options.access_level.manager',
+                (string) AccessLevel::DIRECTOR => 'admin.settings.options.access_level.director',
+                (string) AccessLevel::ADMIN => 'admin.settings.options.access_level.admin',
+                (string) AccessLevel::OWNER => 'admin.settings.options.access_level.owner',
+            ], validation: ['required' => true, 'min' => AutoBanPolicy::MIN_TRUSTED_ACCESS_LEVEL, 'max' => AutoBanPolicy::MAX_TRUSTED_ACCESS_LEVEL], metadata: [
+                'access_feature' => 'admin.settings.security',
+                'minimum_access_level' => AccessLevel::OWNER,
+            ], sortOrder: 37),
+            new CoreSettingDefinition('security', AutoBanPolicy::SCORE_THRESHOLD_KEY, 'admin.settings.fields.auto_ban_score_threshold.label', AutoBanPolicy::DEFAULT_SCORE_THRESHOLD, ConfigValueType::Integer, FormInputType::Number, help: 'admin.settings.fields.auto_ban_score_threshold.help', validation: ['required' => true, 'min' => AutoBanPolicy::MIN_SCORE_THRESHOLD, 'max' => AutoBanPolicy::MAX_SCORE_THRESHOLD], metadata: [
+                'access_feature' => 'admin.settings.security',
+                'minimum_access_level' => AccessLevel::OWNER,
+            ], sortOrder: 38),
+            new CoreSettingDefinition('security', AutoBanPolicy::NEW_BAN_OWNER_ALERTS_KEY, 'admin.settings.fields.auto_ban_new_ban_owner_alerts.label', AutoBanPolicy::DEFAULT_NEW_BAN_OWNER_ALERTS, ConfigValueType::Boolean, help: 'admin.settings.fields.auto_ban_new_ban_owner_alerts.help', metadata: [
+                'access_feature' => 'admin.settings.security',
+                'minimum_access_level' => AccessLevel::OWNER,
+            ], sortOrder: 39),
             new CoreSettingDefinition('security', ConfigAuditLogPolicy::ENABLED_KEY, 'admin.settings.fields.audit_enabled.label', true, ConfigValueType::Boolean, metadata: [
                 'access_feature' => 'admin.settings.security',
             ], sortOrder: 40),
@@ -107,7 +134,7 @@ final readonly class CoreSettingsRegistry
             ], metadata: [
                 'access_feature' => 'admin.settings.security',
             ], sortOrder: 50),
-            new CoreSettingDefinition('security', DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY, 'admin.settings.fields.security_signal_retention_days.label', DatabaseLogRetentionPolicy::DEFAULT_SECURITY_SIGNAL_RETENTION_DAYS, ConfigValueType::Integer, FormInputType::Number, help: 'admin.settings.fields.security_signal_retention_days.help', validation: ['min' => 1, 'max' => DatabaseLogRetentionPolicy::MAX_RETENTION_DAYS], metadata: [
+            new CoreSettingDefinition('security', DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY, 'admin.settings.fields.security_signal_retention_days.label', DatabaseLogRetentionPolicy::defaultSecuritySignalRetentionDays(), ConfigValueType::Integer, FormInputType::Number, help: 'admin.settings.fields.security_signal_retention_days.help', validation: ['min' => AutoBanPolicy::maxTtlDays(), 'max' => DatabaseLogRetentionPolicy::MAX_RETENTION_DAYS], metadata: [
                 'access_feature' => 'admin.settings.security',
             ], sortOrder: 60),
             new CoreSettingDefinition('security', SuspiciousProbePathMatcher::PATTERNS_KEY, 'admin.settings.fields.security_probe_path_patterns.label', SuspiciousProbePathMatcher::defaultPatternText(), ConfigValueType::String, FormInputType::Textarea, help: 'admin.settings.fields.security_probe_path_patterns.help', validation: ['max_length' => 50000], metadata: [

@@ -35,12 +35,14 @@ final class ConfigTest extends TestCase
     {
         $connection = $this->connection();
         $connection->insert('config_entry', ['config_key' => UserFlowConfig::ACCOUNT_LINK_TTL_HOURS_KEY, 'value' => '36', 'value_type' => 'integer']);
+        $connection->insert('config_entry', ['config_key' => UserFlowConfig::MENU_SORT_ORDER_KEY, 'value' => '-1', 'value_type' => 'integer']);
         $connection->insert('config_entry', ['config_key' => UserFlowConfig::REGISTRATION_ADMIN_NOTIFICATION_EMAIL_KEY, 'value' => '"Admin@Example.Test"', 'value_type' => 'string']);
         $connection->insert('config_entry', ['config_key' => UserFlowConfig::SECURITY_NOTIFICATION_EMAIL_KEY, 'value' => '"Security@Example.Test"', 'value_type' => 'string']);
         $config = new UserFlowConfig(new Config($connection));
 
         self::assertSame(36, $config->accountLinkTtlHours());
         self::assertSame('+36 hours', $config->accountLinkTtl());
+        self::assertSame(UserFlowConfig::MIN_MENU_SORT_ORDER, $config->menuSortOrder());
         self::assertSame('admin@example.test', $config->registrationAdminNotificationEmail());
         self::assertSame('security@example.test', $config->securityNotificationEmail());
         self::assertFalse($config->usernameChangeEnabled());
@@ -48,6 +50,17 @@ final class ConfigTest extends TestCase
         $connection->insert('config_entry', ['config_key' => UserFlowConfig::USERNAME_CHANGE_ENABLED_KEY, 'value' => 'true', 'value_type' => 'boolean']);
 
         self::assertTrue($config->usernameChangeEnabled());
+    }
+
+    public function testUserFlowConfigBoundsPersistedLifecycleValues(): void
+    {
+        $connection = $this->connection();
+        $connection->insert('config_entry', ['config_key' => UserFlowConfig::ACCOUNT_LINK_TTL_HOURS_KEY, 'value' => '999', 'value_type' => 'integer']);
+        $connection->insert('config_entry', ['config_key' => UserFlowConfig::DELETED_USER_RETENTION_DAYS_KEY, 'value' => '0', 'value_type' => 'integer']);
+        $config = new UserFlowConfig(new Config($connection));
+
+        self::assertSame(UserFlowConfig::MAX_ACCOUNT_LINK_TTL_HOURS, $config->accountLinkTtlHours());
+        self::assertSame(UserFlowConfig::MIN_DELETED_USER_RETENTION_DAYS, $config->deletedUserRetentionDays());
     }
 
     public function testItFallsBackWhenConfigurationCannotBeRead(): void

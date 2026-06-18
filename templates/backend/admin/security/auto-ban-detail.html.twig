@@ -1,0 +1,67 @@
+{% extends '@backend/admin.html.twig' %}
+
+{% block title %}{{ 'admin.auto_bans.detail.title'|trans }}{% endblock %}
+
+{% block admin_sidebar %}
+    <nav aria-label="{{ 'ui.admin.navigation'|trans }}">
+        <a href="{{ path('backend_admin_route', {path: 'settings/security'}) }}">{{ 'admin.navigation.security_settings'|trans }}</a>
+    </nav>
+{% endblock %}
+
+{% block admin_body %}
+    {% include '@backend/admin/partials/_page-header.html.twig' with {
+        eyebrow: 'admin.settings.security.title'|trans,
+        title: 'admin.auto_bans.detail.title'|trans,
+    } only %}
+
+    {% set ban = auto_ban_detail.ban %}
+    {% set trigger_geo = auto_ban_detail.trigger_geo %}
+    <section class="system-panel">
+        <h2>{{ ban.subject_label }}</h2>
+        <table class="system-field-table">
+            <tbody>
+                <tr><th>{{ 'admin.auto_bans.columns.subject'|trans }}</th><td>{{ ban.subject_type }}</td></tr>
+                <tr><th>{{ 'admin.auto_bans.columns.created_at'|trans }}</th><td>{{ ban.created_at }}</td></tr>
+                <tr><th>{{ 'admin.auto_bans.columns.expires_at'|trans }}</th><td>{{ ban.expires_at }}</td></tr>
+                <tr><th>{{ 'admin.auto_bans.columns.ttl'|trans }}</th><td>{{ ban.ttl_seconds }}</td></tr>
+                <tr><th>{{ 'admin.auto_bans.detail.trigger_country'|trans }}</th><td>{{ trigger_geo.country|default('admin.logs.empty_value'|trans) }}</td></tr>
+                <tr><th>{{ 'admin.auto_bans.detail.trigger_continent'|trans }}</th><td>{{ trigger_geo.continent|default('admin.logs.empty_value'|trans) }}</td></tr>
+            </tbody>
+        </table>
+        {% if auto_ban_reset_mutable|default(false) %}
+            <form method="post" action="{{ path('backend_admin_auto_ban_reset', {key: ban.key}) }}">
+                <input type="hidden" name="_form_id" value="{{ reset_form_id }}">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token(reset_form_id) }}">
+                <button type="submit" class="system-button">{{ 'admin.auto_bans.reset.submit'|trans }}</button>
+            </form>
+        {% endif %}
+    </section>
+
+    <section class="system-panel">
+        <h2>{{ 'admin.auto_bans.detail.signals'|trans }}</h2>
+        {% if auto_ban_detail.signals is empty %}
+            <p class="system-muted">{{ 'admin.auto_bans.detail.no_signals'|trans }}</p>
+        {% else %}
+            <table class="system-table">
+                <thead>
+                    <tr>
+                        <th>{{ 'admin.logs.columns.timestamp'|trans }}</th>
+                        <th>{{ 'admin.logs.columns.security_signal'|trans }}</th>
+                        <th>{{ 'admin.logs.columns.request'|trans }}</th>
+                        <th>{{ 'admin.logs.columns.http_status'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for signal in auto_ban_detail.signals %}
+                        <tr>
+                            <td>{{ signal.occurred_at }}</td>
+                            <td>{{ signal.signal_type }}<br><span class="system-muted">{{ signal.reason_code }}</span></td>
+                            <td>{{ signal.request_id }}<br><span class="system-muted">{{ signal.path }}</span></td>
+                            <td>{{ signal.http_status|default('admin.logs.empty_value'|trans) }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </section>
+{% endblock %}

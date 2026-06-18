@@ -18,6 +18,7 @@ use App\Core\Statistics\AccessStatisticsPolicy;
 use App\Localization\LocaleToken;
 use App\Scheduler\SchedulerSettings;
 use App\Security\Abuse\SuspiciousProbePathMatcher;
+use App\Security\AutoBan\AutoBanPolicy;
 use App\Security\UserFlowConfig;
 
 final readonly class SetupDefaultSeed
@@ -52,8 +53,12 @@ final readonly class SetupDefaultSeed
             ['key' => DatabaseLogRetentionPolicy::MESSAGE_LOG_RETENTION_DAYS_KEY, 'value' => $this->setting($input, DatabaseLogRetentionPolicy::MESSAGE_LOG_RETENTION_DAYS_KEY, DatabaseLogRetentionPolicy::DEFAULT_LOG_RETENTION_DAYS), 'type' => ConfigValueType::Integer],
             ['key' => DatabaseLogRetentionPolicy::AUDIT_LOG_RETENTION_DAYS_KEY, 'value' => $this->setting($input, DatabaseLogRetentionPolicy::AUDIT_LOG_RETENTION_DAYS_KEY, DatabaseLogRetentionPolicy::DEFAULT_LOG_RETENTION_DAYS), 'type' => ConfigValueType::Integer],
             ['key' => DatabaseLogRetentionPolicy::ACCESS_LOG_RETENTION_DAYS_KEY, 'value' => $this->setting($input, DatabaseLogRetentionPolicy::ACCESS_LOG_RETENTION_DAYS_KEY, DatabaseLogRetentionPolicy::DEFAULT_LOG_RETENTION_DAYS), 'type' => ConfigValueType::Integer],
-            ['key' => DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY, 'value' => $this->setting($input, DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY, DatabaseLogRetentionPolicy::DEFAULT_SECURITY_SIGNAL_RETENTION_DAYS), 'type' => ConfigValueType::Integer],
+            ['key' => DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY, 'value' => $this->setting($input, DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY, DatabaseLogRetentionPolicy::defaultSecuritySignalRetentionDays()), 'type' => ConfigValueType::Integer],
             ['key' => SuspiciousProbePathMatcher::PATTERNS_KEY, 'value' => $this->setting($input, SuspiciousProbePathMatcher::PATTERNS_KEY, SuspiciousProbePathMatcher::defaultPatternText()), 'type' => ConfigValueType::String],
+            ['key' => AutoBanPolicy::ENABLED_KEY, 'value' => $this->setupSetting($input, AutoBanPolicy::ENABLED_KEY, AutoBanPolicy::SETUP_ENABLED), 'type' => ConfigValueType::Boolean],
+            ['key' => AutoBanPolicy::TRUSTED_ACCESS_LEVEL_KEY, 'value' => $this->setting($input, AutoBanPolicy::TRUSTED_ACCESS_LEVEL_KEY, AutoBanPolicy::DEFAULT_TRUSTED_ACCESS_LEVEL), 'type' => ConfigValueType::Integer],
+            ['key' => AutoBanPolicy::SCORE_THRESHOLD_KEY, 'value' => $this->setting($input, AutoBanPolicy::SCORE_THRESHOLD_KEY, AutoBanPolicy::DEFAULT_SCORE_THRESHOLD), 'type' => ConfigValueType::Integer],
+            ['key' => AutoBanPolicy::NEW_BAN_OWNER_ALERTS_KEY, 'value' => $this->setting($input, AutoBanPolicy::NEW_BAN_OWNER_ALERTS_KEY, AutoBanPolicy::DEFAULT_NEW_BAN_OWNER_ALERTS), 'type' => ConfigValueType::Boolean],
             ['key' => AccessStatisticsPolicy::ENABLED_KEY, 'value' => $this->setting($input, AccessStatisticsPolicy::ENABLED_KEY, true), 'type' => ConfigValueType::Boolean],
             ['key' => AccessStatisticsPolicy::RESPECT_DO_NOT_TRACK_KEY, 'value' => $this->setting($input, AccessStatisticsPolicy::RESPECT_DO_NOT_TRACK_KEY, true), 'type' => ConfigValueType::Boolean],
             ['key' => MaxMindGeoIpConfig::ENABLED_KEY, 'value' => $this->setting($input, MaxMindGeoIpConfig::ENABLED_KEY, false), 'type' => ConfigValueType::Boolean],
@@ -73,6 +78,11 @@ final readonly class SetupDefaultSeed
     private function setting(SetupInput $input, string $key, mixed $default): mixed
     {
         return $input->siteSettings()[$key] ?? $this->default($key, $default);
+    }
+
+    private function setupSetting(SetupInput $input, string $key, mixed $default): mixed
+    {
+        return $input->siteSettings()[$key] ?? $default;
     }
 
     private function default(string $key, mixed $fallback): mixed

@@ -129,7 +129,7 @@ final readonly class RequestIntentClassifier
         }
 
         return match (true) {
-            !$this->safeMethod($method) && ($this->routeIs($route, 'user_login') || $this->matchesSegments($segments, 'user', 'login')) => RequestIntent::Login,
+            !$this->safeMethod($method) && ($this->routeIs($route, 'user_login') || $this->loginSegments($segments)) => RequestIntent::Login,
             !$this->safeMethod($method) && ($this->routeIs($route, 'user_register', 'user_invitation_accept') || $this->matchesSegments($segments, 'user', 'register') || $this->matchesSegments($segments, 'user', 'invitation')) => RequestIntent::Registration,
             !$this->safeMethod($method) && ($this->routeIs($route, 'user_reset_password', 'user_password_reset_token', 'user_security_review') || $this->matchesSegments($segments, 'user', 'password-reset') || $this->matchesSegments($segments, 'user', 'reset-password') || $this->matchesSegments($segments, 'user', 'security-review')) => RequestIntent::PasswordReset,
             !$this->safeMethod($method) => RequestIntent::FormSubmit,
@@ -140,15 +140,23 @@ final readonly class RequestIntentClassifier
     private function recoveryLogin(Request $request, string $method, array $segments, string $route): bool
     {
         return 'GET' === $method
-            && $this->matchesSegments($segments, 'user', 'login')
+            && $this->loginSegments($segments)
             && $this->routeIs($route, 'user_login', 'n/a')
-            && '1' === (string) $request->query->get('bypass', '');
+            && '1' === $this->scalarQueryValue($request, 'bypass', '');
+    }
+
+    /**
+     * @param list<string> $segments
+     */
+    private function loginSegments(array $segments): bool
+    {
+        return $this->matchesSegments($segments, 'user', 'login');
     }
 
     private function setupApply(Request $request, array $segments): bool
     {
         return $this->matchesExactSegments($segments, 'setup', 'review')
-            && 'apply' === (string) $request->request->get('_setup_action', '');
+            && 'apply' === $this->scalarRequestValue($request, '_setup_action', '');
     }
 
     private function schedulerTrigger(Request $request): bool
@@ -274,6 +282,20 @@ final readonly class RequestIntentClassifier
         return $this->matchesSegments($segments, 'api', 'v1', 'admin')
             ? ['admin', ...array_slice($segments, 3)]
             : $segments;
+    }
+
+    private function scalarRequestValue(Request $request, string $name, string $default = ''): string
+    {
+        $value = $request->request->all()[$name] ?? $default;
+
+        return is_scalar($value) ? (string) $value : $default;
+    }
+
+    private function scalarQueryValue(Request $request, string $name, string $default = ''): string
+    {
+        $value = $request->query->all()[$name] ?? $default;
+
+        return is_scalar($value) ? (string) $value : $default;
     }
 
 }

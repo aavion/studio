@@ -251,6 +251,7 @@ final class Version20260531000000 extends AbstractMigration
         $this->addIndex($securitySignalLog, ['subject_type', 'subject_identifier', 'occurred_at'], 'idx_security_signal_subject_at');
         $this->addIndex($securitySignalLog, ['signal_type', 'occurred_at'], 'idx_security_signal_type_at');
         $this->addIndex($securitySignalLog, ['reason_code', 'occurred_at'], 'idx_security_signal_reason_at');
+        $this->addIndex($securitySignalLog, ['request_id', 'reason_code'], 'idx_security_signal_request_reason');
 
         $aclGroup = $schema->createTable('acl_group');
         $aclGroup->addColumn('uid', 'string', ['length' => 36]);

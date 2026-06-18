@@ -7,11 +7,20 @@ namespace App\Tests\Controller;
 use App\Core\Config\Config;
 use App\Core\Config\ConfigValueType;
 use App\Entity\SchedulerTask;
+use App\Security\Abuse\AbuseRequestInspector;
+use App\Security\Abuse\AbuseSubject;
+use App\Security\Abuse\AbuseSubjectType;
+use App\Security\AutoBan\AutoBanPolicy;
+use App\Security\AutoBan\AutoBanStore;
+use App\Security\AutoBan\AutoBanSubject;
+use App\Security\AutoBan\TrustedApiKeyAutoBanBypass;
 use App\Scheduler\SchedulerLockFactory;
 use App\Scheduler\SchedulerSettings;
 use App\Scheduler\SchedulerTaskDefinition;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\HttpFoundation\Request;
 
 final class SchedulerControllerTest extends WebTestCase
 {
@@ -75,6 +84,66 @@ final class SchedulerControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(404);
     }
 
+    public function testTrustedCronRunErrorsDoNotCreateSourceScoredSignals(): void
+    {
+        $client = self::createClient();
+        $connection = self::getContainer()->get(EntityManagerInterface::class)->getConnection();
+        $config = self::getContainer()->get(Config::class);
+        self::assertInstanceOf(Config::class, $config);
+
+        $connection->executeStatement('DELETE FROM security_signal_event');
+        $client->request('GET', '/cron/run?job=system.missing', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer test_seed_read_write_key',
+            'REMOTE_ADDR' => '198.51.100.61',
+        ]);
+
+        self::assertResponseStatusCodeSame(404);
+        self::assertSame(0, (int) $connection->fetchOne('SELECT COUNT(*) FROM security_signal_event'));
+
+        $config->set(SchedulerSettings::GET_AUTH_ENABLED_KEY, true, ConfigValueType::Boolean);
+        try {
+            $connection->executeStatement('DELETE FROM security_signal_event');
+            $client->request('GET', '/cron/run?auth=test_seed_read_write_key&job=system.missing', server: [
+                'REMOTE_ADDR' => '198.51.100.62',
+            ]);
+
+            self::assertResponseStatusCodeSame(404);
+            self::assertSame(0, (int) $connection->fetchOne('SELECT COUNT(*) FROM security_signal_event'));
+        } finally {
+            $config->set(SchedulerSettings::GET_AUTH_ENABLED_KEY, false, ConfigValueType::Boolean);
+        }
+    }
+
+    public function testTrustedCronRunPayloadPatternsDoNotCreateSourceScoredSignals(): void
+    {
+        $client = self::createClient();
+        $connection = self::getContainer()->get(EntityManagerInterface::class)->getConnection();
+        $config = self::getContainer()->get(Config::class);
+        self::assertInstanceOf(Config::class, $config);
+
+        $connection->executeStatement('DELETE FROM security_signal_event');
+        $client->request('GET', '/cron/run?job=../etc/passwd', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer test_seed_read_write_key',
+            'REMOTE_ADDR' => '198.51.100.63',
+        ]);
+
+        self::assertResponseStatusCodeSame(404);
+        self::assertSame(0, (int) $connection->fetchOne('SELECT COUNT(*) FROM security_signal_event'));
+
+        $config->set(SchedulerSettings::GET_AUTH_ENABLED_KEY, true, ConfigValueType::Boolean);
+        try {
+            $connection->executeStatement('DELETE FROM security_signal_event');
+            $client->request('GET', '/cron/run?auth=test_seed_read_write_key&job=../etc/passwd', server: [
+                'REMOTE_ADDR' => '198.51.100.64',
+            ]);
+
+            self::assertResponseStatusCodeSame(404);
+            self::assertSame(0, (int) $connection->fetchOne('SELECT COUNT(*) FROM security_signal_event'));
+        } finally {
+            $config->set(SchedulerSettings::GET_AUTH_ENABLED_KEY, false, ConfigValueType::Boolean);
+        }
+    }
+
     public function testCronRunRejectsMalformedJobIdentifierBeforeRegistryLookup(): void
     {
         $client = self::createClient();
@@ -105,6 +174,57 @@ final class SchedulerControllerTest extends WebTestCase
 
         self::assertResponseStatusCodeSame(401);
         self::assertSame(str_repeat('a', 16).'…', json_decode((string) $client->getResponse()->getContent(), true, flags: JSON_THROW_ON_ERROR)['auth']);
+    }
+
+    public function testCronRunAutoBanGuardAllowsOnlyTrustedKeysBeforeSchedulerAuth(): void
+    {
+        $client = self::createClient();
+        $cache = self::getContainer()->get('cache.app');
+        self::assertInstanceOf(CacheItemPoolInterface::class, $cache);
+        $cache->clear();
+
+        $config = self::getContainer()->get(Config::class);
+        self::assertInstanceOf(Config::class, $config);
+        $config->set(AutoBanPolicy::ENABLED_KEY, AutoBanPolicy::SETUP_ENABLED, ConfigValueType::Boolean);
+
+        try {
+            $this->banIpBucketFor('/cron/run', '198.51.100.41');
+            $client->request('GET', '/cron/run', server: $this->server('198.51.100.41') + [
+                'HTTP_AUTHORIZATION' => 'Bearer invalid-scheduler-key',
+            ]);
+            self::assertResponseStatusCodeSame(403);
+
+            $this->banIpBucketFor('/cron/run', '198.51.100.42');
+            $trustedBypass = self::getContainer()->get(TrustedApiKeyAutoBanBypass::class);
+            self::assertInstanceOf(TrustedApiKeyAutoBanBypass::class, $trustedBypass);
+            self::assertTrue($trustedBypass->allows(
+                Request::create('/cron/run', server: ['HTTP_AUTHORIZATION' => 'Bearer test_seed_read_write_key']),
+                allowPrefixlessBearer: true,
+                allowSchedulerQuery: true,
+            ));
+            $client->request('GET', '/cron/run', server: $this->server('198.51.100.42') + [
+                'HTTP_AUTHORIZATION' => 'Bearer test_seed_read_write_key',
+            ]);
+            self::assertResponseIsSuccessful();
+
+            $this->banIpBucketFor('/cron/run', '198.51.100.43');
+            $client->request('GET', '/cron/run', server: $this->server('198.51.100.43') + [
+                'HTTP_AUTHORIZATION' => 'Bearer test_seed_read_only_key',
+            ]);
+            self::assertResponseStatusCodeSame(401);
+
+            $config->set(SchedulerSettings::GET_AUTH_ENABLED_KEY, true, ConfigValueType::Boolean);
+            $this->banIpBucketFor('/cron/run?auth=test_seed_read_write_key', '198.51.100.44');
+            $client->request('GET', '/cron/run?auth=test_seed_read_write_key', server: $this->server('198.51.100.44'));
+            self::assertResponseIsSuccessful();
+
+            $oversizedToken = str_repeat('a', 129);
+            $this->banIpBucketFor('/cron/run?auth='.$oversizedToken, '198.51.100.45');
+            $client->request('GET', '/cron/run?auth='.$oversizedToken, server: $this->server('198.51.100.45'));
+            self::assertResponseStatusCodeSame(403);
+        } finally {
+            $config->set(SchedulerSettings::GET_AUTH_ENABLED_KEY, false, ConfigValueType::Boolean);
+        }
     }
 
     public function testCronRunGetAuthFallbackIsDisabledByDefault(): void
@@ -220,5 +340,34 @@ final class SchedulerControllerTest extends WebTestCase
         $connection = $entityManager->getConnection();
         $connection->delete('scheduler_task_run', ['task_identifier' => $identifier]);
         $connection->delete('scheduler_task', ['identifier' => $identifier]);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function server(string $ip): array
+    {
+        return [
+            'REMOTE_ADDR' => $ip,
+            'HTTP_USER_AGENT' => 'SchedulerControllerTest',
+            'HTTP_X_AUTO_BAN_TESTING' => '1',
+        ];
+    }
+
+    private function banIpBucketFor(string $path, string $ip): void
+    {
+        $request = Request::create($path, server: $this->server($ip));
+        $inspector = self::getContainer()->get(AbuseRequestInspector::class);
+        self::assertInstanceOf(AbuseRequestInspector::class, $inspector);
+
+        $subject = $inspector->inspect($request)['subjects']->first(AbuseSubjectType::IpBucket);
+        self::assertInstanceOf(AbuseSubject::class, $subject);
+
+        $autoBanSubject = AutoBanSubject::fromAbuseSubject($subject);
+        self::assertInstanceOf(AutoBanSubject::class, $autoBanSubject);
+
+        $store = self::getContainer()->get(AutoBanStore::class);
+        self::assertInstanceOf(AutoBanStore::class, $store);
+        $store->ban($autoBanSubject, 3600);
     }
 }

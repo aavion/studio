@@ -1,7 +1,7 @@
 # Security policy defaults
 
 > **Status**: Draft  
-> **Updated**: 2026-06-17  
+> **Updated**: 2026-06-18  
 > **Owner**: Core  
 > **Purpose:** Define first implementation defaults for Security hardening branches before runtime work begins.  
 
@@ -27,14 +27,15 @@ The defaults are not an Admin UI requirement. Admin-configurable policy can be a
 - Visitor-ID-backed policy is preferred for continuity. IP-backed policy is a short-lived secondary layer to reduce cookie-reset bypasses and shared-host abuse.
 - Raw credentials, raw API keys, raw visitor-cookie tokens, session IDs, full user agents, and captcha answer material must not be stored in policy records.
 - GeoIP values are operational metadata. They may support diagnostics and aggregate statistics, but they do not create allow/deny decisions in this policy slice.
+- Auto-ban detail may use the latest ban-trigger signal's Request ID to show coarse access-log GeoIP context, limited to country and continent, for Owner audit review. Security signals must not duplicate raw IP or per-signal GeoIP data.
 - Browser storage may hold only transient UI state, such as operation overlay resume data. It must not hold raw credentials, API keys, captcha answers, remember-me token material, CSRF secrets beyond Symfony's intended browser-side double-submit flow, or live-operation polling tokens longer than the underlying operation TTL.
 
 ## Retention Defaults
 
 - Raw access/security file logs: 30 days by default.
 - Queryable IP-derived records in database projections or passive-signal stores: maximum 30 days.
-- IP-derived auto-ban records: maximum 7 days, even though the privacy ceiling is 30 days.
-- Visitor-ID auto-ban records: maximum 30 days unless a later policy explicitly defines longer visitor retention and user-facing privacy copy.
+- IP-derived active auto-ban state: maximum 7 days, even though the privacy ceiling is 30 days.
+- Visitor-ID active auto-ban state: maximum 7 days for the first score-based implementation. Escalation and review evidence come from retained `security_signal_event` records, including ban-trigger and reset records, not durable ban table rows.
 - Passive suspicious signals: default 7 days for visitor/user/API subjects; default 24 hours for IP-only subjects; maximum 30 days for any IP-derived subject.
 - Captcha challenge state: 15 minutes, one-shot invalidation after every validation attempt.
 - Remember-me trust window: seven days.
@@ -46,10 +47,10 @@ Runtime enforcement must use one deterministic order so the same request is not 
 
 1. Resolve trusted client identity, visitor identity, request family, request intent, and safe pre-auth subject keys; resolve authenticated session/user and API key context before ordinary rate-limit decisions.
 2. Apply static asset, generated asset, setup/maintenance, and `/api/live/**` classification before ordinary website/API rate decisions.
-3. Resolve active Admin/Owner context before ordinary ban and rate checks so recovery protections and ordinary rate-limit exemptions can be evaluated safely.
+3. Resolve active trusted-user, Admin/Owner, and valid API-key user context before ordinary ban and rate checks so recovery protections, trusted-user auto-ban bypasses, and ordinary rate-limit exemptions can be evaluated safely.
 4. Allow the recovery-login bypass path to render the normal login form before active visitor/IP bans or exhausted ordinary website buckets block it, while still applying the dedicated recovery-login bucket.
 5. Classify high-signal probes early and return the generic probe response without revealing route existence.
-6. Check active bans except where Admin/Owner protection or the recovery-login rendering rule applies.
+6. Check active Visitor/IP bans except where trusted-user protection, trusted-user-owned API-key protection, Admin/Owner protection, or the recovery-login rendering rule applies. This must happen before controllers, custom error-page rendering, and ordinary rate-limit bucket consumption can produce another response.
 7. Consume rate buckets in a stable order: workflow-specific bucket, request-family/global bucket, then suspicious/abuse bucket where applicable.
 8. When multiple buckets fail, report the most user-actionable policy to the client and keep internal bucket names in diagnostics only.
 9. Run the guarded workflow only after the decision is allowed.
@@ -67,7 +68,7 @@ Default authority policy:
 - Admins may view normal Admin dashboards, package/theme overviews, scheduler status, redacted log/audit/security diagnostics, non-secret settings, user review queues, and operational summaries.
 - Admins may mutate non-owner user accounts, ACL groups below their own role level, pending account-token review actions, password-reset link creation, bounded non-secret settings, cache/asset rebuilds, and trusted registered scheduler run-now actions when the owning workflow allows it.
 - Owners are required for Owner/Admin account promotion or demotion, peer Admin changes, last-Owner-sensitive actions, protected secret configuration, security policy bounds, public API/CORS expansion, scheduler web-trigger/GET-token enablement, package install/activate/purge/update, backup restore, backup/download/export of full system data, self-update/release actions, destructive package/data purge, and emergency operational controls that can affect global runtime state.
-- Admins may perform manual unban or abuse review for ordinary anonymous/user subjects, but Owner/Admin subject relief, disabling auto-ban, weakening recovery protections, or changing privacy ceilings remains Owner-only.
+- Admins may review ordinary anonymous/user abuse diagnostics where the Admin ACL surface allows it. The first auto-ban implementation keeps manual reset, disabling auto-ban, threshold changes, trusted-user-level changes, Owner/Admin subject relief, weakening recovery protections, and privacy-ceiling changes Owner-only; later ACL delegation may broaden ordinary anonymous/IP/Visitor reset only through an explicit policy update.
 - Protected values remain write-only or status-only even for Owners unless a workflow explicitly implements a reveal flow with re-authentication, audit, and redaction rules.
 - Permission-aware navigation is not the security boundary. Controllers, API handlers, live-operation starters, scheduler triggers, and service-layer workflows must all call the same action policy before mutating or revealing high-impact data. Responsibility decides the feature row: pending account-token review actions use the review permission even when rendered from user management, while direct user creation/editing/group membership uses the user-management permission.
 
@@ -140,7 +141,7 @@ Multi-bucket requests must not partially spend earlier buckets when a later buck
 ## Response Semantics
 
 - Rate-limit exhaustion returns `429 Too Many Requests` with `Retry-After` when a reliable retry time exists.
-- Active temporary bans return a generic `403 Forbidden` by default, also with `Retry-After` when the ban expiry is known. The response must not expose raw reason internals, subject keys, IP data, or bucket names.
+- Active temporary bans return the forced bare `403 Forbidden` response by default, with `Retry-After` when the ban expiry is known, the safe Request ID, `no-store`, and a generic message only. The response must not expose score values, raw reason internals, subject keys, Visitor IDs, IP buckets, IP data, paths, headers, signal internals, or bucket names.
 - High-signal probes return generic `400 Bad Request` and must not reveal whether a probed path, file, or package exists. Probe handling should run before package loaders and other response-producing request gates, then force a minimal `400 Invalid Request` HTML response for browser probes while leaving the passive response-time signal recorder able to persist the security signal.
 - Browser responses use the shared HTML error/recovery renderer. Versioned API, scheduler, and JSON-request responses use the stable JSON error shape for their request family.
 - Security block, recovery, captcha, login, and bypass responses are `no-store` by default. Shared rendered HTTP error pages also set `no-store` centrally so customized system error content cannot be cached accidentally.
@@ -161,34 +162,40 @@ The codebase and other feature drafts expose several security-relevant surfaces 
 - Trusted proxy handling is a deployment/webserver boundary, not an app-level Security settings feature. Security identity, GeoIP, IP-bucket policy, access logs, API diagnostics, and auto-ban decisions must use Symfony's resolved request client IP and must not trust raw forwarding headers directly. Operators configure trusted reverse proxies through webserver/Symfony deployment config, for example `mod_remoteip` or equivalent server-level handling.
 - Visitor ID generation may use raw forwarding-header values only as untrusted differentiation entropy, for example to avoid merging unrelated browsers behind the same resolved IP when their `X-Forwarded-For` chains differ. Raw forwarding-header values must not become Security subject keys, GeoIP inputs, ban keys, or signal evidence. Because clients can spoof those headers, enforcement must not rely on the fallback Visitor-ID alone for anonymous cookie-less abuse; it must evaluate the stable IP-bucket HMAC alongside Visitor-ID evidence.
 - Visitor ID remains the preferred browser continuity key. Different browsers behind the same untrusted proxy should still receive separate visitor subjects. IP bans/blocks remain allowed as a secondary cookie-reset bypass defense, but their thresholds should be laxer than Visitor-ID thresholds so shared or untrusted-network IPs have a lower false-positive risk.
+- Future aggregation/rate-limit work may evaluate emergency country or continent traffic-shedding buckets for DDoS-like spikes. This must be a short-lived aggregate rate-limit defense, not an auto-ban subject or geo-blocking policy: unknown GeoIP (`n/a`) is ignored, thresholds must be extreme, windows should stay brief such as 5-15 minutes, trusted-user recovery and Owner/API access must remain available, and the response should be a minimal `429`/shed path rather than durable bans.
 - HTTP security headers are an adjacent production-hardening follow-up. Before production readiness, define and test the response policy for CSP, `frame-ancestors`, `Referrer-Policy`, `Permissions-Policy`, `X-Content-Type-Options`, sensitive-route `no-store`, and any route-specific exceptions needed by the editor, package assets, or external integrations.
 - Configurable enforcement windows, thresholds, escalation windows, and review horizons must respect the retention of the underlying evidence. A limiter, auto-ban, or review policy may not evaluate signals, projected logs, IP-derived buckets, or other evidence beyond the configured retention window for that data. If an operator configures an enforcement window longer than the available retained evidence, the implementation must reject, clamp, or clearly diagnose the mismatch instead of pretending older evidence can still be considered.
 
 ## Auto-Ban Defaults
 
-- Auto-ban is enabled by default and can be disabled through Security policy/settings once the auto-ban branch introduces bounded configuration.
-- Visitor-ID bans are the preferred continuity mechanism:
-  - first temporary ban: 1 hour;
-  - repeated ban within 24 hours: 24 hours;
-  - severe repeated anonymous abuse: up to 7 days;
-  - maximum: 30 days unless a later policy extends visitor retention.
-- IP-bucket bans are secondary and shorter:
-  - first temporary IP ban: 15 minutes;
-  - repeated IP ban within 24 hours: 6 hours;
-  - severe repeated IP abuse: up to 24 hours;
-  - maximum: 7 days.
-- IP-ban/block thresholds should stay laxer than Visitor-ID thresholds because one resolved IP may represent multiple users behind shared hosting, NAT, or an untrusted proxy. Use Visitor-ID evidence first where available, and treat IP-only evidence as a secondary escalation signal unless the signal is severe.
-- API-key bans use key fingerprint/prefix only:
-  - invalid-key probe ban: 15 minutes;
-  - repeated invalid-key probe ban: 1 hour;
-  - compromised or revoked-key replay review may escalate to 24 hours.
-- Authenticated users start with higher limits and softer handling such as throttling, captcha, warnings, or session/token review unless explicit compromise signals justify a hard block.
-- Visitor IDs and IP buckets that resolve to an active Admin or Owner session must not be banned.
+- Auto-ban is enabled by setup for completed installations and can be disabled through Security policy/settings once the auto-ban branch introduces bounded configuration. Runtime/default-provider fallback must be disabled when config storage is unavailable so cached active bans are not enforced during setup or database/config outages.
+- Auto-ban evaluates retained Security signals over a one-hour scoring window. The score is global per subject type/key, not split into separate buckets.
+- Source-risk Security signals contribute to the score: repeated error responses, high-signal probes, obvious malformed/attack-pattern GET or POST payloads, failed auth/rate activity, invalid API/CORS probing, copied-session or copied-visitor-cookie risk, setup-apply abuse, upload/archive validation abuse, diagnostic/export probing, and similarly explicit abuse signals. Routine access, ordinary successful requests, expected validation failures, and login-required `401` responses do not contribute by status alone.
+- `400`, `403`, `404`, and `429` responses emit low-weight source-risk signals by default. Probe responses already return `400`, so probe and response-status evidence for the same request must be correlated and not double-counted as independent actions.
+- Visitor-ID source scoring is primary. Stable client-IP bucket/HMAC scoring is secondary to reduce header/cookie mutation bypasses. User accounts and API keys are trusted-context inputs, not active auto-ban subjects.
+- IP-only scoring uses a fixed threshold multiplier above the Visitor-ID threshold so shared NAT and untrusted proxy users are not penalized as aggressively. The first default is `2x`.
+- First score defaults use a Visitor threshold of `100`, an IP threshold multiplier of `2` for an effective IP threshold of `200`, and a minimum of two qualifying signals before any ban can be created.
+- Initial signal weights are: error-hit `7`, suspicious probe path `100`, obvious malformed/attack-pattern payload `100`, copied session or copied visitor-cookie `100`, and failed authentication `10`. These values let roughly 15 error hits, one high-confidence probe or payload signature plus another qualifying signal, one session-copy signal plus another qualifying signal, or 10 failed auth attempts reach the Visitor threshold inside the one-hour window.
+- Scoreable request signals should be persisted for every evaluated source subject, normally Visitor ID and IP bucket, using indexed `subject_type`/`subject_identifier` values and shared request/correlation context. IP scoring must not require filtering on JSON context fields.
+- Score aggregation is write-triggered, not request-triggered. After a scoreable `security_signal_event` insert succeeds, the same DB connection may query retained rows for the affected Visitor/IP subjects using the indexed `subject_type`, `subject_identifier`, and `occurred_at` fields, apply the latest reset cutoff and one-hour window, and decide whether to write a ban-trigger signal plus cache-flock state. Requests with no new scoreable signal perform only the cheap active-ban cache check and must not start a database score lookup.
+- When one incoming Security signal makes both Visitor and IP scores eligible, create at most one new active ban for that signal and prefer the Visitor ban. Create an IP ban only when the IP score crosses the laxer threshold and no Visitor ban is created for the same evaluation.
+- Triggered active ban TTLs escalate as `1h`, `3h`, `24h`, and `7d` for both Visitor-ID and IP subjects.
+- Escalation is derived from retained prior ban-trigger `security_signal_event` records for the same subject type/key. Ban-trigger signals must record whether the effective ban subject was `visitor` or `ip` so the escalation counters stay separate.
+- Security-signal retention resets escalation naturally. Manual reset records a reset Security signal; score and escalation queries ignore earlier signals at or before the latest reset for the same subject type/key.
+- Manual reset clears the active cache-flock ban state before recording the reset cutoff signal and must be audited. Release plus cutoff persistence must hold the same subject-key lock used for ban creation so a concurrent qualifying signal cannot recreate the ban from pre-reset evidence in between. If the cutoff signal cannot be persisted after active release, the active state is restored best-effort and the reset is reported as failed so a still-active ban does not get under-scored later.
+- Threshold changes apply immediately for new ban decisions only. Existing active bans are not lifted automatically. If a subject is above a newly lowered threshold but is not yet banned, the next qualifying Security signal triggers re-evaluation and may create the ban.
+- Score thresholds and suspicious-action weights must be floored so at least one action always gets through and a ban cannot be created before the second qualifying signal for that subject type.
+- Initial score weights should live in a dedicated score catalogue similar to existing catalogue classes. Honeypot/probe, obvious attack-pattern payload, and copied-session signals may have high weights, while ordinary error-hit and rate-limit-hit weights must be conservative enough that a single legitimate mistake is harmless and repeated hits can still become suspicious. Payload scanning must skip Admin, Editor, Setup, and trusted-user contexts so legitimate code-bearing fields are not treated as probes. Payload signal evidence must be redacted to pattern classes and safe parameter metadata only.
+- Active ban state uses cache-flock TTL storage plus a cache-backed active-ban index for Admin list rendering. Explainability, escalation, and reset cutoffs come from retained `security_signal_event` records, including ban-trigger and reset records, rather than a separate durable ban table. The authoritative block is the per-subject cache-flock TTL state; stale index entries must not block.
+- Auto-ban storage degradation is fail-open. If database, signal storage, Config, cache, lock/flock, or consume/reset operations fail, the facade should allow the request, emit safe diagnostics where possible, and avoid creating an invisible Owner, login, setup, API, or scheduler lockout.
+- If a scoreable signal is recorded but the subsequent score query or cache-flock ban creation fails, the request remains allowed or proceeds with the response already selected by the owning workflow. Auto-ban must not retry score aggregation synchronously on later unrelated non-signal requests.
+- Auto-ban Config keys must be registered through the settings/default provider so setup, missing database, or unavailable database states read safe defaults without touching Doctrine/DBAL. When the database is unavailable, signal persistence and score evaluation cannot happen, so the policy is fail-open.
+- Trusted registered users are never selected as auto-ban subjects. The trusted-user minimum access level is required, defaults to `6`/`MANAGER`, and cannot be empty. Because Owners have level `9`, this also protects Owners from being newly banned through trusted browser context. API keys are not active auto-ban subjects; `/api/v1/**` and raw `/cron/run` requests from an already banned Visitor/IP source are pre-auth blocked before invalid credentials, untrusted credentials, CORS preflights, authentication-failure signals, controller handling, or rate-limit buckets can pass, but an early HMAC-backed lookup may allow active trusted-user-owned API keys. Scheduler-specific read-write/Admin authorization remains the scheduler boundary after the ban guard.
+- Visitor IDs and IP buckets that resolve to a trusted registered user session or trusted-user-owned API key must not be banned.
 - API keys owned by an active Owner and Visitor-ID/IP subjects that resolve to an active Owner session must not be rate-limited by ordinary application buckets.
 - Owner accounts must retain at least one documented recovery path. A policy that could deny all Owners is invalid.
-- Provide a recovery login path such as `GET /user/login?bypass=1` that renders the normal login form even when the current Visitor ID or IP bucket is banned or ordinary website buckets are exhausted. The bypass flag only bypasses ban/rate checks that would prevent rendering the login form; it does not bypass CSRF, credential validation, login-failure accounting, the dedicated recovery-login bucket, audit logging, or post-login policy re-evaluation. Unsafe login submissions with `bypass=1` remain normal login attempts.
+- Provide the recovery login render path `GET /user/login?bypass=1`, resolved through the shared `RequestPathResolver`, so the normal login form remains reachable even when the current Visitor ID or IP bucket is banned or ordinary website buckets are exhausted. The bypass flag only bypasses ban/rate checks that would prevent rendering the login form; it does not bypass CSRF, credential validation, login-failure accounting, the dedicated recovery-login bucket, audit logging, or post-login policy re-evaluation. Login submissions bypass an active source ban only when they carry the explicit recovery marker rendered by that recovery form; unsafe login submissions with only `bypass=1` remain normal login attempts.
 - The dedicated recovery-login bucket is intentionally small but not lockout-like: 2 recovery-login requests per minute, 10 per hour, and a 30-minute retry window after exhaustion.
-- Manual unban takes effect immediately and must be audited.
 
 ## Captcha Defaults
 
@@ -235,8 +242,10 @@ These are first soft decisions for which values should stay fixed, become protec
 | GeoIP enablement, database path, license key, and update task | Protected config/Admin setting with null fallback | Yes, protected and audited | License key never public; disabled/unconfigured state uses `NullGeoIpResolver`; no geo-blocking |
 | GeoIP license key | Secret/protected setting | Yes, protected only | Never rendered, exported, logged, or included in diagnostics |
 | Probe-path defaults | Code defaults plus config descriptor | Yes, audited | Defaults remain broad; patterns are anchored/normalized and tested against false positives |
-| Auto-ban enabled flag | Code default `on` | Yes, bounded | Disabling requires diagnostics; cannot disable Owner recovery, audit, or passive signal recording by accident |
-| Auto-ban TTLs and escalation windows | Code/config defaults | Yes, bounded | No permanent bans; IP-ban TTL stays below the documented max and IP retention ceiling |
+| Auto-ban enabled flag | Owner-gated Security setting seeded `on` during setup, runtime fallback `off` when config storage is unavailable | Yes, bounded | Disabling requires diagnostics; cannot disable trusted-user/Owner recovery, audit, or passive signal recording by accident |
+| Auto-ban trusted-user minimum level | Owner-gated required Security setting default `6`/`MANAGER` | Yes, bounded | Cannot be empty; Owners are level `9` and remain protected from auto-ban self-lockout |
+| Auto-ban score threshold | Owner-gated required Security setting default `100` plus score-catalogue weights | Yes, bounded | Threshold changes affect only new ban decisions; active bans are not auto-lifted; floors must allow at least one action and ban no earlier than the second qualifying signal |
+| Auto-ban TTLs, scoring window, IP multiplier, and escalation | Code/config defaults in an auto-ban score/policy catalogue | Possibly later at catalogue boundary | One-hour score window; TTL escalation `1h`, `3h`, `24h`, `7d`; IP threshold defaults to Visitor threshold `x2`; no permanent bans; active state uses cache-flock TTL |
 | Rate-limit mode | Owner-gated Security setting with `off`, `standard`, `strict`, and `panic` | Yes, bounded to those modes first | `off` bypasses limiter consume calls only; suspicious probes, passive signals, auth, ACL, CSRF, audit, and diagnostics stay active |
 | Rate-limit thresholds and windows | Dedicated code-level policy catalogue plus derived profile scaling | Yes, later at the catalogue boundary | Lower values that affect login, scheduler, captcha, or recovery require false-positive/recovery tests; higher public-entry values require policy review; future config-backed tuning should attach at the catalogue boundary |
 | Setup apply/finalization bucket | Named code/config default | Yes, bounded | Must avoid installer lockout; stricter values need documented CLI/manual recovery |

@@ -31,7 +31,7 @@ final class SecuritySignalRecorderTest extends TestCase
                 new DatabaseReadyState(new SetupCompletionMarker(), sys_get_temp_dir().'/missing-system-project', 'test'),
             );
 
-            $recorder->record('probe', 'security.probe.setup', 'visitor', 'visitor-id');
+            self::assertFalse($recorder->record('probe', 'security.probe.setup', 'visitor', 'visitor-id'));
         } finally {
             $this->restoreEnvironment(SetupCompletionMarker::KEY, $setupState);
             $this->restoreEnvironment(DatabaseReadyState::ALLOW_UNREADY_KEY, $allowState);
@@ -77,7 +77,7 @@ final class SecuritySignalRecorderTest extends TestCase
             new DatabaseLogRetentionPolicy($connection),
             clock: new MockClock('2026-06-16 12:00:00'),
         );
-        $recorder->record(
+        self::assertTrue($recorder->record(
             'probe',
             'security.probe.env',
             'ip_hash',
@@ -89,7 +89,7 @@ final class SecuritySignalRecorderTest extends TestCase
             requestIntent: 'suspicious_probe',
             path: '/.env',
             httpStatus: 400,
-        );
+        ));
 
         self::assertSame(1, (int) $connection->fetchOne('SELECT COUNT(*) FROM security_signal_event'));
         self::assertSame('security.probe.env', $connection->fetchOne('SELECT reason_code FROM security_signal_event'));

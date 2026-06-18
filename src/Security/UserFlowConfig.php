@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Security;
 
 use App\Core\Config\Config;
+use App\Core\Config\ConfigValidationGuard;
 use App\Core\Validation\EmailAddress;
 
 final readonly class UserFlowConfig
@@ -23,10 +24,19 @@ final readonly class UserFlowConfig
     public const REGISTRATION_AUTO_APPROVAL = 'auto_approval';
     public const DEFAULT_ACCOUNT_LINK_TTL_HOURS = 24;
     public const DEFAULT_DELETED_USER_RETENTION_DAYS = 7;
+    public const MIN_ACCOUNT_LINK_TTL_HOURS = 1;
+    public const MAX_ACCOUNT_LINK_TTL_HOURS = 168;
+    public const MIN_DELETED_USER_RETENTION_DAYS = 1;
+    public const MAX_DELETED_USER_RETENTION_DAYS = 3650;
+    public const DEFAULT_MENU_SORT_ORDER = 900;
+    public const MIN_MENU_SORT_ORDER = 0;
+    public const MAX_MENU_SORT_ORDER = 9999;
     public const PASSWORD_RESET_TTL = '+1 hour';
 
-    public function __construct(private Config $config)
-    {
+    public function __construct(
+        private Config $config,
+        private ConfigValidationGuard $configValidation = new ConfigValidationGuard(),
+    ) {
     }
 
     public function menuEnabled(): bool
@@ -36,9 +46,12 @@ final readonly class UserFlowConfig
 
     public function menuSortOrder(): int
     {
-        $sortOrder = $this->config->get(self::MENU_SORT_ORDER_KEY) ?? 900;
-
-        return is_int($sortOrder) ? $sortOrder : 900;
+        return $this->configValidation->boundedInteger(
+            $this->config->get(self::MENU_SORT_ORDER_KEY),
+            self::DEFAULT_MENU_SORT_ORDER,
+            self::MIN_MENU_SORT_ORDER,
+            self::MAX_MENU_SORT_ORDER,
+        );
     }
 
     public function registrationEnabled(): bool
@@ -76,24 +89,22 @@ final readonly class UserFlowConfig
 
     public function accountLinkTtlHours(): int
     {
-        $hours = $this->config->get(self::ACCOUNT_LINK_TTL_HOURS_KEY) ?? self::DEFAULT_ACCOUNT_LINK_TTL_HOURS;
-
-        if (!is_int($hours)) {
-            return self::DEFAULT_ACCOUNT_LINK_TTL_HOURS;
-        }
-
-        return max(1, min(168, $hours));
+        return $this->configValidation->boundedInteger(
+            $this->config->get(self::ACCOUNT_LINK_TTL_HOURS_KEY),
+            self::DEFAULT_ACCOUNT_LINK_TTL_HOURS,
+            self::MIN_ACCOUNT_LINK_TTL_HOURS,
+            self::MAX_ACCOUNT_LINK_TTL_HOURS,
+        );
     }
 
     public function deletedUserRetentionDays(): int
     {
-        $days = $this->config->get(self::DELETED_USER_RETENTION_DAYS_KEY) ?? self::DEFAULT_DELETED_USER_RETENTION_DAYS;
-
-        if (!is_int($days)) {
-            return self::DEFAULT_DELETED_USER_RETENTION_DAYS;
-        }
-
-        return max(1, min(3650, $days));
+        return $this->configValidation->boundedInteger(
+            $this->config->get(self::DELETED_USER_RETENTION_DAYS_KEY),
+            self::DEFAULT_DELETED_USER_RETENTION_DAYS,
+            self::MIN_DELETED_USER_RETENTION_DAYS,
+            self::MAX_DELETED_USER_RETENTION_DAYS,
+        );
     }
 
     public function registrationAdminNotificationEmail(): ?string

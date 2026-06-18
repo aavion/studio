@@ -8,10 +8,12 @@ use App\Core\Access\AccessMessageKey;
 use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
 use App\Core\Message\MessageReporterInterface;
+use App\Core\Routing\IgnorableRequestPathMatcher;
 use App\Core\Statistics\AccessStatisticsRecorderInterface;
 use App\Core\Statistics\VisitorIdGenerator;
 use App\Database\DatabaseReadyState;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
@@ -19,6 +21,8 @@ use Throwable;
 
 final readonly class AccessLogSubscriber implements EventSubscriberInterface
 {
+    private IgnorableRequestPathMatcher $ignorablePaths;
+
     public function __construct(
         private AccessLoggerInterface $accessLogger,
         private AccessStatisticsRecorderInterface $accessStatisticsRecorder,
@@ -26,7 +30,9 @@ final readonly class AccessLogSubscriber implements EventSubscriberInterface
         private VisitorIdGenerator $visitorIdGenerator,
         private ?MessageReporterInterface $messageReporter = null,
         private ?DatabaseReadyState $databaseReadyState = null,
+        ?IgnorableRequestPathMatcher $ignorablePaths = null,
     ) {
+        $this->ignorablePaths = $ignorablePaths ?? new IgnorableRequestPathMatcher();
     }
 
     public static function getSubscribedEvents(): array
@@ -39,7 +45,7 @@ final readonly class AccessLogSubscriber implements EventSubscriberInterface
 
     public function onKernelRequest(RequestEvent $event): void
     {
-        if (!$event->isMainRequest() || $this->shouldSkipAccessLog($event->getRequest()->getPathInfo())) {
+        if (!$event->isMainRequest() || $this->shouldSkipAccessLog($event->getRequest())) {
             return;
         }
 
@@ -48,7 +54,7 @@ final readonly class AccessLogSubscriber implements EventSubscriberInterface
 
     public function onKernelResponse(ResponseEvent $event): void
     {
-        if (!$event->isMainRequest() || $this->shouldSkipAccessLog($event->getRequest()->getPathInfo())) {
+        if (!$event->isMainRequest() || $this->shouldSkipAccessLog($event->getRequest())) {
             return;
         }
 
@@ -69,22 +75,17 @@ final readonly class AccessLogSubscriber implements EventSubscriberInterface
         }
     }
 
-    private function shouldSkipAccessLog(string $path): bool
+    private function shouldSkipAccessLog(Request $request): bool
     {
-        return str_starts_with($path, '/_profiler')
-            || str_starts_with($path, '/_wdt')
-            || str_starts_with($path, '/assets/')
-            || str_starts_with($path, '/build/');
+        return !$request->attributes->getBoolean(AccessRequestMetadata::FORCE_ACCESS_LOG_ATTRIBUTE)
+            && $this->ignorablePaths->matches($request->getPathInfo());
     }
 
     private function shouldSkipStatistics(string $path): bool
     {
         return $this->databaseIsNotReady()
             || str_starts_with($path, '/setup')
-            || str_starts_with($path, '/_profiler')
-            || str_starts_with($path, '/_wdt')
-            || str_starts_with($path, '/assets/')
-            || str_starts_with($path, '/build/');
+            || $this->ignorablePaths->matches($path);
     }
 
     private function databaseIsNotReady(): bool
