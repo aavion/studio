@@ -59,7 +59,7 @@ final readonly class AutoBanAdminBrowser
     {
         try {
             $rows = $this->connection->fetchAllAssociative(
-                'SELECT uid, occurred_at, signal_type, reason_code, severity, confidence, request_id, visitor_id, path, route, http_status, context FROM '.self::TABLE.' WHERE subject_type = ? AND subject_identifier = ? AND expires_at > ? ORDER BY occurred_at DESC LIMIT 100',
+                'SELECT uid, occurred_at, signal_type, reason_code, severity, confidence, request_id, visitor_id, path, route, http_status, context FROM '.self::TABLE.' WHERE subject_type = ? AND subject_identifier = ? AND expires_at > ? ORDER BY occurred_at DESC, uid DESC LIMIT 100',
                 [
                     $ban->subjectType(),
                     $ban->subjectIdentifier(),
