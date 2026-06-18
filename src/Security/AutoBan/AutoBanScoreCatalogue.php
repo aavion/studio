@@ -8,6 +8,7 @@ final readonly class AutoBanScoreCatalogue
 {
     public const SIGNAL_ERROR_HIT = 'security.signal.error_http_status';
     public const SIGNAL_SUSPICIOUS_PROBE = 'security.signal.suspicious_probe';
+    public const SIGNAL_SUSPICIOUS_PAYLOAD = 'security.signal.suspicious_payload';
     public const SIGNAL_SESSION_VISITOR_MISMATCH = 'security.signal.session_visitor_mismatch';
     public const SIGNAL_AUTH_FAILURE = 'security.signal.auth_failure';
     public const SIGNAL_TRIGGERED = 'security.signal.auto_ban_triggered';
@@ -15,6 +16,7 @@ final readonly class AutoBanScoreCatalogue
 
     public const WEIGHT_ERROR_HIT = 7;
     public const WEIGHT_PROBE = 100;
+    public const WEIGHT_SUSPICIOUS_PAYLOAD = 100;
     public const WEIGHT_SESSION_COPY = 100;
     public const WEIGHT_AUTH_FAILURE = 10;
 
@@ -26,6 +28,10 @@ final readonly class AutoBanScoreCatalogue
 
         if ('probe' === $signalType || self::SIGNAL_SUSPICIOUS_PROBE === $reasonCode) {
             return self::WEIGHT_PROBE;
+        }
+
+        if ('payload_probe' === $signalType || self::SIGNAL_SUSPICIOUS_PAYLOAD === $reasonCode) {
+            return self::WEIGHT_SUSPICIOUS_PAYLOAD;
         }
 
         if (self::SIGNAL_SESSION_VISITOR_MISMATCH === $reasonCode) {
