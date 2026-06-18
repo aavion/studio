@@ -53,10 +53,32 @@ final class AutoBanOwnerAlertNotifierTest extends TestCase
         self::assertInstanceOf(UiAlertTranslation::class, $alerts->userAlerts[0]['alert']);
         self::assertSame('admin.auto_bans.alerts.triggered', $alerts->userAlerts[0]['alert']->translationKey());
         self::assertSame('hidden', $alerts->userAlerts[0]['presentation']?->mode());
-        self::assertSame('auto-ban-triggered-'.$ban->key(), $alerts->userAlerts[0]['presentation']?->id());
+        self::assertStringStartsWith('auto-ban-triggered-'.$ban->key().'-', (string) $alerts->userAlerts[0]['presentation']?->id());
         self::assertSame([
             ['label' => 'Review', 'href' => '/admin/security/auto-bans'],
         ], $alerts->userAlerts[0]['presentation']?->actions());
+    }
+
+    public function testRepeatBanAlertsUseDifferentPresentationIds(): void
+    {
+        $connection = $this->connection();
+        $connection->insert('user_account', [
+            'uid' => 'owner-uid',
+            'role' => UserRole::Owner->value,
+            'status' => UserAccountStatus::Active->value,
+        ]);
+        $alerts = new RecordingAutoBanAlertDispatcher();
+        $notifier = new AutoBanOwnerAlertNotifier(new AutoBanPolicy(new Config($connection)), $connection, $alerts);
+        $ban = $this->ban();
+
+        $notifier->notifyBanTriggered($ban);
+        $notifier->notifyBanTriggered($ban);
+
+        self::assertCount(2, $alerts->userAlerts);
+        self::assertNotSame(
+            $alerts->userAlerts[0]['presentation']?->id(),
+            $alerts->userAlerts[1]['presentation']?->id(),
+        );
     }
 
     public function testItSkipsOwnerAlertsWhenDeliveryIsDisabled(): void

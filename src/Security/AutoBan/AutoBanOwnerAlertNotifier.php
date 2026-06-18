@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Security\AutoBan;
 
+use App\Core\Id\UuidFactory;
 use App\Core\Message\Message;
 use App\Core\Message\MessageReporterInterface;
 use App\Security\UserAccountStatus;
@@ -25,6 +26,7 @@ final readonly class AutoBanOwnerAlertNotifier
         private Connection $connection,
         private UiAlertDispatcherInterface $alerts,
         private ?MessageReporterInterface $messageReporter = null,
+        private UuidFactory $uuidFactory = new UuidFactory(),
     ) {
     }
 
@@ -40,7 +42,7 @@ final readonly class AutoBanOwnerAlertNotifier
             ]);
             $presentation = UiAlertPresentation::hidden(actions: [
                 UiAlertAction::link('Review', '/admin/security/auto-bans'),
-            ], id: 'auto-ban-triggered-'.$ban->key());
+            ], id: 'auto-ban-triggered-'.$ban->key().'-'.$this->uuidFactory->generate());
 
             foreach ($this->ownerUids() as $uid) {
                 $this->alerts->addAlertToUser($uid, $alert, UiAlertDelivery::Queue, $presentation);
