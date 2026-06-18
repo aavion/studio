@@ -96,6 +96,7 @@
 - Replaced throw-based auto-ban payload timestamp parsing with bounded `createFromFormat()` parsing and routed auto-ban storage/evaluation degradation through Security Message-layer diagnostics while preserving fail-open behavior.
 - Added configurable hidden Owner alerts for newly decided bans, linked alert actions directly to the active-ban list, added success/error alerts for manual ban release and failed settings saves, and routed alert-delivery degradation through Security Message-layer diagnostics.
 - Registered `/api/v1/admin/security/auto-bans` list/detail/reset endpoints through the existing API endpoint registry. Browser and API auto-ban review/reset surfaces use the existing non-configurable `admin.settings.security` ACL gate, so delegated non-Owner admins cannot access the ban list.
+- Review-hardened active-ban enforcement so `/api/live/**` remains outside ordinary rate-limit `429` handling but no longer bypasses an already active auto-ban, and added a `request_id`/`reason_code` Security-signal index for the Visitor-over-IP ban dedupe query.
 - Verification: `php -l` on changed PHP entry points passed; `php bin/console lint:container` passed; focused AutoBan/API/settings/message PHPUnit groups passed; full `php bin/phpunit` passed with 1631 tests and 10708 assertions; `bin/lint --diff` plus explicit lint for new auto-ban files passed.
 
 ### Archived Compacted Branch History

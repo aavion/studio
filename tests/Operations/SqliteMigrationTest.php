@@ -120,6 +120,7 @@ final class SqliteMigrationTest extends TestCase
             self::assertContains('studio_idx_ui_alert_inbox_expires_at', $alertIndexes);
             self::assertContains('studio_pk_security_signal_event', $signalIndexes);
             self::assertContains('studio_idx_security_signal_subject_at', $signalIndexes);
+            self::assertContains('studio_idx_security_signal_request_reason', $signalIndexes);
             self::assertContains('studio_fk_user_acl_group_user', $userGroupForeignKeys);
             self::assertContains('studio_fk_user_acl_group_group', $userGroupForeignKeys);
         } finally {

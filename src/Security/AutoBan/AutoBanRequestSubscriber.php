@@ -132,7 +132,7 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
 
     private function excludedRequest(Request $request): bool
     {
-        return $this->paths->matchesAnyPrefix($request->getPathInfo(), '/api/live', '/assets', '/build', '/_profiler', '/_wdt')
+        return $this->paths->matchesAnyPrefix($request->getPathInfo(), '/assets', '/build', '/_profiler', '/_wdt')
             || in_array($request->getPathInfo(), ['/favicon.ico', '/robots.txt'], true);
     }
 
