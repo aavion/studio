@@ -7,6 +7,7 @@ namespace App\Security\Abuse;
 use App\Core\Id\UuidFactory;
 use App\Core\Log\DatabaseLogRetentionPolicy;
 use App\Database\DatabaseReadyState;
+use App\Security\AutoBan\AutoBanSignalEvaluator;
 use DateInterval;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\Clock\ClockInterface;
@@ -24,6 +25,7 @@ final readonly class SecuritySignalRecorder
         private ?DatabaseReadyState $databaseReadyState = null,
         private UuidFactory $uuidFactory = new UuidFactory(),
         private ClockInterface $clock = new NativeClock(),
+        private ?AutoBanSignalEvaluator $autoBanSignals = null,
     ) {
     }
 
@@ -65,7 +67,7 @@ final readonly class SecuritySignalRecorder
         ];
 
         try {
-            $this->connection->insert(self::TABLE, [
+            $row = [
                 'uid' => $this->uuidFactory->generate(),
                 'occurred_at' => $now->format('Y-m-d H:i:s'),
                 'expires_at' => $expiresAt->format('Y-m-d H:i:s'),
@@ -84,8 +86,11 @@ final readonly class SecuritySignalRecorder
                 'route' => $this->short($route, 190),
                 'http_status' => $httpStatus,
                 'context' => $this->json($context),
-            ]);
+            ];
+
+            $this->connection->insert(self::TABLE, $row);
             $this->purgeExpired();
+            $this->autoBanSignals?->afterSignalRecorded([...$row, ...$context]);
         } catch (Throwable) {
             return;
         }

@@ -124,6 +124,12 @@ message:
     request_rejected: 'Die Anfrage konnte nicht akzeptiert werden.'
     storage_degraded: 'Rate-Limit-Speicher war nicht verfügbar; die Anfrage wurde zugelassen.'
     reset_degraded: 'Rate-Limit-Reset-Speicher war nicht verfügbar.'
+  auto_ban:
+    storage_degraded: 'Auto-Ban-Speicher war nicht verfügbar; Enforcement ist fail-open weitergelaufen.'
+    evaluation_degraded: 'Auto-Ban-Score-Auswertung war nicht verfügbar; die Anfrage wurde zugelassen.'
+    payload_invalid: 'Auto-Ban-State enthielt eine ungültige Payload und wurde ignoriert.'
+    reset_released: 'Auto-Ban wurde gelöst.'
+    alert_delivery_degraded: 'Auto-Ban-Owner-Alert-Zustellung war nicht verfügbar.'
   event:
     hook:
       invalid: 'Event-Hook "%event%" ist keine gültige öffentliche Hook-Definition.'

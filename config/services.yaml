@@ -269,6 +269,19 @@ services:
             $cachePool: '@cache.rate_limiter'
             $lockFactory: '@lock.factory'
 
+    App\Security\AutoBan\AutoBanStore:
+        arguments:
+            $cache: '@cache.app'
+            $lockFactory: '@lock.factory'
+
+    App\Security\AutoBan\AutoBanSignalEvaluator:
+        arguments:
+            $environment: '%kernel.environment%'
+
+    App\Security\AutoBan\AutoBanRequestSubscriber:
+        arguments:
+            $environment: '%kernel.environment%'
+
     App\Security\RateLimit\RateLimitRequestSubscriber:
         arguments:
             $environment: '%kernel.environment%'
