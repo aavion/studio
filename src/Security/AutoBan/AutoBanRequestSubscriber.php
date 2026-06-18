@@ -24,11 +24,15 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
+use Symfony\Component\Security\Csrf\CsrfToken;
+use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 use Throwable;
 
 final readonly class AutoBanRequestSubscriber implements EventSubscriberInterface
 {
     public const PASSIVE_SIGNAL_SKIP_ATTRIBUTE = '_system_auto_ban_response';
+    public const RECOVERY_LOGIN_TOKEN_FIELD = '_auto_ban_recovery_token';
+    public const RECOVERY_LOGIN_TOKEN_ID = 'auto_ban_recovery_login';
 
     private IgnorableRequestPathMatcher $ignorablePaths;
 
@@ -42,6 +46,7 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
         private ?MessageReporterInterface $messageReporter = null,
         private ClockInterface $clock = new NativeClock(),
         ?IgnorableRequestPathMatcher $ignorablePaths = null,
+        private ?CsrfTokenManagerInterface $csrfTokens = null,
     ) {
         $this->ignorablePaths = $ignorablePaths ?? new IgnorableRequestPathMatcher();
     }
@@ -66,7 +71,7 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
 
         try {
             $inspection = $this->inspector->inspect($request);
-            if ($this->recoveryRequest($inspection['profile']) || $this->trustedContext($inspection['subjects']->subjects())) {
+            if ($this->recoveryRequest($request, $inspection['profile']) || $this->trustedContext($inspection['subjects']->subjects())) {
                 return;
             }
 
@@ -119,7 +124,7 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
         return false;
     }
 
-    private function recoveryRequest(AbuseRequestProfile $profile): bool
+    private function recoveryRequest(Request $request, AbuseRequestProfile $profile): bool
     {
         if (RequestIntent::RecoveryLogin === $profile->intent()) {
             return true;
@@ -127,7 +132,18 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
 
         return RequestIntent::Login === $profile->intent()
             && 'POST' === $profile->method()
-            && in_array($profile->route(), ['user_login', 'n/a'], true);
+            && in_array($profile->route(), ['user_login', 'n/a'], true)
+            && $this->validRecoveryLoginToken($request);
+    }
+
+    private function validRecoveryLoginToken(Request $request): bool
+    {
+        $token = $request->request->get(self::RECOVERY_LOGIN_TOKEN_FIELD);
+
+        return is_string($token)
+            && '' !== $token
+            && $this->csrfTokens instanceof CsrfTokenManagerInterface
+            && $this->csrfTokens->isTokenValid(new CsrfToken(self::RECOVERY_LOGIN_TOKEN_ID, $token));
     }
 
     private function banResponse(Request $request, ActiveAutoBan $ban): Response

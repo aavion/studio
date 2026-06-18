@@ -27,6 +27,7 @@ final class SecurityController extends AbstractController
             'return_to' => $this->returnTo($request),
             'registration_enabled' => $this->config->registrationEnabled(),
             'account_closed' => '1' === $request->query->get('account_closed'),
+            'auto_ban_recovery_login' => '1' === (string) $request->query->get('bypass', ''),
         ]);
     }
 

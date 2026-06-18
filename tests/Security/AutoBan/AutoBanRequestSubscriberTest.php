@@ -34,6 +34,7 @@ use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\Lock\LockFactory;
 use Symfony\Component\Lock\Store\InMemoryStore;
+use Symfony\Component\Security\Csrf\CsrfTokenManager;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorage;
 use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
 use Twig\Environment;
@@ -80,7 +81,27 @@ final class AutoBanRequestSubscriberTest extends TestCase
         self::assertNull($event->getResponse());
     }
 
-    public function testLoginSubmissionsCanEstablishTrustedRecoveryContextDespiteActiveBan(): void
+    public function testRecoveryLoginSubmissionsCanEstablishTrustedContextDespiteActiveBan(): void
+    {
+        $clock = new MockClock('2026-06-18 12:00:00');
+        $visitorIds = new VisitorIdGenerator('test-secret');
+        $store = new AutoBanStore(new ArrayAdapter(), new LockFactory(new InMemoryStore()), clock: $clock);
+        $csrfTokens = new CsrfTokenManager();
+        $request = Request::create('/user/login', 'POST', [
+            'username' => 'owner',
+            AutoBanRequestSubscriber::RECOVERY_LOGIN_TOKEN_FIELD => (string) $csrfTokens->getToken(AutoBanRequestSubscriber::RECOVERY_LOGIN_TOKEN_ID),
+        ], server: ['REMOTE_ADDR' => '203.0.113.10']);
+        $request->attributes->set('_route', 'user_login');
+        $subject = new AutoBanSubject(AutoBanSubject::VISITOR, $visitorIds->generate($request));
+        $store->ban($subject, 3600);
+        $event = new RequestEvent(new AutoBanRequestTestKernel(), $request, HttpKernelInterface::MAIN_REQUEST);
+
+        $this->subscriber($visitorIds, $store, $clock, csrfTokens: $csrfTokens)->onKernelRequest($event);
+
+        self::assertNull($event->getResponse());
+    }
+
+    public function testOrdinaryLoginSubmissionsDoNotBypassActiveBan(): void
     {
         $clock = new MockClock('2026-06-18 12:00:00');
         $visitorIds = new VisitorIdGenerator('test-secret');
@@ -93,7 +114,7 @@ final class AutoBanRequestSubscriberTest extends TestCase
 
         $this->subscriber($visitorIds, $store, $clock)->onKernelRequest($event);
 
-        self::assertNull($event->getResponse());
+        self::assertSame(403, $event->getResponse()?->getStatusCode());
     }
 
     public function testLiveEndpointsDoNotBypassActiveBans(): void
@@ -144,6 +165,7 @@ final class AutoBanRequestSubscriberTest extends TestCase
         AutoBanStore $store,
         MockClock $clock,
         ?TokenStorage $tokenStorage = null,
+        ?CsrfTokenManager $csrfTokens = null,
     ): AutoBanRequestSubscriber {
         $connection = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
         $connection->executeStatement('CREATE TABLE config_entry (config_key VARCHAR(160) NOT NULL PRIMARY KEY, value CLOB NOT NULL, value_type VARCHAR(32) NOT NULL, sensitive BOOLEAN NOT NULL DEFAULT 0, modified_at DATETIME DEFAULT NULL, modified_by VARCHAR(180) DEFAULT NULL)');
@@ -159,6 +181,7 @@ final class AutoBanRequestSubscriberTest extends TestCase
             $this->renderer(),
             new AccessRequestMetadata(),
             clock: $clock,
+            csrfTokens: $csrfTokens,
         );
     }
 
