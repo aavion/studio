@@ -67,6 +67,7 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
                 ['onKernelRequestProbeCandidate', 4097],
                 ['onKernelRequestLogin', 16],
                 ['onKernelRequest', 4],
+                ['onKernelRequestAfterSignalWrites', 1],
             ],
         ];
     }
@@ -161,6 +162,16 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
 
     public function onKernelRequest(RequestEvent $event): void
     {
+        $this->enforceActiveBan($event, 'request_enforcement');
+    }
+
+    public function onKernelRequestAfterSignalWrites(RequestEvent $event): void
+    {
+        $this->enforceActiveBan($event, 'post_signal_request_enforcement');
+    }
+
+    private function enforceActiveBan(RequestEvent $event, string $operation): void
+    {
         if (!$event->isMainRequest() || !$this->enabledForRequest($event->getRequest()) || !$this->policy->enabled()) {
             return;
         }
@@ -183,7 +194,7 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
             }
         } catch (Throwable $error) {
             $this->reportEvaluation($error, [
-                'operation' => 'request_enforcement',
+                'operation' => $operation,
                 'path' => $request->getPathInfo(),
             ]);
 

@@ -15,6 +15,7 @@ use App\Security\Abuse\AbuseRequestInspector;
 use App\Security\Abuse\AbuseSubjectResolver;
 use App\Security\Abuse\ActionCostCatalogue;
 use App\Security\Abuse\RequestIntentClassifier;
+use App\Security\Abuse\SuspiciousPayloadSignalSubscriber;
 use App\Security\AutoBan\AutoBanPolicy;
 use App\Security\AutoBan\AutoBanRequestSubscriber;
 use App\Security\AutoBan\AutoBanStore;
@@ -345,6 +346,27 @@ final class AutoBanRequestSubscriberTest extends TestCase
         self::assertSame(403, $event->getResponse()?->getStatusCode());
     }
 
+    public function testPostSignalGuardBlocksBansCreatedAfterTheFinalPreSignalGuard(): void
+    {
+        $clock = new MockClock('2026-06-18 12:00:00');
+        $visitorIds = new VisitorIdGenerator('test-secret');
+        $store = new AutoBanStore(new ArrayAdapter(), new LockFactory(new InMemoryStore()), clock: $clock);
+        $request = Request::create('/search', 'GET', ['q' => 'probe'], server: ['REMOTE_ADDR' => '203.0.113.10']);
+        $subject = new AutoBanSubject(AutoBanSubject::VISITOR, $visitorIds->generate($request));
+        $subscriber = $this->subscriber($visitorIds, $store, $clock);
+        $event = new RequestEvent(new AutoBanRequestTestKernel(), $request, HttpKernelInterface::MAIN_REQUEST);
+
+        $subscriber->onKernelRequest($event);
+
+        self::assertFalse($event->hasResponse());
+
+        $store->ban($subject, 3600);
+        $subscriber->onKernelRequestAfterSignalWrites($event);
+
+        self::assertSame(403, $event->getResponse()?->getStatusCode());
+        self::assertTrue($request->attributes->getBoolean(AutoBanRequestSubscriber::PASSIVE_SIGNAL_SKIP_ATTRIBUTE));
+    }
+
     public function testTrustedUsersBypassActiveVisitorBans(): void
     {
         $clock = new MockClock('2026-06-18 12:00:00');
@@ -367,15 +389,19 @@ final class AutoBanRequestSubscriberTest extends TestCase
     {
         $autoBan = AutoBanRequestSubscriber::getSubscribedEvents()[KernelEvents::REQUEST];
         $rateLimit = RateLimitRequestSubscriber::getSubscribedEvents()[KernelEvents::REQUEST];
+        $payloadSignals = SuspiciousPayloadSignalSubscriber::getSubscribedEvents()[KernelEvents::REQUEST];
 
         self::assertSame(['onKernelRequestPreAuthSourceBan', 4098], $autoBan[0]);
         self::assertSame(['onKernelRequestProbeCandidate', 4097], $autoBan[1]);
         self::assertSame(['onKernelRequestLogin', 16], $autoBan[2]);
         self::assertSame(['onKernelRequest', 4], $autoBan[3]);
+        self::assertSame(['onKernelRequestAfterSignalWrites', 1], $autoBan[4]);
         self::assertGreaterThan($rateLimit[0][1], $autoBan[0][1]);
         self::assertGreaterThan($rateLimit[0][1], $autoBan[1][1]);
         self::assertSame(['onKernelRequestOrdinary', 3], $rateLimit[1]);
         self::assertGreaterThan($rateLimit[1][1], $autoBan[3][1]);
+        self::assertGreaterThan($autoBan[4][1], $payloadSignals[1]);
+        self::assertLessThan($autoBan[3][1], $payloadSignals[1]);
     }
 
     private function subscriber(
