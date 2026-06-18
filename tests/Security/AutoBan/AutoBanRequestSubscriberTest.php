@@ -136,6 +136,43 @@ final class AutoBanRequestSubscriberTest extends TestCase
         self::assertSame(403, $event->getResponse()?->getStatusCode());
     }
 
+    public function testMalformedLoginFieldsDoNotBypassActiveBan(): void
+    {
+        $clock = new MockClock('2026-06-18 12:00:00');
+        $visitorIds = new VisitorIdGenerator('test-secret');
+        $store = new AutoBanStore(new ArrayAdapter(), new LockFactory(new InMemoryStore()), clock: $clock);
+        $request = Request::create('/user/login', 'POST', [
+            'username' => ['owner'],
+            AutoBanRequestSubscriber::RECOVERY_LOGIN_TOKEN_FIELD => ['invalid'],
+        ], server: ['REMOTE_ADDR' => '203.0.113.10']);
+        $request->attributes->set('_route', 'user_login');
+        $subject = new AutoBanSubject(AutoBanSubject::VISITOR, $visitorIds->generate($request));
+        $store->ban($subject, 3600);
+        $event = new RequestEvent(new AutoBanRequestTestKernel(), $request, HttpKernelInterface::MAIN_REQUEST);
+
+        $this->subscriber($visitorIds, $store, $clock)->onKernelRequest($event);
+
+        self::assertSame(403, $event->getResponse()?->getStatusCode());
+        self::assertTrue($request->attributes->getBoolean(AutoBanRequestSubscriber::PASSIVE_SIGNAL_SKIP_ATTRIBUTE));
+    }
+
+    public function testMalformedRecoveryQueryDoesNotBypassActiveBan(): void
+    {
+        $clock = new MockClock('2026-06-18 12:00:00');
+        $visitorIds = new VisitorIdGenerator('test-secret');
+        $store = new AutoBanStore(new ArrayAdapter(), new LockFactory(new InMemoryStore()), clock: $clock);
+        $request = Request::create('/user/login?bypass[]=1', server: ['REMOTE_ADDR' => '203.0.113.10']);
+        $request->attributes->set('_route', 'user_login');
+        $subject = new AutoBanSubject(AutoBanSubject::VISITOR, $visitorIds->generate($request));
+        $store->ban($subject, 3600);
+        $event = new RequestEvent(new AutoBanRequestTestKernel(), $request, HttpKernelInterface::MAIN_REQUEST);
+
+        $this->subscriber($visitorIds, $store, $clock)->onKernelRequest($event);
+
+        self::assertSame(403, $event->getResponse()?->getStatusCode());
+        self::assertTrue($request->attributes->getBoolean(AutoBanRequestSubscriber::PASSIVE_SIGNAL_SKIP_ATTRIBUTE));
+    }
+
     public function testLiveEndpointsDoNotBypassActiveBans(): void
     {
         $clock = new MockClock('2026-06-18 12:00:00');

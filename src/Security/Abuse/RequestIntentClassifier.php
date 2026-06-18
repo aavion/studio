@@ -142,7 +142,7 @@ final readonly class RequestIntentClassifier
         return 'GET' === $method
             && $this->loginSegments($segments)
             && $this->routeIs($route, 'user_login', 'n/a')
-            && '1' === (string) $request->query->get('bypass', '');
+            && '1' === $this->scalarQueryValue($request, 'bypass', '');
     }
 
     /**
@@ -156,7 +156,7 @@ final readonly class RequestIntentClassifier
     private function setupApply(Request $request, array $segments): bool
     {
         return $this->matchesExactSegments($segments, 'setup', 'review')
-            && 'apply' === (string) $request->request->get('_setup_action', '');
+            && 'apply' === $this->scalarRequestValue($request, '_setup_action', '');
     }
 
     private function schedulerTrigger(Request $request): bool
@@ -282,6 +282,20 @@ final readonly class RequestIntentClassifier
         return $this->matchesSegments($segments, 'api', 'v1', 'admin')
             ? ['admin', ...array_slice($segments, 3)]
             : $segments;
+    }
+
+    private function scalarRequestValue(Request $request, string $name, string $default = ''): string
+    {
+        $value = $request->request->all()[$name] ?? $default;
+
+        return is_scalar($value) ? (string) $value : $default;
+    }
+
+    private function scalarQueryValue(Request $request, string $name, string $default = ''): string
+    {
+        $value = $request->query->all()[$name] ?? $default;
+
+        return is_scalar($value) ? (string) $value : $default;
     }
 
 }

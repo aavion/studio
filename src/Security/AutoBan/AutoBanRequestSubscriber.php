@@ -138,7 +138,7 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
 
     private function validRecoveryLoginToken(Request $request): bool
     {
-        $token = $request->request->get(self::RECOVERY_LOGIN_TOKEN_FIELD);
+        $token = $request->request->all()[self::RECOVERY_LOGIN_TOKEN_FIELD] ?? null;
 
         return is_string($token)
             && '' !== $token
