@@ -50,7 +50,7 @@ final readonly class SuspiciousPayloadSignalSubscriber implements EventSubscribe
             $inspection = $this->inspector->inspect($request);
             $subjects = $inspection['subjects'];
             $profile = $inspection['profile'];
-            if ($this->safeApplicationInput($profile) || $this->trustedContext($subjects) || $this->trustedSchedulerCredential($request, $profile)) {
+            if ($this->safeApplicationInput($profile, $subjects) || $this->trustedContext($subjects) || $this->trustedSchedulerCredential($request, $profile)) {
                 return;
             }
 
@@ -109,9 +109,10 @@ final readonly class SuspiciousPayloadSignalSubscriber implements EventSubscribe
         ]));
     }
 
-    private function safeApplicationInput(AbuseRequestProfile $profile): bool
+    private function safeApplicationInput(AbuseRequestProfile $profile, AbuseSubjectResolution $subjects): bool
     {
-        return in_array($profile->family(), [RequestFamily::Admin, RequestFamily::Editor, RequestFamily::Setup], true);
+        return in_array($profile->family(), [RequestFamily::Admin, RequestFamily::Editor, RequestFamily::Setup], true)
+            && $subjects->first(AbuseSubjectType::User) instanceof AbuseSubject;
     }
 
     private function trustedContext(AbuseSubjectResolution $subjects): bool
