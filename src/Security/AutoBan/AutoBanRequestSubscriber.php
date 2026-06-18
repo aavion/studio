@@ -28,6 +28,7 @@ use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\Security\Csrf\CsrfToken;
 use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
+use Symfony\Component\Security\Http\Event\LoginFailureEvent;
 use Throwable;
 
 final readonly class AutoBanRequestSubscriber implements EventSubscriberInterface
@@ -35,6 +36,7 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
     public const PASSIVE_SIGNAL_SKIP_ATTRIBUTE = '_system_auto_ban_response';
     public const PROBE_RATE_LIMIT_SKIP_ATTRIBUTE = '_system_auto_ban_skip_probe_rate_limit';
     public const TRUSTED_PRE_AUTH_BYPASS_ATTRIBUTE = '_system_auto_ban_trusted_pre_auth_bypass';
+    public const RECOVERY_ACTIVE_BAN_KEY_ATTRIBUTE = '_system_auto_ban_recovery_active_ban_key';
     public const RECOVERY_LOGIN_TOKEN_FIELD = '_auto_ban_recovery_token';
     public const RECOVERY_LOGIN_TOKEN_ID = 'auto_ban_recovery_login';
 
@@ -69,6 +71,7 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
                 ['onKernelRequest', 4],
                 ['onKernelRequestAfterSignalWrites', 1],
             ],
+            LoginFailureEvent::class => ['onLoginFailure', 64],
         ];
     }
 
@@ -140,6 +143,12 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
         try {
             $inspection = $this->inspector->inspect($request);
             if ($this->recoveryRequest($request, $inspection['profile'])) {
+                $ban = $this->activeBanFor($inspection['subjects']);
+                if ($ban instanceof ActiveAutoBan) {
+                    $request->attributes->set(self::PASSIVE_SIGNAL_SKIP_ATTRIBUTE, true);
+                    $request->attributes->set(self::RECOVERY_ACTIVE_BAN_KEY_ATTRIBUTE, $ban->key());
+                }
+
                 return;
             }
 
@@ -168,6 +177,27 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
     public function onKernelRequestAfterSignalWrites(RequestEvent $event): void
     {
         $this->enforceActiveBan($event, 'post_signal_request_enforcement');
+    }
+
+    public function onLoginFailure(LoginFailureEvent $event): void
+    {
+        $request = $event->getRequest();
+        if (!$this->enabledForRequest($request) || !$this->policy->enabled()) {
+            return;
+        }
+
+        $key = $request->attributes->get(self::RECOVERY_ACTIVE_BAN_KEY_ATTRIBUTE);
+        if (!is_string($key) || '' === $key) {
+            return;
+        }
+
+        $ban = $this->store->activeByKey($key);
+        if (!$ban instanceof ActiveAutoBan) {
+            return;
+        }
+
+        $event->setResponse($this->banResponse($request, $ban));
+        $request->attributes->set(self::PASSIVE_SIGNAL_SKIP_ATTRIBUTE, true);
     }
 
     private function enforceActiveBan(RequestEvent $event, string $operation): void

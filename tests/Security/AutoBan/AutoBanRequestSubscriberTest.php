@@ -39,6 +39,11 @@ use Symfony\Component\Lock\Store\InMemoryStore;
 use Symfony\Component\Security\Csrf\CsrfTokenManager;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorage;
 use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
+use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
+use Symfony\Component\Security\Core\Exception\AuthenticationException;
+use Symfony\Component\Security\Http\Authenticator\AuthenticatorInterface;
+use Symfony\Component\Security\Http\Authenticator\Passport\Passport;
+use Symfony\Component\Security\Http\Event\LoginFailureEvent;
 use Twig\Environment;
 use Twig\Loader\ArrayLoader;
 
@@ -229,6 +234,44 @@ final class AutoBanRequestSubscriberTest extends TestCase
         $this->subscriber($visitorIds, $store, $clock, csrfTokens: $csrfTokens)->onKernelRequestLogin($event);
 
         self::assertFalse($event->hasResponse());
+    }
+
+    public function testRecoveryLoginFailuresAfterActiveBanReturnBareForbiddenWithoutSideEffects(): void
+    {
+        $clock = new MockClock('2026-06-18 12:00:00');
+        $visitorIds = new VisitorIdGenerator('test-secret');
+        $store = new AutoBanStore(new ArrayAdapter(), new LockFactory(new InMemoryStore()), clock: $clock);
+        $csrfTokens = new CsrfTokenManager();
+        $request = Request::create('/user/login', 'POST', [
+            'username' => 'owner',
+            AutoBanRequestSubscriber::RECOVERY_LOGIN_TOKEN_FIELD => (string) $csrfTokens->getToken(AutoBanRequestSubscriber::RECOVERY_LOGIN_TOKEN_ID),
+        ], server: ['REMOTE_ADDR' => '203.0.113.10']);
+        $request->attributes->set('_route', 'user_login');
+        $request->attributes->set(AccessRequestMetadata::REQUEST_ID_ATTRIBUTE, 'request-recovery-failure-ban');
+        $subject = new AutoBanSubject(AutoBanSubject::VISITOR, $visitorIds->generate($request));
+        $ban = $store->ban($subject, 3600);
+        self::assertNotNull($ban);
+        $subscriber = $this->subscriber($visitorIds, $store, $clock, csrfTokens: $csrfTokens);
+        $requestEvent = new RequestEvent(new AutoBanRequestTestKernel(), $request, HttpKernelInterface::MAIN_REQUEST);
+
+        $subscriber->onKernelRequestLogin($requestEvent);
+
+        self::assertFalse($requestEvent->hasResponse());
+        self::assertTrue($request->attributes->getBoolean(AutoBanRequestSubscriber::PASSIVE_SIGNAL_SKIP_ATTRIBUTE));
+        self::assertSame($ban->key(), $request->attributes->get(AutoBanRequestSubscriber::RECOVERY_ACTIVE_BAN_KEY_ATTRIBUTE));
+
+        $failure = new LoginFailureEvent(
+            new AuthenticationException('Invalid credentials.'),
+            new AutoBanRequestTestAuthenticator(),
+            $request,
+            null,
+            'main',
+        );
+        $subscriber->onLoginFailure($failure);
+
+        self::assertSame(403, $failure->getResponse()?->getStatusCode());
+        self::assertSame('3600', $failure->getResponse()?->headers->get('Retry-After'));
+        self::assertStringContainsString('request-recovery-failure-ban', (string) $failure->getResponse()?->getContent());
     }
 
     public function testRecoveryLoginSubmissionsCanEstablishTrustedContextDespiteActiveBan(): void
@@ -451,5 +494,33 @@ final class AutoBanRequestTestKernel implements HttpKernelInterface
     public function handle(Request $request, int $type = self::MAIN_REQUEST, bool $catch = true): Response
     {
         return new Response();
+    }
+}
+
+final class AutoBanRequestTestAuthenticator implements AuthenticatorInterface
+{
+    public function supports(Request $request): ?bool
+    {
+        return true;
+    }
+
+    public function authenticate(Request $request): Passport
+    {
+        throw new AuthenticationException('Not used by this test.');
+    }
+
+    public function createToken(Passport $passport, string $firewallName): TokenInterface
+    {
+        throw new AuthenticationException('Not used by this test.');
+    }
+
+    public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response
+    {
+        return null;
+    }
+
+    public function onAuthenticationFailure(Request $request, AuthenticationException $exception): ?Response
+    {
+        return null;
     }
 }
