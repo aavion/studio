@@ -7,6 +7,7 @@ namespace App\Security\RateLimit;
 use App\Api\Http\ApiResponder;
 use App\Core\Log\AccessRequestMetadata;
 use App\Core\Message\Message;
+use App\Core\Routing\PathScopeMatcher;
 use App\Security\SecurityMessageCode;
 use App\Security\SecurityMessageKey;
 use App\View\Http\HttpErrorRenderer;
@@ -15,11 +16,15 @@ use Symfony\Component\HttpFoundation\Response;
 
 final readonly class RateLimitResponseRenderer
 {
+    private PathScopeMatcher $paths;
+
     public function __construct(
         private HttpErrorRenderer $httpError,
         private ApiResponder $apiResponder,
         private AccessRequestMetadata $requestMetadata,
+        ?PathScopeMatcher $paths = null,
     ) {
+        $this->paths = $paths ?? new PathScopeMatcher();
     }
 
     public function tooManyRequests(Request $request, RateLimitCheckResult $result): Response
@@ -87,12 +92,6 @@ final readonly class RateLimitResponseRenderer
 
     private function jsonSurface(Request $request): bool
     {
-        return str_starts_with($request->getPathInfo(), '/api/v1')
-            || $this->pathMatchesPrefix($request->getPathInfo(), '/cron');
-    }
-
-    private function pathMatchesPrefix(string $path, string $prefix): bool
-    {
-        return $path === $prefix || str_starts_with($path, $prefix.'/');
+        return $this->paths->matchesAnyPrefix($request->getPathInfo(), '/api/v1', '/cron');
     }
 }

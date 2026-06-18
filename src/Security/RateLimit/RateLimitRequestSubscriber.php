@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Security\RateLimit;
 
+use App\Core\Routing\PathScopeMatcher;
 use App\Security\Abuse\SuspiciousProbePathMatcher;
 use App\Setup\SetupCompletionMarker;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
@@ -15,6 +16,7 @@ use Symfony\Component\HttpKernel\KernelEvents;
 final readonly class RateLimitRequestSubscriber implements EventSubscriberInterface
 {
     private SuspiciousProbePathMatcher $probePathMatcher;
+    private PathScopeMatcher $paths;
 
     public function __construct(
         private RateLimitEnforcer $enforcer,
@@ -23,8 +25,10 @@ final readonly class RateLimitRequestSubscriber implements EventSubscriberInterf
         private SetupCompletionMarker $setupCompletionMarker,
         private string $projectDir,
         ?SuspiciousProbePathMatcher $probePathMatcher = null,
+        ?PathScopeMatcher $paths = null,
     ) {
         $this->probePathMatcher = $probePathMatcher ?? new SuspiciousProbePathMatcher(patterns: SuspiciousProbePathMatcher::DEFAULT_PATTERNS);
+        $this->paths = $paths ?? new PathScopeMatcher();
     }
 
     public static function getSubscribedEvents(): array
@@ -101,17 +105,8 @@ final readonly class RateLimitRequestSubscriber implements EventSubscriberInterf
 
     private function excludedPath(string $path): bool
     {
-        return $this->pathMatchesPrefix($path, '/api/live')
-            || $this->pathMatchesPrefix($path, '/assets')
-            || $this->pathMatchesPrefix($path, '/build')
-            || $this->pathMatchesPrefix($path, '/_profiler')
-            || $this->pathMatchesPrefix($path, '/_wdt')
+        return $this->paths->matchesAnyPrefix($path, '/api/live', '/assets', '/build', '/_profiler', '/_wdt')
             || in_array($path, ['/favicon.ico', '/robots.txt'], true);
-    }
-
-    private function pathMatchesPrefix(string $path, string $prefix): bool
-    {
-        return $path === $prefix || str_starts_with($path, $prefix.'/');
     }
 
     private function setupApplyRequest(Request $request): bool

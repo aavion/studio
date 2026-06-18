@@ -4,13 +4,21 @@ declare(strict_types=1);
 
 namespace App\Api\Security;
 
+use App\Core\Routing\PathScopeMatcher;
 use Symfony\Component\HttpFoundation\Request;
 
 final readonly class ApiRequestMethodPolicy
 {
+    private PathScopeMatcher $paths;
+
+    public function __construct(?PathScopeMatcher $paths = null)
+    {
+        $this->paths = $paths ?? new PathScopeMatcher();
+    }
+
     public function isApiV1Request(Request $request): bool
     {
-        return $this->pathMatchesPrefix($request->getPathInfo(), '/api/v1');
+        return $this->paths->matchesPrefix($request->getPathInfo(), '/api/v1');
     }
 
     public function isCorsPreflight(Request $request): bool
@@ -59,10 +67,5 @@ final readonly class ApiRequestMethodPolicy
         $method = $request->headers->get('Access-Control-Request-Method');
 
         return is_string($method) && '' !== trim($method) ? strtoupper(trim($method)) : null;
-    }
-
-    private function pathMatchesPrefix(string $path, string $prefix): bool
-    {
-        return $path === $prefix || str_starts_with($path, $prefix.'/');
     }
 }

@@ -11,6 +11,7 @@ use App\Core\Config\Config;
 use App\Core\Log\AccessRequestMetadata;
 use App\Core\Message\Message;
 use App\Core\Message\MessageReporterInterface;
+use App\Core\Routing\PathScopeMatcher;
 use App\Core\Statistics\VisitorIdGenerator;
 use App\Security\Abuse\AbuseRequestInspector;
 use App\Security\Abuse\AbuseSubjectResolver;
@@ -94,6 +95,8 @@ final class RateLimitRequestSubscriberTest extends TestCase
     public function testExcludedPathUsesSegmentBoundaries(string $path, bool $excluded): void
     {
         $subscriber = (new ReflectionClass(RateLimitRequestSubscriber::class))->newInstanceWithoutConstructor();
+        $paths = new \ReflectionProperty(RateLimitRequestSubscriber::class, 'paths');
+        $paths->setValue($subscriber, new PathScopeMatcher());
         $method = new \ReflectionMethod(RateLimitRequestSubscriber::class, 'excludedPath');
 
         self::assertSame($excluded, $method->invoke($subscriber, $path));

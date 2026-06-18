@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Security\RateLimit;
 
+use App\Core\Routing\PathScopeMatcher;
 use App\Security\RateLimit\RateLimitResponseRenderer;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -28,6 +29,8 @@ final class RateLimitResponseRendererTest extends TestCase
     public function testJsonSurfaceUsesPathBoundaries(string $path, bool $json): void
     {
         $renderer = (new ReflectionClass(RateLimitResponseRenderer::class))->newInstanceWithoutConstructor();
+        $paths = new \ReflectionProperty(RateLimitResponseRenderer::class, 'paths');
+        $paths->setValue($renderer, new PathScopeMatcher());
         $method = new \ReflectionMethod(RateLimitResponseRenderer::class, 'jsonSurface');
 
         self::assertSame($json, $method->invoke($renderer, Request::create($path)));
