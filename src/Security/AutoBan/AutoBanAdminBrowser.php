@@ -37,7 +37,7 @@ final readonly class AutoBanAdminBrowser
     }
 
     /**
-     * @return array{ban: array<string, mixed>, signals: list<array<string, mixed>>}|null
+     * @return array{ban: array<string, mixed>, trigger_geo: array{request_id: string, country: string, continent: string}, signals: list<array<string, mixed>>}|null
      */
     public function detail(string $key): ?array
     {
@@ -48,6 +48,7 @@ final readonly class AutoBanAdminBrowser
 
         return [
             'ban' => $ban->toArray(),
+            'trigger_geo' => $this->triggerGeo($ban),
             'signals' => $this->signals($ban),
         ];
     }
@@ -72,6 +73,49 @@ final readonly class AutoBanAdminBrowser
             $this->reportStorage('signals', $error, ['active_ban_key' => $ban->key()]);
 
             return [];
+        }
+    }
+
+    /**
+     * @return array{request_id: string, country: string, continent: string}
+     */
+    private function triggerGeo(ActiveAutoBan $ban): array
+    {
+        $empty = ['request_id' => 'n/a', 'country' => 'n/a', 'continent' => 'n/a'];
+
+        try {
+            $requestId = $this->connection->fetchOne(
+                'SELECT request_id FROM '.self::TABLE.' WHERE subject_type = ? AND subject_identifier = ? AND reason_code = ? AND expires_at > ? ORDER BY occurred_at DESC, uid DESC LIMIT 1',
+                [
+                    $ban->subjectType(),
+                    $ban->subjectIdentifier(),
+                    AutoBanScoreCatalogue::SIGNAL_TRIGGERED,
+                    $this->clock->now()->format('Y-m-d H:i:s'),
+                ],
+            );
+
+            if (!is_string($requestId) || '' === trim($requestId) || 'n/a' === trim($requestId)) {
+                return $empty;
+            }
+
+            $row = $this->connection->fetchAssociative(
+                'SELECT country, continent FROM access_log_entry WHERE request_id = ? ORDER BY occurred_at DESC, uid DESC LIMIT 1',
+                [$requestId],
+            );
+
+            if (!is_array($row)) {
+                return ['request_id' => $requestId, 'country' => 'n/a', 'continent' => 'n/a'];
+            }
+
+            return [
+                'request_id' => $requestId,
+                'country' => $this->presentGeoValue($row['country'] ?? null),
+                'continent' => $this->presentGeoValue($row['continent'] ?? null),
+            ];
+        } catch (Throwable $error) {
+            $this->reportStorage('trigger_geo', $error, ['active_ban_key' => $ban->key()]);
+
+            return $empty;
         }
     }
 
@@ -114,6 +158,13 @@ final readonly class AutoBanAdminBrowser
         $decoded = json_decode($context, true);
 
         return is_array($decoded) ? $decoded : [];
+    }
+
+    private function presentGeoValue(mixed $value): string
+    {
+        $value = is_scalar($value) ? trim((string) $value) : '';
+
+        return '' === $value ? 'n/a' : mb_substr($value, 0, 80);
     }
 
     /**

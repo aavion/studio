@@ -144,22 +144,23 @@ final readonly class AutoBanApiHandler implements ApiEndpointHandlerInterface
     }
 
     /**
-     * @param array{ban: array<string, mixed>, signals: list<array<string, mixed>>} $detail
+     * @param array{ban: array<string, mixed>, trigger_geo: array{request_id: string, country: string, continent: string}, signals: list<array<string, mixed>>} $detail
      *
      * @return array<string, mixed>
      */
     private function detailResource(array $detail): array
     {
-        return [
-            ...$this->banResource($detail['ban']),
-            'relationships' => [
-                'signals' => array_map(static fn (array $signal): array => [
-                    'type' => 'security_signal',
-                    'id' => (string) ($signal['uid'] ?? ''),
-                    'attributes' => $signal,
-                ], $detail['signals']),
-            ],
+        $resource = $this->banResource($detail['ban']);
+        $resource['attributes']['trigger_geo'] = $detail['trigger_geo'];
+        $resource['relationships'] = [
+            'signals' => array_map(static fn (array $signal): array => [
+                'type' => 'security_signal',
+                'id' => (string) ($signal['uid'] ?? ''),
+                'attributes' => $signal,
+            ], $detail['signals']),
         ];
+
+        return $resource;
     }
 
     private function notFound(Request $request, ?string $key): Response

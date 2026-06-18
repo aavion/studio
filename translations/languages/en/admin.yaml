@@ -671,6 +671,8 @@ admin:
       title: 'Auto-ban detail'
       signals: 'Related security signals'
       no_signals: 'No retained signals are available for this active ban.'
+      trigger_country: 'Trigger country'
+      trigger_continent: 'Trigger continent'
     reset:
       submit: 'Reset auto-ban'
       saved: 'Auto-ban reset.'

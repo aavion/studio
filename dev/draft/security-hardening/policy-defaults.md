@@ -27,6 +27,7 @@ The defaults are not an Admin UI requirement. Admin-configurable policy can be a
 - Visitor-ID-backed policy is preferred for continuity. IP-backed policy is a short-lived secondary layer to reduce cookie-reset bypasses and shared-host abuse.
 - Raw credentials, raw API keys, raw visitor-cookie tokens, session IDs, full user agents, and captcha answer material must not be stored in policy records.
 - GeoIP values are operational metadata. They may support diagnostics and aggregate statistics, but they do not create allow/deny decisions in this policy slice.
+- Auto-ban detail may use the latest ban-trigger signal's Request ID to show coarse access-log GeoIP context, limited to country and continent, for Owner audit review. Security signals must not duplicate raw IP or per-signal GeoIP data.
 - Browser storage may hold only transient UI state, such as operation overlay resume data. It must not hold raw credentials, API keys, captcha answers, remember-me token material, CSRF secrets beyond Symfony's intended browser-side double-submit flow, or live-operation polling tokens longer than the underlying operation TTL.
 
 ## Retention Defaults

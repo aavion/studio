@@ -671,6 +671,8 @@ admin:
       title: 'Auto-Ban-Detail'
       signals: 'Zugehörige Security-Signale'
       no_signals: 'Für diesen aktiven Bann sind keine aufbewahrten Signale verfügbar.'
+      trigger_country: 'Auslöse-Land'
+      trigger_continent: 'Auslöse-Kontinent'
     reset:
       submit: 'Auto-Ban zurücksetzen'
       saved: 'Auto-Ban zurückgesetzt.'

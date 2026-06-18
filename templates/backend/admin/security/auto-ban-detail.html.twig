@@ -15,6 +15,7 @@
     } only %}
 
     {% set ban = auto_ban_detail.ban %}
+    {% set trigger_geo = auto_ban_detail.trigger_geo %}
     <section class="system-panel">
         <h2>{{ ban.subject_label }}</h2>
         <table class="system-field-table">
@@ -23,6 +24,8 @@
                 <tr><th>{{ 'admin.auto_bans.columns.created_at'|trans }}</th><td>{{ ban.created_at }}</td></tr>
                 <tr><th>{{ 'admin.auto_bans.columns.expires_at'|trans }}</th><td>{{ ban.expires_at }}</td></tr>
                 <tr><th>{{ 'admin.auto_bans.columns.ttl'|trans }}</th><td>{{ ban.ttl_seconds }}</td></tr>
+                <tr><th>{{ 'admin.auto_bans.detail.trigger_country'|trans }}</th><td>{{ trigger_geo.country|default('admin.logs.empty_value'|trans) }}</td></tr>
+                <tr><th>{{ 'admin.auto_bans.detail.trigger_continent'|trans }}</th><td>{{ trigger_geo.continent|default('admin.logs.empty_value'|trans) }}</td></tr>
             </tbody>
         </table>
         {% if auto_ban_reset_mutable|default(false) %}
