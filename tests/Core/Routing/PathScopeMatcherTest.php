@@ -46,4 +46,13 @@ final class PathScopeMatcherTest extends TestCase
         self::assertFalse($matcher->matchesSegments('/api/v10/content', 'api', 'v1'));
         self::assertFalse($matcher->matchesSegments('/de/api/v1/content', 'api', 'v1'));
     }
+
+    public function testMatchesExactSegmentsRejectsChildrenAndLocalizedLookalikes(): void
+    {
+        $matcher = new PathScopeMatcher();
+
+        self::assertTrue($matcher->matchesExactSegments('/cron/run', 'cron', 'run'));
+        self::assertFalse($matcher->matchesExactSegments('/cron/run/extra', 'cron', 'run'));
+        self::assertFalse($matcher->matchesExactSegments('/de/cron/run', 'cron', 'run'));
+    }
 }

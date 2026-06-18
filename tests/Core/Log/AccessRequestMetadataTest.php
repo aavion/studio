@@ -109,7 +109,7 @@ final class AccessRequestMetadataTest extends TestCase
         self::assertSame('public', $disabled->surface(Request::create('/de/api/v1/status')));
         self::assertSame('admin', $disabled->surface($localizedRoute));
         self::assertSame('admin', $enabled->surface(Request::create('/de/admin/logs')));
-        self::assertSame('api', $enabled->surface(Request::create('/de/api/v1/status')));
+        self::assertSame('public', $enabled->surface(Request::create('/de/api/v1/status')));
     }
 
     private function routeLocalization(bool $enabled): ContentRouteLocalization

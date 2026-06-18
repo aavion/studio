@@ -74,7 +74,8 @@ final class RateLimitEnforcementControllerTest extends WebTestCase
 
         self::assertResponseStatusCodeSame(400);
         self::assertStringContainsString('no-store', (string) $client->getResponse()->headers->get('Cache-Control'));
-        self::assertStringContainsString('Request ID', $client->getResponse()->getContent());
+        self::assertStringContainsString('Invalid Request', $client->getResponse()->getContent());
+        self::assertStringContainsString('Request-ID', $client->getResponse()->getContent());
         self::assertStringNotContainsString('suspicious.probe', $client->getResponse()->getContent());
     }
 

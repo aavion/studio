@@ -11,7 +11,7 @@ use App\Core\Config\Config;
 use App\Core\Log\AccessRequestMetadata;
 use App\Core\Message\Message;
 use App\Core\Message\MessageReporterInterface;
-use App\Core\Routing\RequestPathResolver;
+use App\Core\Routing\PathScopeMatcher;
 use App\Core\Statistics\VisitorIdGenerator;
 use App\Security\Abuse\AbuseRequestInspector;
 use App\Security\Abuse\AbuseSubjectResolver;
@@ -96,22 +96,22 @@ final class RateLimitRequestSubscriberTest extends TestCase
     {
         $subscriber = (new ReflectionClass(RateLimitRequestSubscriber::class))->newInstanceWithoutConstructor();
         $paths = new \ReflectionProperty(RateLimitRequestSubscriber::class, 'paths');
-        $paths->setValue($subscriber, new RequestPathResolver());
+        $paths->setValue($subscriber, new PathScopeMatcher());
         $method = new \ReflectionMethod(RateLimitRequestSubscriber::class, 'excludedRequest');
 
         self::assertSame($excluded, $method->invoke($subscriber, Request::create($path)));
     }
 
-    public function testExcludedRequestUsesLocalizedPathSegments(): void
+    public function testExcludedRequestDoesNotUseLocalizedTechnicalPathSegments(): void
     {
         $subscriber = (new ReflectionClass(RateLimitRequestSubscriber::class))->newInstanceWithoutConstructor();
         $paths = new \ReflectionProperty(RateLimitRequestSubscriber::class, 'paths');
-        $paths->setValue($subscriber, new RequestPathResolver());
+        $paths->setValue($subscriber, new PathScopeMatcher());
         $method = new \ReflectionMethod(RateLimitRequestSubscriber::class, 'excludedRequest');
         $localized = Request::create('/de/api/live/status');
         $localized->attributes->set('_locale', 'de');
 
-        self::assertTrue($method->invoke($subscriber, $localized));
+        self::assertFalse($method->invoke($subscriber, $localized));
         self::assertFalse($method->invoke($subscriber, Request::create('/de/api/live/status')));
     }
 
@@ -119,7 +119,8 @@ final class RateLimitRequestSubscriberTest extends TestCase
     {
         $events = RateLimitRequestSubscriber::getSubscribedEvents()[KernelEvents::REQUEST];
 
-        self::assertSame(['onKernelRequestProbe', 900], $events[0]);
+        self::assertSame(['onKernelRequestProbe', 4096], $events[0]);
+        self::assertGreaterThan(1024, $events[0][1]);
         self::assertGreaterThan(768, $events[0][1]);
         self::assertGreaterThan(512, $events[0][1]);
         self::assertGreaterThan(256, $events[0][1]);
@@ -152,7 +153,7 @@ final class RateLimitRequestSubscriberTest extends TestCase
     {
         unset($_SERVER[SetupCompletionMarker::KEY], $_ENV[SetupCompletionMarker::KEY]);
         putenv(SetupCompletionMarker::KEY);
-        $subscriber = $this->subscriberWithUninitializedEnforcer();
+        $subscriber = $this->subscriberWithRealEnforcer();
         $event = new RequestEvent(
             new RateLimitRequestSubscriberTestKernel(),
             Request::create('/.env'),
@@ -164,7 +165,26 @@ final class RateLimitRequestSubscriberTest extends TestCase
         self::assertTrue($event->hasResponse());
         self::assertSame(Response::HTTP_BAD_REQUEST, $event->getResponse()->getStatusCode());
         self::assertStringContainsString('400 - Bad Request', (string) $event->getResponse()->getContent());
+        self::assertStringContainsString('Invalid Request', (string) $event->getResponse()->getContent());
         self::assertStringContainsString('<pre><strong>Request-ID:</strong>', (string) $event->getResponse()->getContent());
+        self::assertStringContainsString('no-store', (string) $event->getResponse()->headers->get('Cache-Control'));
+    }
+
+    public function testProbeHookUsesForcedBareResponseAfterSetupCompletion(): void
+    {
+        $subscriber = $this->subscriberWithRealEnforcer();
+        $event = new RequestEvent(
+            new RateLimitRequestSubscriberTestKernel(),
+            Request::create('/.env'),
+            HttpKernelInterface::MAIN_REQUEST,
+        );
+
+        $subscriber->onKernelRequestProbe($event);
+
+        self::assertTrue($event->hasResponse());
+        self::assertSame(Response::HTTP_BAD_REQUEST, $event->getResponse()->getStatusCode());
+        self::assertStringContainsString('400 - Bad Request', (string) $event->getResponse()->getContent());
+        self::assertStringContainsString('Invalid Request', (string) $event->getResponse()->getContent());
         self::assertStringContainsString('no-store', (string) $event->getResponse()->headers->get('Cache-Control'));
     }
 
@@ -188,7 +208,7 @@ final class RateLimitRequestSubscriberTest extends TestCase
     {
         $subscriber = (new ReflectionClass(RateLimitRequestSubscriber::class))->newInstanceWithoutConstructor();
         $paths = new \ReflectionProperty(RateLimitRequestSubscriber::class, 'paths');
-        $paths->setValue($subscriber, new RequestPathResolver());
+        $paths->setValue($subscriber, new PathScopeMatcher());
         $method = new \ReflectionMethod(RateLimitRequestSubscriber::class, 'setupApplyRequest');
 
         self::assertTrue($method->invoke($subscriber, Request::create('/setup/review', 'POST', [

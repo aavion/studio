@@ -39,6 +39,11 @@ final readonly class PathScopeMatcher
         return [] !== $segments;
     }
 
+    public function matchesExactSegments(string $path, string ...$segments): bool
+    {
+        return count($this->segments($path)) === count($segments) && $this->matchesSegments($path, ...$segments);
+    }
+
     /**
      * @return list<string>
      */

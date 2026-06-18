@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Security\Abuse;
 
 use App\Api\Http\ApiRequestContext;
+use App\Core\Routing\PathScopeMatcher;
 use App\Core\Routing\RequestPathResolver;
 use App\Core\Statistics\VisitorIdGenerator;
 use App\Core\Validation\EmailAddress;
@@ -17,14 +18,17 @@ final readonly class AbuseSubjectResolver
 {
     private const PLACEHOLDER = 'n/a';
     private RequestPathResolver $paths;
+    private PathScopeMatcher $rawPaths;
 
     public function __construct(
         private VisitorIdGenerator $visitorIdGenerator,
         private TokenStorageInterface $tokenStorage,
         private string $secret,
         ?RequestPathResolver $paths = null,
+        ?PathScopeMatcher $rawPaths = null,
     ) {
         $this->paths = $paths ?? new RequestPathResolver();
+        $this->rawPaths = $rawPaths ?? new PathScopeMatcher();
     }
 
     public function resolve(Request $request): AbuseSubjectResolution
@@ -108,7 +112,7 @@ final readonly class AbuseSubjectResolver
 
     private function submittedSchedulerCredential(Request $request): ?AbuseSubject
     {
-        if (!$this->paths->matchesExact($request, 'cron', 'run')) {
+        if (!$this->rawPaths->matchesExactSegments($request->getPathInfo(), 'cron', 'run')) {
             return null;
         }
 

@@ -7,7 +7,7 @@ namespace App\Security\RateLimit;
 use App\Api\Http\ApiResponder;
 use App\Core\Log\AccessRequestMetadata;
 use App\Core\Message\Message;
-use App\Core\Routing\RequestPathResolver;
+use App\Core\Routing\PathScopeMatcher;
 use App\Security\SecurityMessageCode;
 use App\Security\SecurityMessageKey;
 use App\View\Http\HttpErrorRenderer;
@@ -16,15 +16,15 @@ use Symfony\Component\HttpFoundation\Response;
 
 final readonly class RateLimitResponseRenderer
 {
-    private RequestPathResolver $paths;
+    private PathScopeMatcher $paths;
 
     public function __construct(
         private HttpErrorRenderer $httpError,
         private ApiResponder $apiResponder,
         private AccessRequestMetadata $requestMetadata,
-        ?RequestPathResolver $paths = null,
+        ?PathScopeMatcher $paths = null,
     ) {
-        $this->paths = $paths ?? new RequestPathResolver();
+        $this->paths = $paths ?? new PathScopeMatcher();
     }
 
     public function tooManyRequests(Request $request, RateLimitCheckResult $result): Response
@@ -47,6 +47,13 @@ final readonly class RateLimitResponseRenderer
             : $this->httpError->resolve(Response::HTTP_BAD_REQUEST, $request, context: $this->context($request));
 
         return $this->noStore($response);
+    }
+
+    public function invalidRequest(Request $request): Response
+    {
+        return $this->httpError->bare(Response::HTTP_BAD_REQUEST, $request, $this->context($request) + [
+            'bare_context' => 'Invalid Request',
+        ]);
     }
 
     public function bare(Request $request, int $status, ?int $retryAfterSeconds = null): Response
@@ -92,6 +99,7 @@ final readonly class RateLimitResponseRenderer
 
     private function jsonSurface(Request $request): bool
     {
-        return $this->paths->matchesAny($request, ['api', 'v1'], ['cron']);
+        return $this->paths->matchesSegments($request->getPathInfo(), 'api', 'v1')
+            || $this->paths->matchesSegments($request->getPathInfo(), 'cron');
     }
 }

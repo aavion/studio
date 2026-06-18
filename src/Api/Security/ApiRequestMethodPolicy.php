@@ -4,21 +4,21 @@ declare(strict_types=1);
 
 namespace App\Api\Security;
 
-use App\Core\Routing\RequestPathResolver;
+use App\Core\Routing\PathScopeMatcher;
 use Symfony\Component\HttpFoundation\Request;
 
 final readonly class ApiRequestMethodPolicy
 {
-    private RequestPathResolver $requestPaths;
+    private PathScopeMatcher $paths;
 
-    public function __construct(?RequestPathResolver $requestPaths = null)
+    public function __construct(?PathScopeMatcher $paths = null)
     {
-        $this->requestPaths = $requestPaths ?? new RequestPathResolver();
+        $this->paths = $paths ?? new PathScopeMatcher();
     }
 
     public function isApiV1Request(Request $request): bool
     {
-        return $this->requestPaths->matches($request, 'api', 'v1');
+        return $this->paths->matchesSegments($request->getPathInfo(), 'api', 'v1');
     }
 
     public function isCorsPreflight(Request $request): bool

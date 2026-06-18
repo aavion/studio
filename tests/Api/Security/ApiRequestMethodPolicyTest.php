@@ -84,12 +84,12 @@ final class ApiRequestMethodPolicyTest extends TestCase
         self::assertSame($api, (new ApiRequestMethodPolicy())->isApiV1Request(Request::create($path)));
     }
 
-    public function testApiPathUsesLocalizedRequestSegments(): void
+    public function testApiPathDoesNotUseLocalizedRequestSegments(): void
     {
         $request = Request::create('/de/api/v1/status');
         $request->attributes->set('_locale', 'de');
 
-        self::assertTrue((new ApiRequestMethodPolicy())->isApiV1Request($request));
+        self::assertFalse((new ApiRequestMethodPolicy())->isApiV1Request($request));
         self::assertFalse((new ApiRequestMethodPolicy())->isApiV1Request(Request::create('/de/api/v1/status')));
     }
 }

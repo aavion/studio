@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Debug;
 
 use App\Api\Http\ApiRequestContext;
+use App\Api\Security\ApiRequestMethodPolicy;
 use App\Database\DatabaseReadyState;
 use App\Entity\ApiKey;
 use App\Entity\UserAccount;
@@ -28,6 +29,7 @@ final readonly class RouteRenderer
         private EntityManagerInterface $entityManager,
         private TokenStorageInterface $tokenStorage,
         private SessionFactoryInterface $sessionFactory,
+        private ApiRequestMethodPolicy $apiMethods = new ApiRequestMethodPolicy(),
     ) {
     }
 
@@ -37,7 +39,7 @@ final readonly class RouteRenderer
         $request = $this->createRequest($options);
         $user = $this->resolveUser($options);
 
-        if (!str_starts_with($request->getPathInfo(), '/api/v1')) {
+        if (!$this->apiMethods->isApiV1Request($request)) {
             return $this->renderBrowserRequest($request, $options, $user);
         }
 

@@ -415,12 +415,27 @@ final class RateLimitEnforcerTest extends TestCase
         $enforcer = $this->enforcer();
 
         self::assertTrue($enforcer->check($this->request('/cron/not-found', 'GET'))->isAllowed());
+        self::assertTrue($enforcer->check($this->request('/de/cron/run', 'GET'))->isAllowed());
         self::assertTrue($enforcer->check($this->request('/cron/run', 'GET'))->isAllowed());
 
         $result = $enforcer->check($this->request('/cron/run', 'GET'));
 
         self::assertFalse($result->isAllowed());
         self::assertSame('security.rate.scheduler', $result->diagnosticsLabel());
+    }
+
+    public function testAdminNavigationFallsBackToWebsiteBuckets(): void
+    {
+        $enforcer = $this->enforcer();
+
+        for ($i = 0; $i < 30; ++$i) {
+            self::assertTrue($enforcer->check($this->request('/admin/logs'))->isAllowed());
+        }
+
+        $result = $enforcer->check($this->request('/admin/logs'));
+
+        self::assertFalse($result->isAllowed());
+        self::assertSame('security.rate.website_burst', $result->diagnosticsLabel());
     }
 
     public function testStrictSchedulerIntervalRejectsSecondRunWithinFifteenMinutes(): void

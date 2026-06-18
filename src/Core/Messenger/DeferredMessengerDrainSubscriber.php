@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 namespace App\Core\Messenger;
 
+use App\Core\Routing\PathScopeMatcher;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\Event\TerminateEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 
 final readonly class DeferredMessengerDrainSubscriber implements EventSubscriberInterface
 {
-    public function __construct(private DeferredMessengerDrain $drain)
-    {
+    public function __construct(
+        private DeferredMessengerDrain $drain,
+        private PathScopeMatcher $paths = new PathScopeMatcher(),
+    ) {
     }
 
     /**
@@ -31,7 +34,7 @@ final readonly class DeferredMessengerDrainSubscriber implements EventSubscriber
         }
 
         $request = $event->getRequest();
-        if ('scheduler_cron_run' === $request->attributes->get('_route') || str_starts_with($request->getPathInfo(), '/cron/run')) {
+        if ('scheduler_cron_run' === $request->attributes->get('_route') || $this->paths->matchesExactSegments($request->getPathInfo(), 'cron', 'run')) {
             return;
         }
 

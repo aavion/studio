@@ -12,7 +12,7 @@ final readonly class RequestPathResolver
     /**
      * @var list<string>
      */
-    private const LOCALIZED_RESERVED_SEGMENTS = ['admin', 'api', 'cron', 'editor', 'setup', 'user'];
+    private const LOCALE_PREFIX_SCOPED_SEGMENTS = ['admin', 'editor', 'user'];
 
     public function __construct(private ?ContentRouteLocalization $routeLocalization = null)
     {
@@ -82,7 +82,7 @@ final readonly class RequestPathResolver
     {
         $firstSegment = $segments[0] ?? '';
 
-        if ('' === $firstSegment || !in_array($segments[1] ?? '', self::LOCALIZED_RESERVED_SEGMENTS, true)) {
+        if ('' === $firstSegment || !in_array($segments[1] ?? '', self::LOCALE_PREFIX_SCOPED_SEGMENTS, true)) {
             return null;
         }
 

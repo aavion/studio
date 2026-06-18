@@ -16,7 +16,7 @@ use Symfony\Component\HttpFoundation\Request;
 
 final class RequestPathResolverTest extends TestCase
 {
-    public function testItStripsRouteLocaleOnlyBeforeKnownReservedPathScopes(): void
+    public function testItStripsRouteLocaleOnlyBeforeKnownLocalePrefixPathScopes(): void
     {
         $resolver = new RequestPathResolver();
         $admin = Request::create('/de/admin/settings/security');
@@ -28,7 +28,7 @@ final class RequestPathResolverTest extends TestCase
         self::assertSame(['de', 'about'], $resolver->segments($content));
     }
 
-    public function testItMatchesLocalizedTechnicalScopesByExactSegments(): void
+    public function testItDoesNotStripLocalePrefixForPrefixlessTechnicalScopes(): void
     {
         $resolver = new RequestPathResolver();
         $api = Request::create('/de/api/v1/status');
@@ -36,8 +36,8 @@ final class RequestPathResolverTest extends TestCase
         $cron = Request::create('/de/cron/run');
         $cron->attributes->set('_locale', 'de');
 
-        self::assertTrue($resolver->matches($api, 'api', 'v1'));
-        self::assertTrue($resolver->matchesExact($cron, 'cron', 'run'));
+        self::assertFalse($resolver->matches($api, 'api', 'v1'));
+        self::assertFalse($resolver->matchesExact($cron, 'cron', 'run'));
         self::assertFalse($resolver->matches(Request::create('/de/api/v1/status'), 'api', 'v1'));
         self::assertFalse($resolver->matches(Request::create('/apiary'), 'api'));
     }
@@ -46,8 +46,9 @@ final class RequestPathResolverTest extends TestCase
     {
         $resolver = new RequestPathResolver($this->routeLocalization(true));
 
-        self::assertTrue($resolver->matches(Request::create('/de/api/v1/status'), 'api', 'v1'));
-        self::assertTrue($resolver->matchesExact(Request::create('/de/cron/run'), 'cron', 'run'));
+        self::assertTrue($resolver->matches(Request::create('/de/admin/logs'), 'admin'));
+        self::assertFalse($resolver->matches(Request::create('/de/api/v1/status'), 'api', 'v1'));
+        self::assertFalse($resolver->matchesExact(Request::create('/de/cron/run'), 'cron', 'run'));
         self::assertFalse($resolver->matches(Request::create('/fr/api/v1/status'), 'api', 'v1'));
         self::assertFalse((new RequestPathResolver($this->routeLocalization(false)))->matches(Request::create('/de/api/v1/status'), 'api', 'v1'));
     }

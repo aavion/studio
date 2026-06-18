@@ -6,20 +6,24 @@ namespace App\Security\Abuse;
 
 use App\Api\Security\ApiRequestMethodPolicy;
 use App\Content\Routing\ContentRouteLocalization;
+use App\Core\Routing\PathScopeMatcher;
 use App\Core\Routing\RequestPathResolver;
 use Symfony\Component\HttpFoundation\Request;
 
 final readonly class RequestIntentClassifier
 {
     private RequestPathResolver $paths;
+    private PathScopeMatcher $rawPaths;
 
     public function __construct(
         private SuspiciousProbePathMatcher $probePathMatcher = new SuspiciousProbePathMatcher(),
         ?ContentRouteLocalization $routeLocalization = null,
         private ApiRequestMethodPolicy $apiMethods = new ApiRequestMethodPolicy(),
         ?RequestPathResolver $paths = null,
+        ?PathScopeMatcher $rawPaths = null,
     ) {
         $this->paths = $paths ?? new RequestPathResolver($routeLocalization);
+        $this->rawPaths = $rawPaths ?? new PathScopeMatcher();
     }
 
     public function classify(Request $request): AbuseRequestProfile
@@ -28,7 +32,7 @@ final readonly class RequestIntentClassifier
         $path = $request->getPathInfo();
         $segments = $this->segments($request);
         $route = $this->route($request);
-        $family = $this->family($segments);
+        $family = $this->family($request, $segments);
         $prefetch = $this->isPrefetch($request);
         $suspiciousProbe = $this->probePathMatcher->isProbe($path);
 
@@ -43,13 +47,15 @@ final readonly class RequestIntentClassifier
         );
     }
 
-    private function family(array $segments): RequestFamily
+    private function family(Request $request, array $segments): RequestFamily
     {
+        $rawPath = $request->getPathInfo();
+
         return match (true) {
-            $this->matchesSegments($segments, 'api', 'live') => RequestFamily::LiveApi,
-            $this->matchesSegments($segments, 'api') => RequestFamily::Api,
-            $this->matchesSegments($segments, 'cron') => RequestFamily::Scheduler,
-            $this->matchesSegments($segments, 'setup') => RequestFamily::Setup,
+            $this->rawPaths->matchesSegments($rawPath, 'api', 'live') => RequestFamily::LiveApi,
+            $this->rawPaths->matchesSegments($rawPath, 'api') => RequestFamily::Api,
+            $this->rawPaths->matchesSegments($rawPath, 'cron') => RequestFamily::Scheduler,
+            $this->rawPaths->matchesSegments($rawPath, 'setup') => RequestFamily::Setup,
             $this->matchesSegments($segments, 'admin') => RequestFamily::Admin,
             $this->matchesSegments($segments, 'editor') => RequestFamily::Editor,
             default => RequestFamily::Browser,
@@ -70,7 +76,7 @@ final readonly class RequestIntentClassifier
         }
 
         if (RequestFamily::Scheduler === $family) {
-            return $this->schedulerTrigger($segments)
+            return $this->schedulerTrigger($request)
                 ? RequestIntent::SchedulerTrigger
                 : RequestIntent::BrowserNavigation;
         }
@@ -145,9 +151,9 @@ final readonly class RequestIntentClassifier
             && 'apply' === (string) $request->request->get('_setup_action', '');
     }
 
-    private function schedulerTrigger(array $segments): bool
+    private function schedulerTrigger(Request $request): bool
     {
-        return $this->matchesExactSegments($segments, 'cron', 'run');
+        return $this->rawPaths->matchesExactSegments($request->getPathInfo(), 'cron', 'run');
     }
 
     private function adminMutationIntent(array $segments, string $route): RequestIntent

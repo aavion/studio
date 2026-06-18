@@ -49,6 +49,17 @@ final class ApiTraceHeaderSubscriberTest extends TestCase
         self::assertNull($response->headers->get('X-Correlation-ID'));
     }
 
+    public function testItIgnoresApiLookalikeResponses(): void
+    {
+        $request = Request::create('/api/v10/status');
+        $response = new Response('ok');
+
+        $this->subscriber()->onKernelResponse($this->responseEvent($request, $response));
+
+        self::assertNull($response->headers->get('X-Request-ID'));
+        self::assertNull($response->headers->get('X-Correlation-ID'));
+    }
+
     private function subscriber(): ApiTraceHeaderSubscriber
     {
         return new ApiTraceHeaderSubscriber(new AccessRequestMetadata());

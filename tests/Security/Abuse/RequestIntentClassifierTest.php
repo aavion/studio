@@ -29,10 +29,10 @@ final class RequestIntentClassifierTest extends TestCase
             RequestFamily::LiveApi,
             RequestIntent::LiveApi,
         ];
-        yield 'localized live api cheap json' => [
+        yield 'localized api-like content path is browser navigation' => [
             self::localizedRequest('/de/api/live/alerts', 'GET', 'de'),
-            RequestFamily::LiveApi,
-            RequestIntent::LiveApi,
+            RequestFamily::Browser,
+            RequestIntent::BrowserNavigation,
         ];
         yield 'api write' => [
             Request::create('/api/v1/content/items', 'POST'),
@@ -54,10 +54,10 @@ final class RequestIntentClassifierTest extends TestCase
             RequestFamily::Api,
             RequestIntent::AdminOperation,
         ];
-        yield 'localized admin api package mutation is package admin mutation' => [
+        yield 'localized admin api-like content path is form submit' => [
             self::localizedRequest('/de/api/v1/admin/packages/demo/reset-fault', 'POST', 'de'),
-            RequestFamily::Api,
-            RequestIntent::PackageAdminOperation,
+            RequestFamily::Browser,
+            RequestIntent::FormSubmit,
         ];
         yield 'apiary public content is not api' => [
             Request::create('/apiary'),
@@ -197,6 +197,11 @@ final class RequestIntentClassifierTest extends TestCase
             Request::create('/cron/run'),
             RequestFamily::Scheduler,
             RequestIntent::SchedulerTrigger,
+        ];
+        yield 'localized cron-like content path is browser navigation' => [
+            self::localizedRequest('/de/cron/run', 'GET', 'de'),
+            RequestFamily::Browser,
+            RequestIntent::BrowserNavigation,
         ];
         yield 'scheduler reserved non-run path is ordinary navigation' => [
             Request::create('/cron/not-found'),

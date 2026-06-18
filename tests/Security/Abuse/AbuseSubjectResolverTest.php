@@ -119,6 +119,15 @@ final class AbuseSubjectResolverTest extends TestCase
         self::assertStringNotContainsString('scheduler.secret-token-material', json_encode($bearerSubject->toArray(), JSON_THROW_ON_ERROR));
     }
 
+    public function testItDoesNotAddSchedulerCredentialSubjectsForLocalizedCronLookalikes(): void
+    {
+        $resolver = new AbuseSubjectResolver(new VisitorIdGenerator('test-secret'), new TokenStorage(), 'test-secret');
+        $request = Request::create('/de/cron/run?auth=scheduler.secret-token-material');
+        $request->attributes->set('_locale', 'de');
+
+        self::assertNull($resolver->resolve($request)->first(AbuseSubjectType::SchedulerCredential));
+    }
+
     public function testItAddsRedactedSubmittedAccountSubjectsForAuthWorkflows(): void
     {
         $resolver = new AbuseSubjectResolver(new VisitorIdGenerator('test-secret'), new TokenStorage(), 'test-secret');

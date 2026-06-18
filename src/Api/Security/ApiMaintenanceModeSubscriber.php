@@ -15,6 +15,7 @@ final readonly class ApiMaintenanceModeSubscriber implements EventSubscriberInte
     public function __construct(
         private bool $maintenanceEnabled,
         private ApiUnavailableResponder $unavailableResponder,
+        private ApiRequestMethodPolicy $methodPolicy = new ApiRequestMethodPolicy(),
     ) {
     }
 
@@ -28,7 +29,7 @@ final readonly class ApiMaintenanceModeSubscriber implements EventSubscriberInte
     public function onKernelRequest(RequestEvent $event): void
     {
         $request = $event->getRequest();
-        if (!$this->maintenanceEnabled || !$event->isMainRequest() || $event->hasResponse() || !str_starts_with($request->getPathInfo(), '/api/v1')) {
+        if (!$this->maintenanceEnabled || !$event->isMainRequest() || $event->hasResponse() || !$this->methodPolicy->isApiV1Request($request)) {
             return;
         }
 

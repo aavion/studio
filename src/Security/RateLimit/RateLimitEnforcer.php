@@ -110,17 +110,14 @@ final readonly class RateLimitEnforcer
     private function descriptors(AbuseRequestProfile $profile, AbuseSubjectResolution $subjects, ActionCost $cost, RateLimitProfile $mode, RateLimitEnforcementStage $stage): array
     {
         $primaryFamily = $this->bucketFamily($cost, $subjects);
-        $families = [$primaryFamily];
-
-        if ([] === $this->descriptorsForFamily($primaryFamily, $mode, $stage)) {
-            return [];
-        }
+        $families = [];
+        $primaryDescriptors = $this->descriptorsForFamily($primaryFamily, $mode, $stage);
 
         if ($stage->consumesWebsiteFamily() && $this->shouldConsumeWebsiteFamily($profile, $primaryFamily)) {
             $families[] = 'website';
         }
 
-        $descriptors = [];
+        $descriptors = $primaryDescriptors;
         foreach (array_values(array_unique($families)) as $family) {
             array_push($descriptors, ...$this->descriptorsForFamily($family, $mode, $stage));
         }

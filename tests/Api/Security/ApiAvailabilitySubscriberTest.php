@@ -92,6 +92,20 @@ final class ApiAvailabilitySubscriberTest extends TestCase
         self::assertFalse($event->hasResponse());
     }
 
+    public function testItIgnoresApiLookalikeRequests(): void
+    {
+        $event = $this->event('/api/v10/status');
+
+        $this->subscriber(new class implements ApiAvailabilityCheckerInterface {
+            public function isAvailable(): bool
+            {
+                return false;
+            }
+        })->onKernelRequest($event);
+
+        self::assertFalse($event->hasResponse());
+    }
+
     private function subscriber(ApiAvailabilityCheckerInterface $availabilityChecker, bool $enabled = true): ApiAvailabilitySubscriber
     {
         $config = $this->config();
