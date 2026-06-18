@@ -172,7 +172,7 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
 
         try {
             $inspection = $this->inspector->inspect($request);
-            if ($this->recoveryRequest($request, $inspection['profile']) || $this->trustedContext($inspection['subjects']->subjects())) {
+            if ($this->recoveryRenderRequest($inspection['profile']) || $this->trustedContext($inspection['subjects']->subjects())) {
                 return;
             }
 
@@ -233,7 +233,7 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
 
     private function recoveryRequest(Request $request, AbuseRequestProfile $profile): bool
     {
-        if (RequestIntent::RecoveryLogin === $profile->intent()) {
+        if ($this->recoveryRenderRequest($profile)) {
             return true;
         }
 
@@ -241,6 +241,11 @@ final readonly class AutoBanRequestSubscriber implements EventSubscriberInterfac
             && 'POST' === $profile->method()
             && in_array($profile->route(), ['user_login', 'n/a'], true)
             && $this->validRecoveryLoginToken($request);
+    }
+
+    private function recoveryRenderRequest(AbuseRequestProfile $profile): bool
+    {
+        return RequestIntent::RecoveryLogin === $profile->intent();
     }
 
     private function validRecoveryLoginToken(Request $request): bool

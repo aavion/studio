@@ -243,11 +243,38 @@ final class AutoBanRequestSubscriberTest extends TestCase
         $request->attributes->set('_route', 'user_login');
         $subject = new AutoBanSubject(AutoBanSubject::VISITOR, $visitorIds->generate($request));
         $store->ban($subject, 3600);
+        $tokenStorage = new TokenStorage();
+        $user = new UserAccount('99999999-0000-7000-8000-000000000101', 'manager', 'manager@example.test', 'hash', role: UserRole::Manager);
+        $tokenStorage->setToken(new UsernamePasswordToken($user, 'main', $user->getRoles()));
         $event = new RequestEvent(new AutoBanRequestTestKernel(), $request, HttpKernelInterface::MAIN_REQUEST);
 
-        $this->subscriber($visitorIds, $store, $clock, csrfTokens: $csrfTokens)->onKernelRequest($event);
+        $this->subscriber($visitorIds, $store, $clock, $tokenStorage, $csrfTokens)->onKernelRequest($event);
 
         self::assertNull($event->getResponse());
+    }
+
+    public function testRecoveryLoginSubmissionsWithoutTrustedContextAreRecheckedAfterAuthentication(): void
+    {
+        $clock = new MockClock('2026-06-18 12:00:00');
+        $visitorIds = new VisitorIdGenerator('test-secret');
+        $store = new AutoBanStore(new ArrayAdapter(), new LockFactory(new InMemoryStore()), clock: $clock);
+        $csrfTokens = new CsrfTokenManager();
+        $request = Request::create('/user/login', 'POST', [
+            'username' => 'member',
+            AutoBanRequestSubscriber::RECOVERY_LOGIN_TOKEN_FIELD => (string) $csrfTokens->getToken(AutoBanRequestSubscriber::RECOVERY_LOGIN_TOKEN_ID),
+        ], server: ['REMOTE_ADDR' => '203.0.113.10']);
+        $request->attributes->set('_route', 'user_login');
+        $subject = new AutoBanSubject(AutoBanSubject::VISITOR, $visitorIds->generate($request));
+        $store->ban($subject, 3600);
+        $tokenStorage = new TokenStorage();
+        $user = new UserAccount('99999999-0000-7000-8000-000000000102', 'member', 'member@example.test', 'hash', role: UserRole::User);
+        $tokenStorage->setToken(new UsernamePasswordToken($user, 'main', $user->getRoles()));
+        $event = new RequestEvent(new AutoBanRequestTestKernel(), $request, HttpKernelInterface::MAIN_REQUEST);
+
+        $this->subscriber($visitorIds, $store, $clock, $tokenStorage, $csrfTokens)->onKernelRequest($event);
+
+        self::assertSame(403, $event->getResponse()?->getStatusCode());
+        self::assertTrue($request->attributes->getBoolean(AutoBanRequestSubscriber::PASSIVE_SIGNAL_SKIP_ATTRIBUTE));
     }
 
     public function testOrdinaryLoginSubmissionsDoNotBypassActiveBan(): void
