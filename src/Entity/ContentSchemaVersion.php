@@ -120,7 +120,7 @@ class ContentSchemaVersion
         $this->description = $description;
         $this->definition = self::assertDefinition($definition);
         $this->customTwig = $customTwig;
-        $this->definitionHash = hash('sha256', json_encode($this->definition, JSON_THROW_ON_ERROR));
+        $this->definitionHash = self::calculateDefinitionHash($this->title, $this->description, $this->definition, $this->customTwig);
         $this->setUseRule($useMinLevel, $useGroupIdentifiers);
         $this->setEditRule($editMinLevel, $editGroupIdentifiers);
         $this->setManageRule($manageMinLevel, $manageGroupIdentifiers);
@@ -289,4 +289,18 @@ class ContentSchemaVersion
         return $definition;
     }
 
+    /**
+     * @param array<string, string> $title
+     * @param array<string, string> $description
+     * @param array<string, mixed> $definition
+     */
+    private static function calculateDefinitionHash(array $title, array $description, array $definition, ?string $customTwig): string
+    {
+        return hash('sha256', json_encode([
+            'title' => $title,
+            'description' => $description,
+            'definition' => $definition,
+            'custom_twig' => $customTwig,
+        ], JSON_THROW_ON_ERROR));
+    }
 }

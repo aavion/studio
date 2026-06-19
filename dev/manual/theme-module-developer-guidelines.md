@@ -59,7 +59,7 @@ Additional `EXTENSION_*` manifest keys become typed immutable metadata and can b
 
 Current constraints:
 
-- Allowed scopes start as `frontend-theme`, `backend-theme`, `system-template`, `module`, `captcha-provider`, `editor-provider`, `database`, and `content-schema`.
+- Allowed scopes start as `frontend-theme`, `backend-theme`, `system-template`, `module`, `captcha-provider`, `editor-provider`, `api`, `database`, and `content-schema`.
 - An extension is always activated or deactivated as one unit. Scopes describe capabilities, not separately switchable sub-extensions.
 - Only one `frontend-theme`, one `backend-theme`, one `system-template`, and one provider extension of each provider type may be active at the same time.
 - Multiple `module` extensions may be active at the same time.

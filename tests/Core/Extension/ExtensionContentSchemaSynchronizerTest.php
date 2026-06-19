@@ -63,6 +63,24 @@ final class ExtensionContentSchemaSynchronizerTest extends KernelTestCase
         self::assertSame(2, $schema->activeVersion()?->version());
     }
 
+    public function testItVersionsExtensionContentSchemasWhenPresentationChanges(): void
+    {
+        $synchronizer = new ExtensionContentSchemaSynchronizer($this->entityManager);
+        $extension = $this->extension();
+
+        self::assertTrue($synchronizer->apply($extension, [$this->schema('body')])->isSuccess());
+        $versioned = $synchronizer->apply($extension, [$this->schema('body', customTwig: '{{ fields.title }}')]);
+
+        self::assertTrue($versioned->isSuccess());
+        self::assertSame(['demo_module_article'], $versioned->value()['versioned']);
+
+        $this->entityManager->clear();
+        $schema = $this->entityManager->getRepository(ContentSchema::class)->findOneBy(['identifier' => 'demo_module_article']);
+        self::assertInstanceOf(ContentSchema::class, $schema);
+        self::assertSame(2, $schema->activeVersion()?->version());
+        self::assertSame('{{ fields.title }}', $schema->activeVersion()?->customTwig());
+    }
+
     public function testItDeletesExtensionContentSchemasOnPurge(): void
     {
         $synchronizer = new ExtensionContentSchemaSynchronizer($this->entityManager);
@@ -107,7 +125,7 @@ final class ExtensionContentSchemaSynchronizerTest extends KernelTestCase
         self::assertNull($schema->activeVersion());
     }
 
-    private function schema(string $customField): ExtensionContentSchemaDefinition
+    private function schema(string $customField, ?string $customTwig = null): ExtensionContentSchemaDefinition
     {
         return ExtensionContentSchemaDefinition::create('article', ['en' => 'Article'], [
             'fields' => [
@@ -115,7 +133,7 @@ final class ExtensionContentSchemaSynchronizerTest extends KernelTestCase
                 ['identifier' => 'subtitle', 'type' => 'string'],
                 ['identifier' => $customField, 'type' => 'text'],
             ],
-        ]);
+        ], customTwig: $customTwig);
     }
 
     private function extension(): Extension

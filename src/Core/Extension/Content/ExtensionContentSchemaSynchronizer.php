@@ -201,7 +201,12 @@ final readonly class ExtensionContentSchemaSynchronizer
 
     private function definitionHash(ExtensionContentSchemaDefinition $definition): string
     {
-        return hash('sha256', json_encode($definition->definition(), JSON_THROW_ON_ERROR));
+        return hash('sha256', json_encode([
+            'title' => $definition->labels(),
+            'description' => $definition->descriptions(),
+            'definition' => $definition->definition(),
+            'custom_twig' => $definition->customTwig(),
+        ], JSON_THROW_ON_ERROR));
     }
 
     /**
