@@ -14,8 +14,7 @@ final readonly class ExtensionRegistrySyncFinalizer
 {
     public function __construct(
         private EntityManagerInterface $entityManager,
-        private ?ExtensionAssetRebuildDispatcher $assetRebuildDispatcher = null,
-        private ?ExtensionLifecycleAssetRebuilderInterface $assetRebuildFallback = null,
+        private ?ExtensionLifecycleAssetRebuilderInterface $assetRebuilder = null,
         private string $environment = 'test',
         private ?AdminFeatureRegistry $adminFeatureRegistry = null,
     ) {
@@ -37,22 +36,17 @@ final readonly class ExtensionRegistrySyncFinalizer
 
         $assetRebuild = null;
         if ([] !== $assetRebuildTriggers) {
-            $assetRebuild = $this->assetRebuildDispatcher?->dispatch($this->environment, 'extension_registry_state_exit');
+            $assetRebuild = $this->assetRebuilder?->rebuild($this->environment);
             $messages = [...$messages, ...($assetRebuild?->messages() ?? [])];
 
             if (null !== $assetRebuild && !$assetRebuild->isSuccess()) {
-                $recovery = $this->recoverFromDispatchFailure($assetRebuild, $messages);
-                $assetRebuild = $recovery['asset_rebuild'];
-                $messages = $recovery['messages'];
-
-                if (!$recovery['fallback_completed']) {
-                    return WorkflowResult::failed($recovery['issues'], [
-                        'change_count' => count($changes),
-                        'changes' => $changes,
-                        'asset_rebuild' => $assetRebuild->toArray(),
-                        'asset_rebuild_triggers' => array_values(array_unique($assetRebuildTriggers)),
-                    ], $messages);
-                }
+                return WorkflowResult::failed($assetRebuild->issues(), [
+                    'change_count' => count($changes),
+                    'changes' => $changes,
+                    'asset_rebuild' => $assetRebuild->toArray(),
+                    'asset_rebuild_triggers' => array_values(array_unique($assetRebuildTriggers)),
+                    'stale_risk' => true,
+                ], $messages);
             }
         }
 
@@ -70,44 +64,5 @@ final readonly class ExtensionRegistrySyncFinalizer
             'asset_rebuild' => $assetRebuild?->toArray(),
             'asset_rebuild_triggers' => array_values(array_unique($assetRebuildTriggers)),
         ], $messages);
-    }
-
-    /**
-     * @param list<Message> $messages
-     *
-     * @return array{
-     *     asset_rebuild: WorkflowResult<array<string, mixed>>,
-     *     fallback_completed: bool,
-     *     issues: list<Message>,
-     *     messages: list<Message>
-     * }
-     */
-    private function recoverFromDispatchFailure(WorkflowResult $dispatchFailure, array $messages): array
-    {
-        $fallback = $this->assetRebuildFallback?->rebuild($this->environment);
-        $fallbackCompleted = null !== $fallback && $fallback->isSuccess();
-        $messages = [
-            ...$messages,
-            ...$dispatchFailure->issues(),
-            ...($fallback?->messages() ?? []),
-            ...($fallback?->issues() ?? []),
-        ];
-        $context = [
-            'deferred' => false,
-            'dispatch' => $dispatchFailure->toArray(),
-            'fallback' => $fallback?->toArray(),
-            'fallback_completed' => $fallbackCompleted,
-        ];
-        $assetRebuild = WorkflowResult::success($context, [
-            ...$context,
-            'stale_risk' => !$fallbackCompleted,
-        ]);
-
-        return [
-            'asset_rebuild' => $assetRebuild,
-            'fallback_completed' => $fallbackCompleted,
-            'issues' => $fallback?->issues() ?: $dispatchFailure->issues(),
-            'messages' => $messages,
-        ];
     }
 }

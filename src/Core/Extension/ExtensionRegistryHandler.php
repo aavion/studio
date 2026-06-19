@@ -26,8 +26,7 @@ final readonly class ExtensionRegistryHandler
         private string $projectDir,
         private ExtensionValidator $validator = new ExtensionValidator(),
         private PathGuard $pathGuard = new PathGuard(),
-        ?ExtensionAssetRebuildDispatcher $assetRebuildDispatcher = null,
-        ?ExtensionLifecycleAssetRebuilderInterface $assetRebuildFallback = null,
+        ?ExtensionLifecycleAssetRebuilderInterface $assetRebuilder = null,
         string $environment = 'test',
         private UuidFactory $uuidFactory = new UuidFactory(),
         ?ExtensionSpec $validationSpec = null,
@@ -44,8 +43,7 @@ final readonly class ExtensionRegistryHandler
         $this->store = $store ?? new ExtensionLifecycleStore($entityManager);
         $this->syncFinalizer = $syncFinalizer ?? new ExtensionRegistrySyncFinalizer(
             $entityManager,
-            $assetRebuildDispatcher,
-            $assetRebuildFallback,
+            $assetRebuilder,
             $environment,
         );
     }

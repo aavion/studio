@@ -22,7 +22,7 @@ final readonly class ExtensionRuntimeFailureHandler
     public function __construct(
         private EntityManagerInterface $entityManager,
         private WorkflowResultMessageReporterInterface $messageReporter,
-        private ?ExtensionAssetRebuildDispatcher $assetRebuildDispatcher = null,
+        private ?ExtensionLifecycleAssetRebuilderInterface $assetRebuilder = null,
         private string $environment = 'test',
         private ?ExtensionContentSchemaImpact $contentSchemaImpact = null,
         ?ExtensionDependentDeactivator $dependentDeactivator = null,
@@ -107,20 +107,9 @@ final readonly class ExtensionRuntimeFailureHandler
 
         $this->entityManager->flush();
         $assetRebuild = $faulty
-            ? $this->assetRebuildDispatcher?->dispatch($this->environment, 'extension_runtime_failure')
+            ? $this->assetRebuilder?->rebuild($this->environment)
             : null;
-
-        return WorkflowResult::success([
-            'extension' => $extensionName,
-            'faulty' => $faulty,
-            'asset_rebuild' => null !== $assetRebuild && $assetRebuild->isSuccess(),
-            'deactivated_dependents' => array_column($dependentChanges, 'extension'),
-        ], [
-            'extension' => $extensionName,
-            'faulty' => $faulty,
-            'asset_rebuild' => $assetRebuild?->toArray(),
-            'deactivated_dependents' => $dependentChanges,
-        ], [
+        $messages = [
             Message::create(
                 ExtensionMessageCode::EXTENSION_LIFECYCLE_RUNTIME_FAILURE,
                 ExtensionMessageKey::EXTENSION_LIFECYCLE_RUNTIME_FAILURE,
@@ -129,7 +118,25 @@ final readonly class ExtensionRuntimeFailureHandler
                 $faulty ? MessageLevel::Error : MessageLevel::Warning,
             ),
             ...$dependentMessages,
-        ]);
+            ...($assetRebuild?->messages() ?? []),
+        ];
+        $context = [
+            'extension' => $extensionName,
+            'faulty' => $faulty,
+            'asset_rebuild' => $assetRebuild?->toArray(),
+            'deactivated_dependents' => $dependentChanges,
+        ];
+
+        if (null !== $assetRebuild && !$assetRebuild->isSuccess()) {
+            return WorkflowResult::failed($assetRebuild->issues(), $context, $messages);
+        }
+
+        return WorkflowResult::success([
+            'extension' => $extensionName,
+            'faulty' => $faulty,
+            'asset_rebuild' => null !== $assetRebuild && $assetRebuild->isSuccess(),
+            'deactivated_dependents' => array_column($dependentChanges, 'extension'),
+        ], $context, $messages);
     }
 
     private function report(WorkflowResult $result, array $context = []): WorkflowResult

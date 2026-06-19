@@ -37,7 +37,7 @@ final class ExtensionPhpLoader implements EventSubscriberInterface
         private readonly EntityManagerInterface $entityManager,
         private readonly string $projectDir,
         private readonly WorkflowResultMessageReporterInterface $messageReporter,
-        private readonly ?ExtensionAssetRebuildDispatcher $assetRebuildDispatcher = null,
+        private readonly ?ExtensionLifecycleAssetRebuilderInterface $assetRebuilder = null,
         private readonly string $environment = 'test',
         private readonly ?ExtensionRuntimeContributionRegistry $runtimeContributions = null,
         private readonly PathGuard $pathGuard = new PathGuard(),
@@ -140,8 +140,9 @@ final class ExtensionPhpLoader implements EventSubscriberInterface
         }
 
         $assetRebuild = $assetRebuildNeeded
-            ? $this->assetRebuildDispatcher?->dispatch($this->environment, 'extension_php_loader_faulty')
+            ? $this->assetRebuilder?->rebuild($this->environment)
             : null;
+        $messages = [...$messages, ...($assetRebuild?->messages() ?? [])];
 
         $value = ['loaded' => $loaded, 'skipped' => $skipped];
         $context = ['loaded' => $loaded, 'skipped' => $skipped, 'failed' => array_map(

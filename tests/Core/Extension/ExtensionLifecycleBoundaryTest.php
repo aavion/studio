@@ -12,7 +12,6 @@ use App\Core\Event\PublicHookFailedEvent;
 use App\Core\Message\Message;
 use App\Core\Extension\ActiveExtensionProvider;
 use App\Core\Extension\ExtensionActivator;
-use App\Core\Extension\ExtensionAssetRebuildDispatcher;
 use App\Core\Extension\ExtensionAssetRebuildMessage;
 use App\Core\Extension\ExtensionAssetRebuildMessageHandler;
 use App\Core\Extension\ExtensionFaultResetter;
@@ -27,7 +26,6 @@ use App\Core\Workflow\WorkflowResult;
 use App\Entity\Extension;
 use App\Tests\Support\FilesystemTestHelper;
 use App\Tests\Support\NullWorkflowResultMessageReporter;
-use App\Tests\Support\RecordingMessageBus;
 use App\View\ViewContextEvent;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
@@ -95,12 +93,10 @@ final class ExtensionLifecycleBoundaryTest extends KernelTestCase
         $this->insertExtension('demo-module', ['module'], 'active');
         $this->insertExtension('demo-addon', ['module'], 'active', dependencies: '[["demo-module", "1.0.0"]]');
 
-        $messageBus = new RecordingMessageBus();
-
         $result = (new ExtensionRuntimeFailureHandler(
             $this->entityManager,
             new NullWorkflowResultMessageReporter(),
-            new ExtensionAssetRebuildDispatcher($messageBus, new NullWorkflowResultMessageReporter()),
+            $this->assetRebuilder,
             'test',
         ))->handleHookFailure(new PublicHookFailedEvent(
             new ViewContextEvent([]),
@@ -122,10 +118,7 @@ final class ExtensionLifecycleBoundaryTest extends KernelTestCase
             static fn (Message $message): string => $message->translationKey(),
             $result->messages(),
         ));
-        self::assertCount(1, $messageBus->messages());
-        self::assertInstanceOf(ExtensionAssetRebuildMessage::class, $messageBus->messages()[0]);
-        self::assertSame('test', $messageBus->messages()[0]->environment());
-        self::assertSame('extension_runtime_failure', $messageBus->messages()[0]->trigger());
+        self::assertSame(['test'], $this->assetRebuilder->environments);
     }
 
     public function testExtensionPhpLoaderIncludesOnlyActiveExtensionLoaders(): void
@@ -163,7 +156,7 @@ final class ExtensionLifecycleBoundaryTest extends KernelTestCase
 
     public function testExtensionPhpLoaderRegistersRuntimeContributions(): void
     {
-        $this->insertExtension('demo-module', ['module'], 'active');
+        $this->insertExtension('demo-module', ['module', 'api'], 'active');
         $this->writeTestFile($this->projectDir, 'extensions/demo-module/extension.php', <<<'PHP'
             <?php
 
@@ -263,7 +256,6 @@ final class ExtensionLifecycleBoundaryTest extends KernelTestCase
     public function testExtensionPhpLoaderDoesNotKeepPartialRuntimeContributionsAfterFailure(): void
     {
         $this->insertExtension('broken-module', ['module'], 'active');
-        $messageBus = new RecordingMessageBus();
         $this->writeTestFile($this->projectDir, 'extensions/broken-module/extension.php', <<<'PHP'
             <?php
 
@@ -288,7 +280,7 @@ final class ExtensionLifecycleBoundaryTest extends KernelTestCase
             $this->entityManager,
             $this->projectDir,
             new NullWorkflowResultMessageReporter(),
-            new ExtensionAssetRebuildDispatcher($messageBus, new NullWorkflowResultMessageReporter()),
+            $this->assetRebuilder,
             'test',
             runtimeContributions: $registry,
         ))->loadActiveExtensions();
@@ -591,7 +583,6 @@ final class ExtensionLifecycleBoundaryTest extends KernelTestCase
     public function testExtensionPhpLoaderConvertsRuntimeProviderFailuresIntoFaults(): void
     {
         $this->insertExtension('broken-provider-module', ['module'], 'active');
-        $messageBus = new RecordingMessageBus();
         $this->writeTestFile($this->projectDir, 'extensions/broken-provider-module/extension.php', <<<'PHP'
             <?php
 
@@ -611,7 +602,7 @@ final class ExtensionLifecycleBoundaryTest extends KernelTestCase
             $this->entityManager,
             $this->projectDir,
             new NullWorkflowResultMessageReporter(),
-            new ExtensionAssetRebuildDispatcher($messageBus, new NullWorkflowResultMessageReporter()),
+            $this->assetRebuilder,
             'test',
             runtimeContributions: $registry,
         ))->loadActiveExtensions();
@@ -668,7 +659,6 @@ final class ExtensionLifecycleBoundaryTest extends KernelTestCase
     {
         $this->insertExtension('broken-module', ['module'], 'active');
         $this->insertExtension('broken-addon', ['module'], 'active', dependencies: '[["broken-module", "1.0.0"]]');
-        $messageBus = new RecordingMessageBus();
         $this->writeTestFile($this->projectDir, 'extensions/broken-module/extension.php', <<<'PHP'
             <?php
 
@@ -685,7 +675,7 @@ final class ExtensionLifecycleBoundaryTest extends KernelTestCase
             $this->entityManager,
             $this->projectDir,
             new NullWorkflowResultMessageReporter(),
-            new ExtensionAssetRebuildDispatcher($messageBus, new NullWorkflowResultMessageReporter()),
+            $this->assetRebuilder,
             'test',
         ))->loadActiveExtensions();
 
@@ -699,9 +689,7 @@ final class ExtensionLifecycleBoundaryTest extends KernelTestCase
             static fn (Message $message): string => $message->translationKey(),
             $result->messages(),
         ));
-        self::assertCount(1, $messageBus->messages());
-        self::assertInstanceOf(ExtensionAssetRebuildMessage::class, $messageBus->messages()[0]);
-        self::assertSame('extension_php_loader_faulty', $messageBus->messages()[0]->trigger());
+        self::assertContains('test', $this->assetRebuilder->environments);
     }
 
     public function testExtensionAssetRebuildMessageHandlerRunsLifecycleRebuild(): void

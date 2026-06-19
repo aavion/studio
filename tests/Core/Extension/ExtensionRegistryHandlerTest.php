@@ -6,8 +6,6 @@ namespace App\Tests\Core\Extension;
 
 use App\Core\Message\Message;
 use App\Core\Extension\ExtensionStatus;
-use App\Core\Extension\ExtensionAssetRebuildDispatcher;
-use App\Core\Extension\ExtensionAssetRebuildMessage;
 use App\Core\Extension\ExtensionCandidate;
 use App\Core\Extension\ExtensionDiscovery;
 use App\Core\Extension\ExtensionLifecycleAssetRebuilderInterface;
@@ -17,14 +15,9 @@ use App\Core\Extension\ExtensionRegistryHandler;
 use App\Core\Extension\ExtensionSource;
 use App\Core\Workflow\WorkflowResult;
 use App\Tests\Support\FilesystemTestHelper;
-use App\Tests\Support\NullWorkflowResultMessageReporter;
-use App\Tests\Support\RecordingMessageBus;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
-use RuntimeException;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
-use Symfony\Component\Messenger\Envelope;
-use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Uid\Uuid;
 
 final class ExtensionRegistryHandlerTest extends KernelTestCase
@@ -76,14 +69,15 @@ final class ExtensionRegistryHandlerTest extends KernelTestCase
         self::assertSame('Registry handler demo extension.', $this->metadata($row)['description']);
         self::assertSame('MIT', $this->metadata($row)['license']);
         self::assertSame('assets/preview.svg', $this->metadata($row)['image']);
+        self::assertSame('Demo Module', $this->metadata($row)['variables']['ext.demo_module.name']['value']);
     }
 
     public function testItMarksMissingFilesystemExtensionsAsRemoved(): void
     {
         $this->insertExtension('missing-module', 'extensions/missing-module', '1.0.0', 'active');
-        $messageBus = new RecordingMessageBus();
+        $assetRebuilder = new RegistryHandlerExtensionLifecycleAssetRebuilder();
 
-        $result = $this->handler($messageBus)->synchronize([]);
+        $result = $this->handler($assetRebuilder)->synchronize([]);
 
         self::assertTrue($result->isSuccess());
         $this->assertChangeRecorded($result->value(), 'missing-module', 'removed', 'removed');
@@ -91,9 +85,7 @@ final class ExtensionRegistryHandlerTest extends KernelTestCase
         $row = $this->extensionRow('missing-module');
         self::assertSame('removed', $row['status']);
         self::assertSame('extensions/missing-module', $this->metadata($row)['removed_path']);
-        self::assertCount(1, $messageBus->messages());
-        self::assertInstanceOf(ExtensionAssetRebuildMessage::class, $messageBus->messages()[0]);
-        self::assertSame('extension_registry_state_exit', $messageBus->messages()[0]->trigger());
+        self::assertSame(['test'], $assetRebuilder->environments);
     }
 
     public function testItDeactivatesActiveDependentsWhenExtensionIsMarkedRemoved(): void
@@ -107,9 +99,9 @@ final class ExtensionRegistryHandlerTest extends KernelTestCase
             dependencies: '[["missing-module", "1.0.0"]]',
         );
         $this->writeExtensionManifest('dependent-module', '1.0.0', '[["missing-module", "1.0.0"]]');
-        $messageBus = new RecordingMessageBus();
+        $assetRebuilder = new RegistryHandlerExtensionLifecycleAssetRebuilder();
 
-        $result = $this->handler($messageBus)->synchronize($this->candidates());
+        $result = $this->handler($assetRebuilder)->synchronize($this->candidates());
 
         self::assertTrue($result->isSuccess(), json_encode($result->toArray(), JSON_THROW_ON_ERROR));
         self::assertSame('removed', $this->extensionRow('missing-module')['status']);
@@ -119,7 +111,7 @@ final class ExtensionRegistryHandlerTest extends KernelTestCase
             'action' => 'deactivated',
             'status' => 'inactive',
         ], $result->value());
-        self::assertCount(1, $messageBus->messages());
+        self::assertSame(['test'], $assetRebuilder->environments);
     }
 
     public function testItUpdatesVersionMismatches(): void
@@ -138,41 +130,21 @@ final class ExtensionRegistryHandlerTest extends KernelTestCase
         self::assertSame('1.1.0', $this->metadata($row)['manifest']['EXTENSION_VERSION']);
     }
 
-    public function testItQueuesAssetRebuildWhenActiveExtensionUpdates(): void
-    {
-        $this->insertExtension('demo-module', 'extensions/demo-module', '1.0.0', 'active', installedVersion: '1.0.0');
-        $this->writeExtensionManifest('demo-module', '1.1.0');
-        $messageBus = new RecordingMessageBus();
-
-        $result = $this->handler($messageBus)->synchronize($this->candidates());
-
-        self::assertTrue($result->isSuccess());
-        $this->assertChangeRecorded($result->value(), 'demo-module', 'updated', 'active');
-        self::assertSame('active', $this->extensionRow('demo-module')['status']);
-        self::assertCount(1, $messageBus->messages());
-        self::assertInstanceOf(ExtensionAssetRebuildMessage::class, $messageBus->messages()[0]);
-        self::assertSame('extension_registry_state_exit', $messageBus->messages()[0]->trigger());
-    }
-
-    public function testItFallsBackToSynchronousAssetRebuildWhenDeferredDispatchFails(): void
+    public function testItRunsAssetRebuildWhenActiveExtensionUpdates(): void
     {
         $this->insertExtension('demo-module', 'extensions/demo-module', '1.0.0', 'active', installedVersion: '1.0.0');
         $this->writeExtensionManifest('demo-module', '1.1.0');
         $assetRebuilder = new RegistryHandlerExtensionLifecycleAssetRebuilder();
 
-        $result = $this->handler(new FailingRegistryHandlerMessageBus(), $assetRebuilder)->synchronize($this->candidates());
+        $result = $this->handler(assetRebuilder: $assetRebuilder)->synchronize($this->candidates());
 
-        self::assertTrue($result->isSuccess(), json_encode($result->toArray(), JSON_THROW_ON_ERROR));
+        self::assertTrue($result->isSuccess());
+        $this->assertChangeRecorded($result->value(), 'demo-module', 'updated', 'active');
+        self::assertSame('active', $this->extensionRow('demo-module')['status']);
         self::assertSame(['test'], $assetRebuilder->environments);
-        self::assertTrue($result->context()['asset_rebuild']['value']['fallback_completed']);
-        self::assertFalse($result->context()['asset_rebuild']['context']['stale_risk']);
-        self::assertContains('message.extension.asset_rebuild_queue_failed', array_map(
-            static fn ($message): string => $message->translationKey(),
-            $result->messages(),
-        ));
     }
 
-    public function testItFailsWhenDeferredAndFallbackAssetRebuildsFail(): void
+    public function testItFailsWhenSynchronousAssetRebuildFails(): void
     {
         $this->insertExtension('demo-module', 'extensions/demo-module', '1.0.0', 'active', installedVersion: '1.0.0');
         $this->writeExtensionManifest('demo-module', '1.1.0');
@@ -180,16 +152,15 @@ final class ExtensionRegistryHandlerTest extends KernelTestCase
             Message::error(
                 ExtensionMessageCode::EXTENSION_ASSET_SYNC_FAILED,
                 ExtensionMessageKey::EXTENSION_ASSET_SYNC_FAILED,
-                ['%message%' => 'fallback failed'],
+                ['%message%' => 'rebuild failed'],
             ),
         ]));
 
-        $result = $this->handler(new FailingRegistryHandlerMessageBus(), $assetRebuilder)->synchronize($this->candidates());
+        $result = $this->handler(assetRebuilder: $assetRebuilder)->synchronize($this->candidates());
 
         self::assertFalse($result->isSuccess());
         self::assertSame(['test'], $assetRebuilder->environments);
-        self::assertFalse($result->context()['asset_rebuild']['value']['fallback_completed']);
-        self::assertTrue($result->context()['asset_rebuild']['context']['stale_risk']);
+        self::assertTrue($result->context()['stale_risk']);
         self::assertSame('extension.asset_sync_failed', $result->firstIssue()?->code());
     }
 
@@ -211,35 +182,30 @@ final class ExtensionRegistryHandlerTest extends KernelTestCase
         self::assertSame('extension.php_syntax_error', $metadata['validation']['issues'][0]['code']);
     }
 
-    public function testItQueuesAssetRebuildWhenActiveExtensionBecomesFaulty(): void
+    public function testItRunsAssetRebuildWhenActiveExtensionBecomesFaulty(): void
     {
         $this->insertExtension('broken-module', 'extensions/broken-module', '1.0.0', 'active');
         $this->writeExtensionManifest('broken-module', '1.0.0');
         $this->writeTestFile($this->projectDir, 'extensions/broken-module/src/Broken.php', '<?php broken');
-        $messageBus = new RecordingMessageBus();
+        $assetRebuilder = new RegistryHandlerExtensionLifecycleAssetRebuilder();
 
-        $result = $this->handler($messageBus)->synchronize($this->candidates());
+        $result = $this->handler($assetRebuilder)->synchronize($this->candidates());
 
         self::assertTrue($result->isSuccess());
         self::assertSame('faulty', $this->extensionRow('broken-module')['status']);
-        self::assertCount(1, $messageBus->messages());
-        self::assertInstanceOf(ExtensionAssetRebuildMessage::class, $messageBus->messages()[0]);
-        self::assertSame('test', $messageBus->messages()[0]->environment());
-        self::assertSame('extension_registry_state_exit', $messageBus->messages()[0]->trigger());
+        self::assertSame(['test'], $assetRebuilder->environments);
     }
 
     public function testItKeepsFaultyExtensionsFaultyWithoutVersionChange(): void
     {
         $this->insertExtension('broken-module', 'extensions/broken-module', '1.0.0', 'faulty');
         $this->writeExtensionManifest('broken-module', '1.0.0');
-        $messageBus = new RecordingMessageBus();
 
-        $result = $this->handler($messageBus)->synchronize($this->candidates());
+        $result = $this->handler()->synchronize($this->candidates());
 
         self::assertTrue($result->isSuccess());
         self::assertSame([], $this->changesForExtension($result->value(), 'broken-module'));
         self::assertSame('faulty', $this->extensionRow('broken-module')['status']);
-        self::assertSame([], $messageBus->messages());
     }
 
     public function testItRevalidatesFaultyExtensionsAfterVersionChange(): void
@@ -285,13 +251,12 @@ final class ExtensionRegistryHandlerTest extends KernelTestCase
         ));
     }
 
-    private function handler(?MessageBusInterface $messageBus = null, ?ExtensionLifecycleAssetRebuilderInterface $assetRebuilder = null): ExtensionRegistryHandler
+    private function handler(?ExtensionLifecycleAssetRebuilderInterface $assetRebuilder = null): ExtensionRegistryHandler
     {
         return new ExtensionRegistryHandler(
             $this->entityManager,
             $this->projectDir,
-            assetRebuildDispatcher: null === $messageBus ? null : new ExtensionAssetRebuildDispatcher($messageBus, new NullWorkflowResultMessageReporter()),
-            assetRebuildFallback: $assetRebuilder,
+            assetRebuilder: $assetRebuilder,
             environment: 'test',
         );
     }
@@ -383,14 +348,6 @@ final class ExtensionRegistryHandlerTest extends KernelTestCase
     private function uuid(): string
     {
         return Uuid::v7()->toRfc4122();
-    }
-}
-
-final class FailingRegistryHandlerMessageBus implements MessageBusInterface
-{
-    public function dispatch(object $message, array $stamps = []): Envelope
-    {
-        throw new RuntimeException('queue unavailable');
     }
 }
 
