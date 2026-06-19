@@ -85,6 +85,9 @@
 ### 2026-06-18 feat-security-captcha-contract
 - Started the captcha contract branch after `feat-security-auto-ban` merged and compacted the completed auto-ban branch notes into `dev/WORKLOG_HISTORY.md`.
 - Reviewed the captcha-contract plan, IconCaptcha handoff plan, and Security policy defaults. Expected branch scope is the generic provider contract, resolver, workflow/provider configuration, global form integration, safe validation/result model, and verified-provider success/failure hooks without shipping a concrete IconCaptcha provider.
+- Added Noto Color Emoji utility CSS generated from the local font and Unicode emoji-test data, aligned the Noto `@font-face` descriptors with the local font metadata, and imported the emoji utilities into the main stylesheet.
+- Updated the local Tabler icon webfont assets and generated utility class map to `@tabler/icons-webfont` 3.44.0.
+- Curated a draft IconCaptcha challenge asset index under `.codex/tmp/challenge-assets` pairing 100 Noto Emoji SVGs with Tabler filled SVG icons, including category and confusable-family selection constraints.
 
 ### Archived Compacted Branch History
 - [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md).

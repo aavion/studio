@@ -18,7 +18,7 @@ final class ViewTwigExtensionTest extends KernelTestCase
             '{{ view_context().system_package.name }}|{{ macro_template("core", "ui") }}|{{ event_hooks()|length }}|{{ navigation("main")|length }}|{{ debug_info().hooks is defined ? "debug" : "missing" }}|{{ package_setting("demo-module", "missing.key", "fallback") }}|{{ footer_copyright("backend") }}|{{ "**ok**"|render_markdown }}',
         )->render();
 
-        self::assertSame('Studio|@root/macros/core/ui.html.twig|11|4|debug|fallback|Powered by [Studio](https://www.aavion.media) 0.2.5|<p><strong>ok</strong></p>', $html);
+        self::assertSame('Studio|@root/macros/core/ui.html.twig|11|4|debug|fallback|Powered by [Studio](https://www.aavion.media) 0.2.6|<p><strong>ok</strong></p>', $html);
     }
 
     public function testItRendersSafeHtmlAttributes(): void

@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "./fonts.css";
 @import "./icons.css";
+@import "./emoji.css";
 @import "./illustrations.css";
 @import "./codemirror.css";
 @import "./tokens/base.css";
