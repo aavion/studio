@@ -43,6 +43,14 @@ message:
       contribution_type_invalid: 'Extension asset contribution type "%type%" is not supported.'
       contribution_path_invalid: 'Extension asset path "%path%" must be project-relative.'
       contribution_path_traversal: 'Extension asset path "%path%" must not traverse parent directories.'
+    database:
+      contribution_invalid: 'Extension database contribution is invalid (%reason%).'
+      sync_completed: 'Extension "%extension%" database sync created %count% table(s).'
+      purge_completed: 'Extension "%extension%" database purge dropped %count% table(s).'
+    content_schema:
+      contribution_invalid: 'Extension content schema contribution is invalid (%reason%).'
+      sync_completed: 'Extension "%extension%" content schema sync created or versioned %count% schema(s).'
+      purge_completed: 'Extension "%extension%" content schema purge deleted %count% schema(s).'
     discovery_queued: 'Extension discovery was queued by "%trigger%".'
     discovery_queue_failed: 'Extension discovery could not be queued by "%trigger%".'
     discovery_completed: 'Extension discovery found %count% candidate(s).'

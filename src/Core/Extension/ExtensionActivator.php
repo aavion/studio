@@ -20,18 +20,19 @@ final readonly class ExtensionActivator
     private ExtensionLifecycleFinalizer $finalizer;
 
     public function __construct(
-        EntityManagerInterface $entityManager,
-        ExtensionLifecycleAssetRebuilderInterface $assetRebuilder,
+        private EntityManagerInterface $entityManager,
+        private ExtensionLifecycleAssetRebuilderInterface $assetRebuilder,
         private WorkflowResultMessageReporterInterface $messageReporter,
         ?ExtensionDependencyResolver $dependencyResolver = null,
         ?ExtensionLifecycleStore $store = null,
         ?ExtensionActivationPlanner $planner = null,
         ?ExtensionLifecycleFinalizer $finalizer = null,
+        private ?ExtensionActivationContributionApplierInterface $activationContributionApplier = null,
     ) {
-        $this->store = $store ?? new ExtensionLifecycleStore($entityManager);
-        $dependencyResolver ??= new ExtensionDependencyResolver($entityManager);
+        $this->store = $store ?? new ExtensionLifecycleStore($this->entityManager);
+        $dependencyResolver ??= new ExtensionDependencyResolver($this->entityManager);
         $this->planner = $planner ?? new ExtensionActivationPlanner($this->store, $dependencyResolver);
-        $this->finalizer = $finalizer ?? new ExtensionLifecycleFinalizer($entityManager, $this->store, $assetRebuilder);
+        $this->finalizer = $finalizer ?? new ExtensionLifecycleFinalizer($this->entityManager, $this->store, $this->assetRebuilder);
     }
 
     /**
@@ -87,8 +88,27 @@ final readonly class ExtensionActivator
             }
         }
 
+        $finalized = $this->finalizer->finalize($snapshots, $changes, $messages, $environment, $rebuildAssets);
+        if (!$finalized->isSuccess() || null === $this->activationContributionApplier) {
+            return $this->report($finalized, 'extension.activate', ['extension' => $extensionName, 'environment' => $environment]);
+        }
+
+        $contributions = $this->activationContributionApplier->applyActivatedExtensions($extensions);
+        if ($contributions->isSuccess()) {
+            return $this->report(WorkflowResult::success([
+                ...$finalized->value(),
+                'contributions' => $contributions->value(),
+            ], [
+                ...$finalized->context(),
+                'contribution_context' => $contributions->context(),
+            ], [
+                ...$finalized->messages(),
+                ...$contributions->messages(),
+            ]), 'extension.activate', ['extension' => $extensionName, 'environment' => $environment]);
+        }
+
         return $this->report(
-            $this->finalizer->finalize($snapshots, $changes, $messages, $environment, $rebuildAssets),
+            $this->rollbackContributionFailure($extensionName, $environment, $snapshots, $changes, $rebuildAssets, $finalized, $contributions),
             'extension.activate',
             ['extension' => $extensionName, 'environment' => $environment],
         );
@@ -145,6 +165,56 @@ final readonly class ExtensionActivator
             ['extension' => $extension->extensionName()],
             MessageLevel::Success,
         );
+    }
+
+    /**
+     * @param array<string, ExtensionStatus> $snapshots
+     * @param list<array{extension: string, action: string, status: string}> $changes
+     */
+    private function rollbackContributionFailure(
+        string $extensionName,
+        string $environment,
+        array $snapshots,
+        array $changes,
+        bool $rebuildAssets,
+        WorkflowResult $finalized,
+        WorkflowResult $contributions,
+    ): WorkflowResult {
+        $this->store->restoreStatuses($snapshots);
+        $this->entityManager->flush();
+
+        $messages = [
+            ...$finalized->messages(),
+            ...$contributions->messages(),
+            Message::warning(
+                ExtensionMessageCode::EXTENSION_LIFECYCLE_ROLLED_BACK,
+                ExtensionMessageKey::EXTENSION_LIFECYCLE_ROLLED_BACK,
+                ['%count%' => count($snapshots)],
+                ['extension_count' => count($snapshots), 'extensions' => array_keys($snapshots)],
+            ),
+        ];
+        $issues = $contributions->issues();
+        $rollbackAssetContext = null;
+
+        if ($rebuildAssets && [] !== $changes) {
+            $rollbackRebuild = $this->assetRebuilder->rebuild($environment);
+            $messages = [...$messages, ...$rollbackRebuild->messages()];
+            $rollbackAssetContext = $rollbackRebuild->context();
+
+            if (!$rollbackRebuild->isSuccess()) {
+                $issues = [...$issues, ...$rollbackRebuild->issues()];
+            }
+        }
+
+        return WorkflowResult::failed($issues, [
+            'extension' => $extensionName,
+            'environment' => $environment,
+            'changes' => $changes,
+            'asset_rebuild' => $rebuildAssets && [] !== $changes,
+            'rolled_back' => true,
+            'contribution_context' => $contributions->context(),
+            'rollback_asset_rebuild_context' => $rollbackAssetContext,
+        ], $messages);
     }
 
     private function report(WorkflowResult $result, string $operation, array $context = []): WorkflowResult

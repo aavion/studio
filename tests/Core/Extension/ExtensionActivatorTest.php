@@ -8,8 +8,12 @@ use App\Core\Config\Config;
 use App\Core\Message\Message;
 use App\Core\Message\MessageLevel;
 use App\Core\Extension\ActiveExtensionProvider;
+use App\Core\Extension\Content\ExtensionContentSchemaSynchronizer;
+use App\Core\Extension\Database\ExtensionDatabaseSchemaSynchronizer;
+use App\Core\Extension\ExtensionActivationContributionApplier;
 use App\Core\Extension\ExtensionStatus;
 use App\Core\Extension\ExtensionActivator;
+use App\Core\Extension\ExtensionContributionReader;
 use App\Core\Extension\ExtensionDependencyResolver;
 use App\Core\Extension\ExtensionLifecycleAssetRebuilderInterface;
 use App\Core\Extension\ExtensionMessageCode;
@@ -52,6 +56,8 @@ final class ExtensionActivatorTest extends KernelTestCase
 
     protected function tearDown(): void
     {
+        $this->dropTableIfExists('demo_module_entry');
+
         if ($this->connection->isTransactionActive()) {
             $this->connection->rollBack();
         }
@@ -78,6 +84,86 @@ final class ExtensionActivatorTest extends KernelTestCase
             'action' => 'activated',
             'status' => 'active',
         ]], $result->value()['changes']);
+    }
+
+    public function testItAppliesDatabaseContributionsDuringActivation(): void
+    {
+        $this->temporaryProjectDir = $this->createTemporaryDirectory('system-extension-database');
+        $this->insertExtension('demo-module', ['module', 'database'], 'inactive');
+        $this->writeTestFile($this->temporaryProjectDir, 'extensions/demo-module/extension.php', <<<'PHP'
+<?php
+
+use App\Core\Extension\Database\ExtensionDatabaseColumn;
+use App\Core\Extension\Database\ExtensionDatabaseTable;
+
+return [
+    ExtensionDatabaseTable::create('entry', [
+        ExtensionDatabaseColumn::string('uid', 36),
+    ], ['uid']),
+];
+PHP);
+
+        $result = $this->activatorWithContributionApplier()->activate('demo-module', 'test', rebuildAssets: false);
+
+        self::assertTrue($result->isSuccess());
+        self::assertContains('demo_module_entry', $this->connection->createSchemaManager()->listTableNames());
+    }
+
+    public function testItDoesNotApplyDatabaseContributionsWhenAssetRebuildFails(): void
+    {
+        $this->temporaryProjectDir = $this->createTemporaryDirectory('system-extension-database-rebuild-failure');
+        $this->insertExtension('demo-module', ['module', 'database'], 'inactive');
+        $this->writeTestFile($this->temporaryProjectDir, 'extensions/demo-module/extension.php', <<<'PHP'
+<?php
+
+use App\Core\Extension\Database\ExtensionDatabaseColumn;
+use App\Core\Extension\Database\ExtensionDatabaseTable;
+
+return [
+    ExtensionDatabaseTable::create('entry', [
+        ExtensionDatabaseColumn::string('uid', 36),
+    ], ['uid']),
+];
+PHP);
+        $this->assetRebuilder->result = WorkflowResult::failed([
+            Message::create(
+                ExtensionMessageCode::EXTENSION_ASSET_SYNC_FAILED,
+                ExtensionMessageKey::EXTENSION_ASSET_SYNC_FAILED,
+                ['%message%' => 'rebuild failed'],
+                level: MessageLevel::Error,
+            ),
+        ]);
+
+        $result = $this->activatorWithContributionApplier()->activate('demo-module', 'test');
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('inactive', $this->extensionStatus('demo-module'));
+        self::assertNotContains('demo_module_entry', $this->connection->createSchemaManager()->listTableNames());
+    }
+
+    public function testItRollsBackActivationWhenDatabaseContributionIsNotAllowed(): void
+    {
+        $this->temporaryProjectDir = $this->createTemporaryDirectory('system-extension-database-scope-failure');
+        $this->insertExtension('demo-module', ['module'], 'inactive');
+        $this->writeTestFile($this->temporaryProjectDir, 'extensions/demo-module/extension.php', <<<'PHP'
+<?php
+
+use App\Core\Extension\Database\ExtensionDatabaseColumn;
+use App\Core\Extension\Database\ExtensionDatabaseTable;
+
+return [
+    ExtensionDatabaseTable::create('entry', [
+        ExtensionDatabaseColumn::string('uid', 36),
+    ], ['uid']),
+];
+PHP);
+
+        $result = $this->activatorWithContributionApplier()->activate('demo-module', 'test');
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('inactive', $this->extensionStatus('demo-module'));
+        self::assertSame(['test', 'test'], $this->assetRebuilder->environments);
+        self::assertSame('extension.database.contribution_invalid', $result->firstIssue()?->code());
     }
 
     public function testActivatedExtensionSchedulerTaskCanBeRegisteredAndEnabled(): void
@@ -407,6 +493,23 @@ PHP);
         );
     }
 
+    private function activatorWithContributionApplier(): ExtensionActivator
+    {
+        self::assertIsString($this->temporaryProjectDir);
+
+        return new ExtensionActivator(
+            $this->entityManager,
+            $this->assetRebuilder,
+            new NullWorkflowResultMessageReporter(),
+            activationContributionApplier: new ExtensionActivationContributionApplier(
+                new ExtensionContributionReader($this->temporaryProjectDir),
+                new ExtensionDatabaseSchemaSynchronizer($this->connection),
+                new ExtensionContentSchemaSynchronizer($this->entityManager),
+                $this->connection,
+            ),
+        );
+    }
+
     /**
      * @param list<string> $scopes
      */
@@ -450,6 +553,17 @@ PHP);
     private function uuid(): string
     {
         return Uuid::v7()->toRfc4122();
+    }
+
+    private function dropTableIfExists(string $tableName): void
+    {
+        if (!in_array($tableName, $this->connection->createSchemaManager()->listTableNames(), true)) {
+            return;
+        }
+
+        foreach ((array) $this->connection->getDatabasePlatform()->getDropTableSQL($tableName) as $sql) {
+            $this->connection->executeStatement($sql);
+        }
     }
 }
 

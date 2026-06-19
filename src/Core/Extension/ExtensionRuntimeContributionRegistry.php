@@ -10,6 +10,10 @@ use App\Api\Endpoint\ApiEndpointHandlerProviderInterface;
 use App\Api\Endpoint\ApiEndpointProviderInterface;
 use App\Core\Message\MessageException;
 use App\Core\Operation\ActionQueue;
+use App\Core\Extension\Content\ExtensionContentSchemaDefinition;
+use App\Core\Extension\Content\ExtensionContentSchemaProviderInterface;
+use App\Core\Extension\Database\ExtensionDatabaseProviderInterface;
+use App\Core\Extension\Database\ExtensionDatabaseTable;
 use App\Core\Extension\Settings\ExtensionSettingDefinition;
 use App\Core\Extension\Settings\ExtensionSettingProviderInterface;
 use App\Core\Extension\Settings\ExtensionSettings;
@@ -33,7 +37,7 @@ use App\View\Injection\StaticViewInjection;
 use App\View\Injection\StaticViewInjectionProviderInterface;
 use Symfony\Component\HttpFoundation\Cookie;
 
-final class ExtensionRuntimeContributionRegistry implements StaticViewInjectionProviderInterface, DynamicViewInjectionProviderInterface, ExtensionSettingProviderInterface, ApiEndpointProviderInterface, ApiEndpointHandlerProviderInterface, LiveEndpointProviderInterface, LiveEndpointHandlerProviderInterface, CookieConsentProviderInterface, SchedulerTaskProviderInterface, SchedulerCallableProviderInterface, SchedulerActionQueueProviderInterface
+final class ExtensionRuntimeContributionRegistry implements StaticViewInjectionProviderInterface, DynamicViewInjectionProviderInterface, ExtensionSettingProviderInterface, ApiEndpointProviderInterface, ApiEndpointHandlerProviderInterface, LiveEndpointProviderInterface, LiveEndpointHandlerProviderInterface, CookieConsentProviderInterface, SchedulerTaskProviderInterface, SchedulerCallableProviderInterface, SchedulerActionQueueProviderInterface, ExtensionDatabaseProviderInterface, ExtensionContentSchemaProviderInterface
 {
     private const RESERVED_COOKIE_NAMES = [
         CookieConsentManager::CONSENT_COOKIE_NAME,
@@ -68,6 +72,10 @@ final class ExtensionRuntimeContributionRegistry implements StaticViewInjectionP
     private array $schedulerCallableProviders = [];
 
     private array $schedulerActionQueueProviders = [];
+
+    private array $databaseTables = [];
+
+    private array $contentSchemaDefinitions = [];
 
     public function add(Extension $extension, mixed $contribution): void
     {
@@ -138,6 +146,18 @@ final class ExtensionRuntimeContributionRegistry implements StaticViewInjectionP
 
         if ($contribution instanceof CookieConsentDefinition) {
             $this->addCookieConsentDefinition($extension, $contribution);
+
+            return;
+        }
+
+        if ($contribution instanceof ExtensionDatabaseTable) {
+            $this->addDatabaseTable($extension, $contribution);
+
+            return;
+        }
+
+        if ($contribution instanceof ExtensionContentSchemaDefinition) {
+            $this->addContentSchemaDefinition($extension, $contribution);
 
             return;
         }
@@ -226,6 +246,22 @@ final class ExtensionRuntimeContributionRegistry implements StaticViewInjectionP
             $providerHandled = true;
         }
 
+        if ($contribution instanceof ExtensionDatabaseProviderInterface) {
+            foreach ($contribution->extensionDatabaseTables() as $table) {
+                $this->addToRegistry($extension, $table);
+            }
+
+            $providerHandled = true;
+        }
+
+        if ($contribution instanceof ExtensionContentSchemaProviderInterface) {
+            foreach ($contribution->extensionContentSchemas() as $definition) {
+                $this->addToRegistry($extension, $definition);
+            }
+
+            $providerHandled = true;
+        }
+
         if ($providerHandled) {
             return;
         }
@@ -258,6 +294,8 @@ final class ExtensionRuntimeContributionRegistry implements StaticViewInjectionP
         $this->schedulerTaskDefinitions = $registry->schedulerTaskDefinitions;
         $this->schedulerCallableProviders = $registry->schedulerCallableProviders;
         $this->schedulerActionQueueProviders = $registry->schedulerActionQueueProviders;
+        $this->databaseTables = $registry->databaseTables;
+        $this->contentSchemaDefinitions = $registry->contentSchemaDefinitions;
     }
 
     private function addSchedulerTaskDefinition(Extension $extension, SchedulerTaskDefinition $definition): void
@@ -321,6 +359,28 @@ final class ExtensionRuntimeContributionRegistry implements StaticViewInjectionP
         }
 
         $this->cookieConsentDefinitions[] = $definition;
+    }
+
+    private function addDatabaseTable(Extension $extension, ExtensionDatabaseTable $table): void
+    {
+        if (!$extension->hasScope(ExtensionScope::Database)) {
+            throw MessageException::forMessage(ExtensionMessageCode::EXTENSION_DATABASE_CONTRIBUTION_INVALID, ExtensionMessageKey::EXTENSION_DATABASE_CONTRIBUTION_INVALID, [
+                '%reason%' => 'scope_missing',
+            ], ['extension' => $extension->extensionName(), 'required_scope' => ExtensionScope::Database->value]);
+        }
+
+        $this->databaseTables[] = $table;
+    }
+
+    private function addContentSchemaDefinition(Extension $extension, ExtensionContentSchemaDefinition $definition): void
+    {
+        if (!$extension->hasScope(ExtensionScope::ContentSchema)) {
+            throw MessageException::forMessage(ExtensionMessageCode::EXTENSION_CONTENT_SCHEMA_CONTRIBUTION_INVALID, ExtensionMessageKey::EXTENSION_CONTENT_SCHEMA_CONTRIBUTION_INVALID, [
+                '%reason%' => 'scope_missing',
+            ], ['extension' => $extension->extensionName(), 'required_scope' => ExtensionScope::ContentSchema->value]);
+        }
+
+        $this->contentSchemaDefinitions[] = $definition;
     }
 
     /**
@@ -428,6 +488,22 @@ final class ExtensionRuntimeContributionRegistry implements StaticViewInjectionP
     public function schedulerTasks(): array
     {
         return $this->schedulerTaskDefinitions;
+    }
+
+    /**
+     * @return list<ExtensionDatabaseTable>
+     */
+    public function extensionDatabaseTables(): array
+    {
+        return $this->databaseTables;
+    }
+
+    /**
+     * @return list<ExtensionContentSchemaDefinition>
+     */
+    public function extensionContentSchemas(): array
+    {
+        return $this->contentSchemaDefinitions;
     }
 
     public function schedulerCallable(string $target): ?callable

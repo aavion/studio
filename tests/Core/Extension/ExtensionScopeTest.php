@@ -26,6 +26,14 @@ final class ExtensionScopeTest extends TestCase
         );
     }
 
+    public function testItParsesDatabaseAndContentSchemaScopes(): void
+    {
+        self::assertSame(
+            [ExtensionScope::Module, ExtensionScope::Database, ExtensionScope::ContentSchema],
+            ExtensionScope::fromManifestValue('[module, database, content-schema]'),
+        );
+    }
+
     public function testItRejectsUnknownScopes(): void
     {
         $this->expectException(InvalidArgumentException::class);

@@ -13,9 +13,9 @@ Use this guide as a working reference when building the native system extensions
 
 ## Extension principles
 
-- Use Symfony-native integration points first: services, tagged services, Twig, routes, forms, validators, voters, EventDispatcher, Messenger, Doctrine migrations, AssetMapper, Tailwind, and translations.
+- Use Symfony-native integration points first: services, tagged services, Twig, routes, forms, validators, voters, EventDispatcher, Messenger, core-controlled database contributions, AssetMapper, Tailwind, and translations.
 - Keep extensions inactive after discovery until an administrator explicitly activates them.
-- Validate manifests before loading classes, routes, templates, migrations, permissions, assets, or providers.
+- Validate manifests before loading classes, routes, templates, database contributions, permissions, assets, or providers.
 - Keep extension points explicit:
   - **Observe:** react without changing the result.
   - **Extend:** add contributions through documented hooks or tagged services.
@@ -39,7 +39,6 @@ extensions/<extension-slug>/
   templates/
   assets/
   config/
-  migrations/
   languages/
 ```
 
@@ -58,14 +57,14 @@ Optional source metadata stays split: `EXTENSION_SOURCE` points to the repositor
 
 Current constraints:
 
-- Allowed scopes start as `frontend-theme`, `backend-theme`, `system-template`, `module`, `captcha-provider`, and `editor-provider`.
+- Allowed scopes start as `frontend-theme`, `backend-theme`, `system-template`, `module`, `captcha-provider`, `editor-provider`, `database`, and `content-schema`.
 - An extension is always activated or deactivated as one unit. Scopes describe capabilities, not separately switchable sub-extensions.
 - Only one `frontend-theme`, one `backend-theme`, one `system-template`, and one provider extension of each provider type may be active at the same time.
 - Multiple `module` extensions may be active at the same time.
 - Activating a new single-active scope deactivates the previously active extension for that scope. If that extension also had module behavior, the module behavior is deactivated with it.
-- Disabled extensions must not contribute services, routes, templates, assets, migrations, permissions, providers, subscribers, or handlers.
-- Extensions may contribute routes, services, templates, assets, field types, editor actions, API resources, permissions, migrations, event subscribers, message handlers, or replaceable providers only through documented extension points.
-- Extension-owned domain data should prefer extension-owned tables and migrations, using collision-resistant table names such as `ext_<slug>_<table>`.
+- Disabled extensions must not contribute services, routes, templates, assets, database tables, permissions, providers, subscribers, or handlers.
+- Extensions may contribute routes, services, templates, assets, field types, editor actions, API resources, permissions, database tables, event subscribers, message handlers, or replaceable providers only through documented extension points.
+- Extension-owned domain data should use the `database` contribution contract. Free-form Doctrine migration classes and arbitrary SQL are not part of the extension contract; core generates physical table names from `{database-prefix}{extension-slug_}{local-table}` and only purges tables under that prefix.
 - Extensions with frontend or admin assets must participate in the asset rebuild workflow.
 - Extensions need uninstall/remove behavior, including explicit confirmation before deleting extension-owned data.
 - Failed activation or deactivation should roll back to the previous state where practical.
@@ -73,13 +72,13 @@ Current constraints:
 
 `extension.php` is optional. It must never be included during discovery and should only be loaded after an extension is valid and active. Extensions are trusted code; only administrators may install them. An extension should use an extension-owned root namespace derived from or declared for the extension slug.
 
-When `EXTENSION_NAMESPACE` is declared, PHP files below `src/` must use that namespace or one of its child namespaces. The active runtime loader includes only `extension.php`; that file may return simple contribution DTOs/providers or a callable that returns them, but it must not directly include files, read or write files, spawn processes, open network sockets, read raw environment/request globals, or bypass extension points. For multiple contributions, prefer `App\Core\Extension\ExtensionContributions::create()` so the extension entry point remains readable and each contribution type is named. Supported direct contributions currently include static view injections, configurable static route sets, dynamic view injections, extension setting definitions, and scheduler task definitions. Loader failures are caught by the lifecycle layer, recorded as structured diagnostics, and mark the extension `faulty` so a broken active extension does not keep breaking requests. Contribution iterables are staged before registry mutation, so one unsupported item rejects the full extension contribution for the current request.
+When `EXTENSION_NAMESPACE` is declared, PHP files below `src/` must use that namespace or one of its child namespaces. The active runtime loader includes only `extension.php`; that file may return simple contribution DTOs/providers or a callable that returns them, but it must not directly include files, read or write files, spawn processes, open network sockets, read raw environment/request globals, or bypass extension points. For multiple contributions, prefer `App\Core\Extension\ExtensionContributions::create()` so the extension entry point remains readable and each contribution type is named. Supported direct contributions currently include static view injections, configurable static route sets, dynamic view injections, extension setting definitions, scheduler task definitions, declarative database tables, and content schema presets. Loader failures are caught by the lifecycle layer, recorded as structured diagnostics, and mark the extension `faulty` so a broken active extension does not keep breaking requests. Contribution iterables are staged before registry mutation, so one unsupported item rejects the full extension contribution for the current request.
 
 Extension assets must be self-contained. Extensions should vendor their external dependencies inside their own extension directory instead of requiring the project importmap to manage third-party dependency lifecycles across extensions. Active extension CSS and JavaScript are aggregated through the generated extension asset registries; extensions should not expect templates to add arbitrary direct `<link>` or `<script>` tags for extension-level assets. Static assets such as images, fonts, videos, and SVGs should be referenced from extension CSS, JavaScript, or templates after the lifecycle mirrors them into the AssetMapper-visible extension path. Assets that must not be mirrored, such as server-side challenge images or provider-private indexes, belong under `private-assets/`.
 
 Area-specific extension assets follow the same boundary as template namespaces. An extension with `frontend-theme` should put frontend-only entrypoints under `assets/frontend/**`; an extension with `backend-theme` should put backend-only entrypoints under `assets/backend/**`. Root-level extension assets and other extension asset subdirectories are shared/global and enter the extension registry only when the extension also declares a global scope such as `module`, `captcha-provider`, `editor-provider`, or `system-template`.
 
-Extension asset registries control deterministic rebuild order, but Tailwind currently emits one application stylesheet. CSS that belongs to one rendered area should therefore stay scoped to that area's root class, such as `.system-frontend` or `.system-backend`, unless the extension intentionally contributes global module/provider styling. Root/shared templates use `{system|extension-slug}-{class}` selectors, provider templates use `{system|extension-slug}-{provider-scope}-{class}`, and frontend/backend templates use `{system|extension-slug}-{frontend|backend}-{class}`. A template may use its own namespace classes and root classes, but not classes from another rendered area.
+Extension asset registries control deterministic rebuild order, but Tailwind currently emits one application stylesheet. CSS that belongs to one rendered area should therefore stay scoped to that area's root class, such as `.system-frontend` or `.system-backend`, unless the extension intentionally contributes global module/provider styling. Root/shared templates use `{system|extension-slug}-{class}` selectors, provider templates use `{system|extension-slug}-{provider-scope}-{class}`, and frontend/backend templates use `{system|extension-slug}-{frontend|backend}-{class}`. A template may use owner-wide classes and classes from its own declared/rendered scope, but not classes from another rendered area.
 
 Extension translations are extension-scoped. An extension may ship `languages/<locale>/*.yaml`; when it does, at least one English catalogue under `languages/en/` must be present as the stable fallback source. Only active extension language files are aggregated into the generated runtime `messages` catalogue during the extension rebuild queue, so inactive extensions cannot override or leak copy. Extension-owned translation keys must stay namespaced below `ext.<extension-slug>.*`.
 

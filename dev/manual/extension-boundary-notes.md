@@ -32,7 +32,7 @@ Installer or extension-type lifecycle code should decide:
 - extension activation and deactivation;
 - dependency maps;
 - version compatibility;
-- migrations;
+- declarative database contributions;
 - route loading;
 - service loading;
 - provider replacement;
@@ -63,6 +63,8 @@ Dependency maps are intentionally deferred. They should likely include:
 - required core version;
 - required PHP extensions;
 - required Composer packages;
+- declarative extension-owned database tables;
+- immutable content schema presets;
 - required extensions;
 - conflicting extensions;
 - optional integrations.

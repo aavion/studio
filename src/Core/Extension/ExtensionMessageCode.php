@@ -36,6 +36,12 @@ final class ExtensionMessageCode
     public const EXTENSION_ASSET_CONTRIBUTION_TYPE_INVALID = 'extension.asset.contribution_type_invalid';
     public const EXTENSION_ASSET_CONTRIBUTION_PATH_INVALID = 'extension.asset.contribution_path_invalid';
     public const EXTENSION_ASSET_CONTRIBUTION_PATH_TRAVERSAL = 'extension.asset.contribution_path_traversal';
+    public const EXTENSION_DATABASE_CONTRIBUTION_INVALID = 'extension.database.contribution_invalid';
+    public const EXTENSION_DATABASE_SYNC_COMPLETED = 'extension.database.sync_completed';
+    public const EXTENSION_DATABASE_PURGE_COMPLETED = 'extension.database.purge_completed';
+    public const EXTENSION_CONTENT_SCHEMA_CONTRIBUTION_INVALID = 'extension.content_schema.contribution_invalid';
+    public const EXTENSION_CONTENT_SCHEMA_SYNC_COMPLETED = 'extension.content_schema.sync_completed';
+    public const EXTENSION_CONTENT_SCHEMA_PURGE_COMPLETED = 'extension.content_schema.purge_completed';
     public const EXTENSION_DISCOVERY_QUEUED = 'extension.discovery_queued';
     public const EXTENSION_DISCOVERY_QUEUE_FAILED = 'extension.discovery_queue_failed';
     public const EXTENSION_DISCOVERY_COMPLETED = 'extension.discovery_completed';

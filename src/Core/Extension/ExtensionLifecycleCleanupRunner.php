@@ -19,6 +19,8 @@ final readonly class ExtensionLifecycleCleanupRunner implements ExtensionLifecyc
         private Settings\ExtensionSettings $extensionSettings,
         private AdminFeatureOverrideStore $adminFeatureOverrideStore,
         private ?AdminFeatureRegistry $adminFeatureRegistry = null,
+        private ?Database\ExtensionDatabaseSchemaSynchronizer $databaseSynchronizer = null,
+        private ?Content\ExtensionContentSchemaSynchronizer $contentSchemaSynchronizer = null,
     ) {
     }
 
@@ -44,6 +46,42 @@ final readonly class ExtensionLifecycleCleanupRunner implements ExtensionLifecyc
             ];
         }
 
+        $messages = [];
+
+        if (null !== $this->databaseSynchronizer) {
+            $database = $this->databaseSynchronizer->purge($extension);
+            if (!$database->isSuccess()) {
+                return WorkflowResult::failed($database->issues(), [
+                    'extension' => $extension->extensionName(),
+                    'actions' => $actions,
+                    'database_context' => $database->context(),
+                ], $database->messages());
+            }
+
+            $messages = [...$messages, ...$database->messages()];
+            $actions[] = [
+                'action' => 'drop_extension_database_tables',
+                'count' => count($database->value()['dropped'] ?? []),
+            ];
+        }
+
+        if (null !== $this->contentSchemaSynchronizer) {
+            $schemas = $this->contentSchemaSynchronizer->purge($extension);
+            if (!$schemas->isSuccess()) {
+                return WorkflowResult::failed($schemas->issues(), [
+                    'extension' => $extension->extensionName(),
+                    'actions' => $actions,
+                    'content_schema_context' => $schemas->context(),
+                ], [...$messages, ...$schemas->messages()]);
+            }
+
+            $messages = [...$messages, ...$schemas->messages()];
+            $actions[] = [
+                'action' => 'delete_extension_content_schemas',
+                'count' => count($schemas->value()['deleted'] ?? []),
+            ];
+        }
+
         $this->adminFeatureRegistry?->resetCache();
 
         return WorkflowResult::success([
@@ -53,6 +91,7 @@ final readonly class ExtensionLifecycleCleanupRunner implements ExtensionLifecyc
             'extension' => $extension->extensionName(),
             'actions' => $actions,
         ], [
+            ...$messages,
             Message::create(
                 ExtensionMessageCode::EXTENSION_LIFECYCLE_CLEANUP_COMPLETED,
                 ExtensionMessageKey::EXTENSION_LIFECYCLE_CLEANUP_COMPLETED,

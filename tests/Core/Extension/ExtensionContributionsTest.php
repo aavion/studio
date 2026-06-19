@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Tests\Core\Extension;
 
 use App\Core\Extension\ExtensionContributions;
+use App\Core\Extension\Content\ExtensionContentSchemaDefinition;
+use App\Core\Extension\Database\ExtensionDatabaseColumn;
+use App\Core\Extension\Database\ExtensionDatabaseTable;
 use App\Core\Extension\Settings\ExtensionSettingDefinition;
 use App\Scheduler\SchedulerTaskDefinition;
 use App\View\Injection\StaticViewInjection;
@@ -36,12 +39,23 @@ final class ExtensionContributionsTest extends TestCase
             '*/15 * * * *',
             'demo',
         );
+        $databaseTable = ExtensionDatabaseTable::create('entry', [
+            ExtensionDatabaseColumn::string('uid', 36),
+        ], ['uid']);
+        $contentSchema = ExtensionContentSchemaDefinition::create('article', ['en' => 'Article'], [
+            'fields' => [
+                ['identifier' => 'title', 'type' => 'string'],
+                ['identifier' => 'subtitle', 'type' => 'string'],
+            ],
+        ]);
 
         $contributions = ExtensionContributions::create()
             ->staticView($staticView)
             ->setting($setting)
-            ->schedulerTask($schedulerTask);
+            ->schedulerTask($schedulerTask)
+            ->databaseTable($databaseTable)
+            ->contentSchema($contentSchema);
 
-        self::assertSame([$staticView, $setting, $schedulerTask], iterator_to_array($contributions));
+        self::assertSame([$staticView, $setting, $schedulerTask, $databaseTable, $contentSchema], iterator_to_array($contributions));
     }
 }

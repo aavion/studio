@@ -83,6 +83,9 @@
 **Usage:** Keep concise session notes in the active worklog and include the current branch in headings, using the form `### YYYY-MM-DD branch-name`. Place the newest branch/date heading directly below `## Branch Logs`; within a matching branch/date heading, add new notes at the top so the newest context stays first. Record meaningful committed or completed changes, decisions, blockers, and follow-ups; keep detailed verification in PR notes unless a result materially affects the worklog context. When switching to a different branch or after a PR is merged, compact the completed branch entry into [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), then create the new branch entry at the top.
 
 ### 2026-06-19 feat-security-captcha-contract
+- Documented content-schema lifecycle impact policy: deactivation should archive/unpublish directly affected public content, while automatic republish on extension reactivation is explicitly out of scope without a future confirmed restore journal.
+- Clarified extension CSS namespace validation so owner-wide selectors and matching scope selectors are accepted while foreign rendered-area scope selectors stay blocked.
+- Added scope-gated extension database and content-schema contribution contracts, with activation-time database/content-schema synchronization, purge cleanup, tests, and updated extension/template documentation.
 - Relaxed and clarified extension validation boundaries for development metadata, private assets, extension-local dependency payloads, open `EXTENSION_*` manifest descriptors, and ZIP installer copy filtering.
 - Added early Git submodule synchronization to `bin/init` so clean checkouts initialize extension submodules before Composer installs dependencies.
 

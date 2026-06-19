@@ -336,6 +336,10 @@ services:
             $projectDir: '%kernel.project_dir%'
             $environment: '%kernel.environment%'
 
+    App\Core\Extension\ExtensionContributionReader:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
     App\Core\Extension\ExtensionRemover:
         arguments:
             $projectDir: '%kernel.project_dir%'
@@ -390,6 +394,9 @@ services:
 
     App\Core\Extension\ExtensionLifecycleCleanupRunnerInterface:
         alias: App\Core\Extension\ExtensionLifecycleCleanupRunner
+
+    App\Core\Extension\ExtensionActivationContributionApplierInterface:
+        alias: App\Core\Extension\ExtensionActivationContributionApplier
 
     App\Core\Messenger\DeferredMessengerDrainStarterInterface:
         alias: App\Core\Messenger\DeferredMessengerDrainProcessStarter

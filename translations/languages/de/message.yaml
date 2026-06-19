@@ -43,6 +43,14 @@ message:
       contribution_type_invalid: 'Extension-Asset-Contribution-Typ "%type%" wird nicht unterstützt.'
       contribution_path_invalid: 'Extension-Asset-Pfad "%path%" muss projektrelativ sein.'
       contribution_path_traversal: 'Extension-Asset-Pfad "%path%" darf keine übergeordneten Verzeichnisse durchlaufen.'
+    database:
+      contribution_invalid: 'Extension-Datenbank-Contribution ist ungültig (%reason%).'
+      sync_completed: 'Datenbank-Sync für Extension "%extension%" hat %count% Tabelle(n) erstellt.'
+      purge_completed: 'Datenbank-Purge für Extension "%extension%" hat %count% Tabelle(n) gelöscht.'
+    content_schema:
+      contribution_invalid: 'Extension-Content-Schema-Contribution ist ungültig (%reason%).'
+      sync_completed: 'Content-Schema-Sync für Extension "%extension%" hat %count% Schema/Schemata erstellt oder versioniert.'
+      purge_completed: 'Content-Schema-Purge für Extension "%extension%" hat %count% Schema/Schemata gelöscht.'
     discovery_queued: 'Extension-Discovery wurde durch "%trigger%" eingereiht.'
     discovery_queue_failed: 'Extension-Discovery konnte durch "%trigger%" nicht eingereiht werden.'
     discovery_completed: 'Extension-Discovery hat %count% Kandidat(en) gefunden.'
