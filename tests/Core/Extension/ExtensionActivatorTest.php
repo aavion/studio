@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace App\Tests\Core\Extension;
 
 use App\Core\Config\Config;
+use App\Content\ContentStatus;
 use App\Core\Message\Message;
 use App\Core\Message\MessageLevel;
 use App\Core\Extension\ActiveExtensionProvider;
+use App\Core\Extension\Content\ExtensionContentSchemaDefinition;
+use App\Core\Extension\Content\ExtensionContentSchemaImpact;
 use App\Core\Extension\Content\ExtensionContentSchemaSynchronizer;
 use App\Core\Extension\Database\ExtensionDatabaseSchemaSynchronizer;
 use App\Core\Extension\ExtensionActivationContributionApplier;
@@ -21,6 +24,10 @@ use App\Core\Extension\ExtensionMessageKey;
 use App\Core\Extension\ExtensionPhpLoader;
 use App\Core\Extension\ExtensionRuntimeContributionRegistry;
 use App\Core\Workflow\WorkflowResult;
+use App\Entity\ContentItem;
+use App\Entity\ContentRevision;
+use App\Entity\ContentSchema;
+use App\Entity\Extension;
 use App\Entity\SchedulerTask;
 use App\Scheduler\SchedulerSettings;
 use App\Scheduler\SchedulerTaskRegistry;
@@ -239,6 +246,30 @@ PHP);
         self::assertSame('active', $this->extensionStatus('utility-module'));
         self::assertSame(['old-theme', 'new-theme'], array_column($result->value()['changes'], 'extension'));
         self::assertSame([], $this->assetRebuilder->environments);
+    }
+
+    public function testItArchivesPublishedContentUsingExtensionSchemasDuringDeactivation(): void
+    {
+        $this->insertExtension('demo-module', ['module', 'content-schema'], 'active');
+        $extension = $this->entityManager->getRepository(Extension::class)->findOneBy(['extensionName' => 'demo-module']);
+        self::assertInstanceOf(Extension::class, $extension);
+        $schema = $this->extensionSchema($extension);
+        $content = $this->contentUsingSchema('c2000000-0000-7000-8000-000000000001', 'extension-content', $schema);
+        $content->publish();
+        $this->entityManager->persist($content);
+        $this->entityManager->flush();
+
+        $activator = $this->activatorWithContentImpact();
+        $plan = $activator->planDeactivation('demo-module');
+
+        self::assertTrue($plan->isSuccess());
+        self::assertSame(1, $plan->value()['content_impact']['public_count']);
+        self::assertSame(['/extension-content'], array_column($plan->value()['content_impact']['items'], 'path'));
+
+        $result = $activator->deactivate('demo-module', 'test', rebuildAssets: false);
+
+        self::assertTrue($result->isSuccess());
+        self::assertSame(ContentStatus::Archived, $content->status());
     }
 
     public function testItDeactivatesDependentsOfConflictingSingleActiveScopes(): void
@@ -508,6 +539,42 @@ PHP);
                 $this->connection,
             ),
         );
+    }
+
+    private function activatorWithContentImpact(): ExtensionActivator
+    {
+        return new ExtensionActivator(
+            $this->entityManager,
+            $this->assetRebuilder,
+            new NullWorkflowResultMessageReporter(),
+            contentSchemaImpact: new ExtensionContentSchemaImpact($this->entityManager),
+        );
+    }
+
+    private function extensionSchema(Extension $extension): ContentSchema
+    {
+        $definition = ExtensionContentSchemaDefinition::create('article', ['en' => 'Article'], [
+            'fields' => [
+                ['identifier' => 'title', 'type' => 'string'],
+                ['identifier' => 'subtitle', 'type' => 'string'],
+            ],
+        ]);
+        $result = (new ExtensionContentSchemaSynchronizer($this->entityManager))->apply($extension, [$definition]);
+        self::assertTrue($result->isSuccess());
+        $schema = $this->entityManager->getRepository(ContentSchema::class)->findOneBy(['identifier' => 'demo_module_article']);
+        self::assertInstanceOf(ContentSchema::class, $schema);
+        self::assertNotNull($schema->activeVersion());
+
+        return $schema;
+    }
+
+    private function contentUsingSchema(string $uid, string $slug, ContentSchema $schema): ContentItem
+    {
+        $content = new ContentItem($uid, $slug);
+        self::assertNotNull($schema->activeVersion());
+        $content->activateRevision(new ContentRevision(substr_replace($uid, '4', 0, 1), $content, 1, $schema->activeVersion()));
+
+        return $content;
     }
 
     /**

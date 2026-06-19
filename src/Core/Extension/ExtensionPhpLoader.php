@@ -9,6 +9,7 @@ use App\Core\Message\Message;
 use App\Core\Message\MessageException;
 use App\Core\Message\MessageLevel;
 use App\Core\Message\WorkflowResultMessageReporterInterface;
+use App\Core\Extension\Content\ExtensionContentSchemaImpact;
 use App\Core\Operation\OperationMessageCode;
 use App\Core\Operation\OperationMessageKey;
 use App\Core\Extension\ExtensionMessageCode;
@@ -41,6 +42,7 @@ final class ExtensionPhpLoader implements EventSubscriberInterface
         private readonly ?ExtensionRuntimeContributionRegistry $runtimeContributions = null,
         private readonly PathGuard $pathGuard = new PathGuard(),
         private readonly ?DatabaseReadyState $databaseReadyState = null,
+        private readonly ?ExtensionContentSchemaImpact $contentSchemaImpact = null,
         ?ExtensionDependentDeactivator $dependentDeactivator = null,
     ) {
         $this->dependentDeactivator = $dependentDeactivator ?? new ExtensionDependentDeactivator($entityManager);
@@ -198,9 +200,13 @@ final class ExtensionPhpLoader implements EventSubscriberInterface
         $messages = [];
 
         if ($changed) {
+            if (null !== $this->contentSchemaImpact) {
+                array_push($messages, ...$this->contentSchemaImpact->archivePublicContentForExtensions([$extension])->messages());
+            }
+
             $deactivation = $this->dependentDeactivator->deactivateActiveDependents($extension, 'extension_php_loader_fault');
             $dependentChanges = $deactivation['changes'];
-            $messages = $deactivation['messages'];
+            array_push($messages, ...$deactivation['messages']);
         }
 
         try {

@@ -7,6 +7,7 @@ namespace App\Core\Extension;
 use App\Core\Message\Message;
 use App\Core\Message\MessageLevel;
 use App\Core\Message\WorkflowResultMessageReporterInterface;
+use App\Core\Extension\Content\ExtensionContentSchemaImpact;
 use App\Core\Extension\ExtensionMessageCode;
 use App\Core\Extension\ExtensionMessageKey;
 use App\Core\Workflow\WorkflowResult;
@@ -28,10 +29,11 @@ final readonly class ExtensionActivator
         ?ExtensionActivationPlanner $planner = null,
         ?ExtensionLifecycleFinalizer $finalizer = null,
         private ?ExtensionActivationContributionApplierInterface $activationContributionApplier = null,
+        private ?ExtensionContentSchemaImpact $contentSchemaImpact = null,
     ) {
         $this->store = $store ?? new ExtensionLifecycleStore($this->entityManager);
         $dependencyResolver ??= new ExtensionDependencyResolver($this->entityManager);
-        $this->planner = $planner ?? new ExtensionActivationPlanner($this->store, $dependencyResolver);
+        $this->planner = $planner ?? new ExtensionActivationPlanner($this->store, $dependencyResolver, $this->contentSchemaImpact);
         $this->finalizer = $finalizer ?? new ExtensionLifecycleFinalizer($this->entityManager, $this->store, $this->assetRebuilder);
     }
 
@@ -88,6 +90,8 @@ final readonly class ExtensionActivator
             }
         }
 
+        $messages = [...$messages, ...$this->archiveContentForDeactivatedExtensions($conflicts)];
+
         $finalized = $this->finalizer->finalize($snapshots, $changes, $messages, $environment, $rebuildAssets);
         if (!$finalized->isSuccess() || null === $this->activationContributionApplier) {
             return $this->report($finalized, 'extension.activate', ['extension' => $extensionName, 'environment' => $environment]);
@@ -137,6 +141,8 @@ final readonly class ExtensionActivator
             }
         }
 
+        $messages = [...$messages, ...$this->archiveContentForDeactivatedExtensions($extensions)];
+
         return $this->report(
             $this->finalizer->finalize($snapshots, $changes, $messages, $environment, $rebuildAssets),
             'extension.deactivate',
@@ -165,6 +171,20 @@ final readonly class ExtensionActivator
             ['extension' => $extension->extensionName()],
             MessageLevel::Success,
         );
+    }
+
+    /**
+     * @param list<Extension> $extensions
+     *
+     * @return list<Message>
+     */
+    private function archiveContentForDeactivatedExtensions(array $extensions): array
+    {
+        if (null === $this->contentSchemaImpact || [] === $extensions) {
+            return [];
+        }
+
+        return $this->contentSchemaImpact->archivePublicContentForExtensions($extensions)->messages();
     }
 
     /**

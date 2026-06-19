@@ -8,6 +8,7 @@ use App\Core\Filesystem\PathGuard;
 use App\Core\Id\UuidFactory;
 use App\Core\Message\Message;
 use App\Core\Message\MessageLevel;
+use App\Core\Extension\Content\ExtensionContentSchemaImpact;
 use App\Core\Workflow\WorkflowResult;
 use App\Entity\Extension;
 use Doctrine\ORM\EntityManagerInterface;
@@ -33,6 +34,7 @@ final readonly class ExtensionRegistryHandler
         ?ExtensionDependencyResolver $dependencyResolver = null,
         ?ExtensionLifecycleStore $store = null,
         ?ExtensionRegistrySyncFinalizer $syncFinalizer = null,
+        private ?ExtensionContentSchemaImpact $contentSchemaImpact = null,
     ) {
         $this->validationSpec = $validationSpec ?? ExtensionSpec::create()
             ->withInventoryDepth(4)
@@ -120,6 +122,7 @@ final readonly class ExtensionRegistryHandler
                 }
 
                 if ($changed && $wasActive) {
+                    array_push($messages, ...$this->archiveContentForDeactivatedExtensions([$extension]));
                     $assetRebuildTriggers[] = $this->assetRebuildTrigger($extensionName, 'extension_registry_faulty');
                     $dependentChanges = $this->deactivateActiveDependents($extension, 'extension_registry_faulty');
                     $changes = [...$changes, ...$dependentChanges['changes']];
@@ -165,6 +168,7 @@ final readonly class ExtensionRegistryHandler
                 );
 
                 if ($wasActive) {
+                    array_push($messages, ...$this->archiveContentForDeactivatedExtensions([$extension]));
                     $assetRebuildTriggers[] = $this->assetRebuildTrigger($extensionName, 'extension_registry_removed');
                     $dependentChanges = $this->deactivateActiveDependents($extension, 'extension_registry_removed');
                     $changes = [...$changes, ...$dependentChanges['changes']];
@@ -207,6 +211,7 @@ final readonly class ExtensionRegistryHandler
                 ['extension' => $dependent->extensionName(), 'required_extension' => $extension->extensionName()],
                 MessageLevel::Success,
             );
+            array_push($messages, ...$this->archiveContentForDeactivatedExtensions([$dependent]));
             $assetRebuildTriggers[] = $this->assetRebuildTrigger($dependent->extensionName(), $trigger);
         }
 
@@ -295,5 +300,19 @@ final readonly class ExtensionRegistryHandler
     private function assetRebuildTrigger(string $extensionName, string $trigger): string
     {
         return $trigger.':'.$extensionName;
+    }
+
+    /**
+     * @param list<Extension> $extensions
+     *
+     * @return list<Message>
+     */
+    private function archiveContentForDeactivatedExtensions(array $extensions): array
+    {
+        if (null === $this->contentSchemaImpact || [] === $extensions) {
+            return [];
+        }
+
+        return $this->contentSchemaImpact->archivePublicContentForExtensions($extensions)->messages();
     }
 }

@@ -6,6 +6,7 @@ namespace App\Core\Extension;
 
 use App\Core\Message\Message;
 use App\Core\Message\MessageLevel;
+use App\Core\Extension\Content\ExtensionContentSchemaImpact;
 use App\Core\Extension\ExtensionMessageCode;
 use App\Core\Extension\ExtensionMessageKey;
 use App\Core\Workflow\WorkflowResult;
@@ -16,6 +17,7 @@ final readonly class ExtensionActivationPlanner
     public function __construct(
         private ExtensionLifecycleStore $store,
         private ExtensionDependencyResolver $dependencyResolver,
+        private ?ExtensionContentSchemaImpact $contentSchemaImpact = null,
     ) {
     }
 
@@ -67,11 +69,13 @@ final readonly class ExtensionActivationPlanner
             'activate' => array_map(static fn (Extension $candidate): string => $candidate->extensionName(), $extensions),
             'deactivate' => array_map(static fn (Extension $candidate): string => $candidate->extensionName(), $deactivations),
             'changes' => $changes,
+            'content_impact' => $this->contentImpact($deactivations),
             'asset_rebuild' => [] !== $changes,
         ], [
             'extension' => $extensionName,
             'dependencies' => $dependencies->value()['dependencies'],
             'changes' => $changes,
+            'content_impact' => $this->contentImpact($deactivations),
         ], $dependencies->messages());
     }
 
@@ -99,10 +103,12 @@ final readonly class ExtensionActivationPlanner
             'extension' => $extensionName,
             'deactivate' => array_map(static fn (Extension $candidate): string => $candidate->extensionName(), $extensions),
             'changes' => $changes,
+            'content_impact' => $this->contentImpact($extensions),
             'asset_rebuild' => [] !== $changes,
         ], [
             'extension' => $extensionName,
             'changes' => $changes,
+            'content_impact' => $this->contentImpact($extensions),
         ]);
     }
 
@@ -192,6 +198,20 @@ final readonly class ExtensionActivationPlanner
             ExtensionStatus::Removed,
             ExtensionStatus::Faulty,
         ], true);
+    }
+
+    /**
+     * @param list<Extension> $extensions
+     *
+     * @return array{count: int, public_count: int, items: list<array{uid: string, path: string, slug: string, status: string, schema: string, extension: string}>}
+     */
+    private function contentImpact(array $extensions): array
+    {
+        return $this->contentSchemaImpact?->impactForExtensions($extensions) ?? [
+            'count' => 0,
+            'public_count' => 0,
+            'items' => [],
+        ];
     }
 
     /**

@@ -6,6 +6,7 @@ namespace App\Core\Extension;
 
 use App\Core\Message\Message;
 use App\Core\Message\MessageLevel;
+use App\Core\Extension\Content\ExtensionContentSchemaImpact;
 use App\Core\Extension\ExtensionMessageCode;
 use App\Core\Extension\ExtensionMessageKey;
 use App\Entity\Extension;
@@ -17,6 +18,7 @@ final readonly class ExtensionDependentDeactivator
 
     public function __construct(
         EntityManagerInterface $entityManager,
+        private ?ExtensionContentSchemaImpact $contentSchemaImpact = null,
         ?ExtensionDependencyResolver $dependencyResolver = null,
     ) {
         $this->dependencyResolver = $dependencyResolver ?? new ExtensionDependencyResolver($entityManager);
@@ -49,6 +51,9 @@ final readonly class ExtensionDependentDeactivator
                 ['extension' => $dependent->extensionName(), 'dependency' => $extension->extensionName(), 'reason' => $reason],
                 MessageLevel::Warning,
             );
+            if (null !== $this->contentSchemaImpact) {
+                array_push($messages, ...$this->contentSchemaImpact->archivePublicContentForExtensions([$dependent])->messages());
+            }
         }
 
         return ['changes' => $changes, 'messages' => $messages];

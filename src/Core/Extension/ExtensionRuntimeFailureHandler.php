@@ -8,6 +8,7 @@ use App\Core\Event\PublicHookFailedEvent;
 use App\Core\Message\Message;
 use App\Core\Message\MessageLevel;
 use App\Core\Message\WorkflowResultMessageReporterInterface;
+use App\Core\Extension\Content\ExtensionContentSchemaImpact;
 use App\Core\Extension\ExtensionMessageCode;
 use App\Core\Extension\ExtensionMessageKey;
 use App\Core\Workflow\WorkflowResult;
@@ -23,6 +24,7 @@ final readonly class ExtensionRuntimeFailureHandler
         private WorkflowResultMessageReporterInterface $messageReporter,
         private ?ExtensionAssetRebuildDispatcher $assetRebuildDispatcher = null,
         private string $environment = 'test',
+        private ?ExtensionContentSchemaImpact $contentSchemaImpact = null,
         ?ExtensionDependentDeactivator $dependentDeactivator = null,
     ) {
         $this->dependentDeactivator = $dependentDeactivator ?? new ExtensionDependentDeactivator($entityManager);
@@ -88,9 +90,16 @@ final readonly class ExtensionRuntimeFailureHandler
             ]);
 
             if ($faulty) {
+                if (null !== $this->contentSchemaImpact) {
+                    $dependentMessages = [
+                        ...$dependentMessages,
+                        ...$this->contentSchemaImpact->archivePublicContentForExtensions([$extension])->messages(),
+                    ];
+                }
+
                 $deactivation = $this->dependentDeactivator->deactivateActiveDependents($extension, 'runtime_fault');
                 $dependentChanges = $deactivation['changes'];
-                $dependentMessages = $deactivation['messages'];
+                $dependentMessages = [...$dependentMessages, ...$deactivation['messages']];
             }
         } else {
             $extension->recordRuntimeFailure($failure);
