@@ -29,7 +29,8 @@ final readonly class ExtensionCssNamespaceValidator
         $issues = [];
 
         foreach ($cssFiles as $file) {
-            $scope = $this->scopeForFile($candidate, $file);
+            $scopeAliases = $this->scopeAliasesForFile($candidate, $file);
+            $prefixes = $this->expectedPrefixes($extension, $scopeAliases);
             $path = $candidate->directory().DIRECTORY_SEPARATOR.$file;
             $contents = file_get_contents($path);
 
@@ -39,18 +40,19 @@ final readonly class ExtensionCssNamespaceValidator
             }
 
             foreach ($this->targetClassSelectors($contents) as $class) {
-                if ($this->isOwnedTargetClass($class, $extension, $scope)) {
+                if ($this->isOwnedTargetClass($class, $extension, $scopeAliases)) {
                     continue;
                 }
 
                 $issues[] = Message::create(
                     ExtensionMessageCode::EXTENSION_CSS_NAMESPACE_INVALID,
                     ExtensionMessageKey::EXTENSION_CSS_NAMESPACE_INVALID,
-                    ['%path%' => $path, '%class%' => $class, '%expected_prefix%' => $this->expectedPrefix($extension, $scope)],
+                    ['%path%' => $path, '%class%' => $class, '%expected_prefix%' => implode(' or ', $prefixes)],
                     context: $this->issueFactory->fileContext($candidate, $file, $path, [
                         'class' => $class,
-                        'css_scope' => $scope,
-                        'expected_prefix' => $this->expectedPrefix($extension, $scope),
+                        'css_scopes' => $scopeAliases,
+                        'expected_prefixes' => $prefixes,
+                        'expected_prefix' => $prefixes[0],
                     ]),
                     level: MessageLevel::Error,
                 );
@@ -109,45 +111,73 @@ final readonly class ExtensionCssNamespaceValidator
         return [] === $parts ? '' : $parts[array_key_last($parts)];
     }
 
-    private function isOwnedTargetClass(string $class, string $extension, string $scope): bool
+    /**
+     * @param list<string> $scopeAliases
+     */
+    private function isOwnedTargetClass(string $class, string $extension, array $scopeAliases): bool
     {
-        return str_starts_with($class, $this->expectedPrefix($extension, $scope));
+        if (!str_starts_with($class, $extension.'-')) {
+            return false;
+        }
+
+        foreach (['frontend', 'backend', 'captcha', 'editor'] as $knownScopeAlias) {
+            if (str_starts_with($class, $extension.'-'.$knownScopeAlias.'-')) {
+                return in_array($knownScopeAlias, $scopeAliases, true);
+            }
+        }
+
+        return true;
     }
 
-    private function expectedPrefix(string $extension, string $scope): string
+    /**
+     * @param list<string> $scopeAliases
+     *
+     * @return non-empty-list<string>
+     */
+    private function expectedPrefixes(string $extension, array $scopeAliases): array
     {
-        return match ($scope) {
-            'frontend' => $extension.'-frontend-',
-            'backend' => $extension.'-backend-',
-            'captcha', 'editor' => $extension.'-'.$scope.'-',
-            default => $extension.'-',
-        };
+        $prefixes = [$extension.'-'];
+
+        foreach ($scopeAliases as $scopeAlias) {
+            $prefixes[] = $extension.'-'.$scopeAlias.'-';
+        }
+
+        return array_values(array_unique($prefixes));
     }
 
-    private function scopeForFile(ExtensionCandidate $candidate, string $file): string
+    /**
+     * @return list<string>
+     */
+    private function scopeAliasesForFile(ExtensionCandidate $candidate, string $file): array
     {
         $file = str_replace('\\', '/', $file);
 
         if (str_starts_with($file, 'assets/frontend/')) {
-            return 'frontend';
+            return ['frontend'];
         }
 
         if (str_starts_with($file, 'assets/backend/')) {
-            return 'backend';
+            return ['backend'];
         }
 
         if (preg_match('#\Aassets/provider/([a-z][a-z0-9-]*)/#', $file, $matches)) {
-            return $matches[1];
+            return [$matches[1]];
         }
 
-        $scopes = $this->manifestScopes($candidate);
+        return array_values(array_unique(array_filter(array_map(
+            $this->scopeAlias(...),
+            $this->manifestScopes($candidate),
+        ))));
+    }
 
-        return match ($scopes) {
-            [ExtensionScope::FrontendTheme] => 'frontend',
-            [ExtensionScope::BackendTheme] => 'backend',
-            [ExtensionScope::CaptchaProvider] => 'captcha',
-            [ExtensionScope::EditorProvider] => 'editor',
-            default => 'root',
+    private function scopeAlias(ExtensionScope $scope): ?string
+    {
+        return match ($scope) {
+            ExtensionScope::FrontendTheme => 'frontend',
+            ExtensionScope::BackendTheme => 'backend',
+            ExtensionScope::CaptchaProvider => 'captcha',
+            ExtensionScope::EditorProvider => 'editor',
+            default => null,
         };
     }
 

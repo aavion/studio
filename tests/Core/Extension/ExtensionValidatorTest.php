@@ -1006,10 +1006,11 @@ CSS);
         self::assertSame('languages/en/messages.yaml', $result->firstIssue()?->context()['file']);
     }
 
-    public function testItRejectsExtensionCssTargetClassesOutsideTheAssetScope(): void
+    public function testItRejectsExtensionCssTargetClassesOutsideTheExplicitAssetScope(): void
     {
         $this->writeFile('assets/frontend/app.css', <<<'CSS'
 .demo-module-card,
+.demo-module-frontend-card,
 .system-panel .demo-module-backend-card {
     color: red;
 }
@@ -1021,11 +1022,28 @@ CSS);
         );
 
         self::assertFalse($result->isSuccess());
-        self::assertSame(['demo-module-card', 'demo-module-backend-card'], array_map(
+        self::assertSame(['demo-module-backend-card'], array_map(
             static fn ($issue): string => $issue->context()['class'],
             $result->issues(),
         ));
-        self::assertSame('demo-module-frontend-', $result->firstIssue()?->context()['expected_prefix']);
+        self::assertSame(['demo-module-', 'demo-module-frontend-'], $result->firstIssue()?->context()['expected_prefixes']);
+    }
+
+    public function testItAcceptsOwnerAndDeclaredScopeCssClassesForMultiScopeExtensions(): void
+    {
+        $this->writeFile('assets/module.css', <<<'CSS'
+.demo-module-card,
+.demo-module-captcha-card {
+    color: red;
+}
+CSS);
+
+        $result = (new ExtensionValidator())->validate(
+            $this->candidateWithManifest(['EXTENSION_SLUG' => 'demo-module', 'EXTENSION_SCOPE' => '[module, captcha-provider]']),
+            ExtensionSpec::create()->withInventoryDepth(4),
+        );
+
+        self::assertTrue($result->isSuccess());
     }
 
     public function testItRejectsTemplateReferencesOutsideTheTemplateScope(): void
