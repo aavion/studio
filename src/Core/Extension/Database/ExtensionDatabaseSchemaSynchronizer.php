@@ -32,13 +32,15 @@ final readonly class ExtensionDatabaseSchemaSynchronizer
         $existing = [];
         $schemaManager = $this->connection->createSchemaManager();
         $knownTables = array_map('strtolower', $schemaManager->listTableNames());
+        $databasePrefix = $this->databasePrefix();
+        $pendingTables = [];
 
         foreach ($tables as $table) {
             if (!$table instanceof ExtensionDatabaseTable) {
                 return $this->invalid($extension, 'table_invalid');
             }
 
-            $physicalName = $table->physicalName($extension->extensionName(), $this->databasePrefix());
+            $physicalName = $table->physicalName($extension->extensionName(), $databasePrefix);
             if (!$this->isOwnedTableName($extension, $physicalName)) {
                 return $this->invalid($extension, 'table_name_not_owned', ['table' => $physicalName]);
             }
@@ -48,8 +50,24 @@ final readonly class ExtensionDatabaseSchemaSynchronizer
                 continue;
             }
 
+            $pendingTables[$physicalName] = $table;
+        }
+
+        $validation = $this->validatePendingTables($extension, $pendingTables, $knownTables, $databasePrefix);
+        if (!$validation->isSuccess()) {
+            return $validation;
+        }
+
+        $ordering = $this->orderedPendingTables($extension, $pendingTables, $databasePrefix);
+        if ($ordering instanceof WorkflowResult) {
+            return $ordering;
+        }
+
+        foreach ($ordering as $physicalName) {
+            $table = $pendingTables[$physicalName];
+
             try {
-                $this->createTable($physicalName, $table);
+                $this->createTable($extension, $physicalName, $table, $databasePrefix);
             } catch (Throwable $error) {
                 return WorkflowResult::failed([
                     Message::create(
@@ -92,11 +110,17 @@ final readonly class ExtensionDatabaseSchemaSynchronizer
         $platform = $this->connection->getDatabasePlatform();
         $schemaManager = $this->connection->createSchemaManager();
 
+        $ownedTables = [];
+
         foreach ($schemaManager->listTableNames() as $tableName) {
             if (!$this->isOwnedTableName($extension, $tableName)) {
                 continue;
             }
 
+            $ownedTables[] = $tableName;
+        }
+
+        foreach ($this->orderedTablesForDrop($ownedTables) as $tableName) {
             foreach ((array) $platform->getDropTableSQL($tableName) as $sql) {
                 $this->connection->executeStatement($sql);
             }
@@ -119,7 +143,7 @@ final readonly class ExtensionDatabaseSchemaSynchronizer
         ]);
     }
 
-    private function createTable(string $physicalName, ExtensionDatabaseTable $definition): void
+    private function createTable(Extension $extension, string $physicalName, ExtensionDatabaseTable $definition, string $databasePrefix): void
     {
         $table = new Table($physicalName);
 
@@ -141,9 +165,280 @@ final readonly class ExtensionDatabaseSchemaSynchronizer
             $table->addIndex($index->columns(), $name);
         }
 
+        foreach ($definition->foreignKeys() as $foreignKey) {
+            $table->addForeignKeyConstraint(
+                $this->referencedPhysicalTableName($extension, $foreignKey, $databasePrefix),
+                $foreignKey->localColumns(),
+                $foreignKey->referencedColumns(),
+                $foreignKey->options(),
+                $this->shortName($physicalName.'_'.$foreignKey->name()),
+            );
+        }
+
         foreach ($this->connection->getDatabasePlatform()->getCreateTableSQL($table) as $sql) {
             $this->connection->executeStatement($sql);
         }
+    }
+
+    /**
+     * @param array<string, ExtensionDatabaseTable> $pendingTables
+     * @param list<string> $knownTables
+     *
+     * @return WorkflowResult<null>
+     */
+    private function validatePendingTables(Extension $extension, array $pendingTables, array $knownTables, string $databasePrefix): WorkflowResult
+    {
+        foreach ($pendingTables as $physicalName => $table) {
+            foreach ($table->foreignKeys() as $foreignKey) {
+                $referencedPhysicalName = $this->referencedPhysicalTableName($extension, $foreignKey, $databasePrefix);
+
+                if (isset($pendingTables[$referencedPhysicalName])) {
+                    $validation = $this->validateDefinitionReference($extension, $foreignKey, $pendingTables[$referencedPhysicalName]);
+                    if (!$validation->isSuccess()) {
+                        return $validation;
+                    }
+
+                    continue;
+                }
+
+                if (!in_array(strtolower($referencedPhysicalName), $knownTables, true)) {
+                    return $this->invalid($extension, 'foreign_key_reference_missing', [
+                        'table' => $physicalName,
+                        'foreign_key' => $foreignKey->name(),
+                        'referenced_table' => $referencedPhysicalName,
+                    ]);
+                }
+
+                try {
+                    $referencedTable = $this->connection->createSchemaManager()->introspectTable($referencedPhysicalName);
+                } catch (Throwable $error) {
+                    return $this->invalid($extension, 'foreign_key_reference_unreadable', [
+                        'table' => $physicalName,
+                        'foreign_key' => $foreignKey->name(),
+                        'referenced_table' => $referencedPhysicalName,
+                        'exception' => $error::class,
+                        'message' => $error->getMessage(),
+                    ]);
+                }
+
+                $validation = $this->validateDatabaseReference($extension, $foreignKey, $referencedTable);
+                if (!$validation->isSuccess()) {
+                    return $validation;
+                }
+            }
+        }
+
+        return WorkflowResult::success(null);
+    }
+
+    /**
+     * @param array<string, ExtensionDatabaseTable> $pendingTables
+     *
+     * @return list<string>|WorkflowResult<null>
+     */
+    private function orderedPendingTables(Extension $extension, array $pendingTables, string $databasePrefix): array|WorkflowResult
+    {
+        $ordered = [];
+        $visited = [];
+        $visiting = [];
+
+        $visit = function (string $physicalName) use (&$visit, &$ordered, &$visited, &$visiting, $extension, $pendingTables, $databasePrefix): bool {
+            if (isset($visited[$physicalName])) {
+                return true;
+            }
+
+            if (isset($visiting[$physicalName])) {
+                return false;
+            }
+
+            $visiting[$physicalName] = true;
+
+            foreach ($pendingTables[$physicalName]->foreignKeys() as $foreignKey) {
+                $referencedPhysicalName = $this->referencedPhysicalTableName($extension, $foreignKey, $databasePrefix);
+                if ($referencedPhysicalName === $physicalName) {
+                    continue;
+                }
+
+                if (isset($pendingTables[$referencedPhysicalName]) && !$visit($referencedPhysicalName)) {
+                    return false;
+                }
+            }
+
+            unset($visiting[$physicalName]);
+            $visited[$physicalName] = true;
+            $ordered[] = $physicalName;
+
+            return true;
+        };
+
+        foreach (array_keys($pendingTables) as $physicalName) {
+            if (!$visit($physicalName)) {
+                return $this->invalid($extension, 'foreign_key_reference_cycle', ['table' => $physicalName]);
+            }
+        }
+
+        return $ordered;
+    }
+
+    private function validateDefinitionReference(Extension $extension, ExtensionDatabaseForeignKey $foreignKey, ExtensionDatabaseTable $referencedTable): WorkflowResult
+    {
+        $availableColumns = [];
+        foreach ($referencedTable->columns() as $column) {
+            $availableColumns[$column->name()] = true;
+        }
+
+        foreach ($foreignKey->referencedColumns() as $column) {
+            if (!isset($availableColumns[$column])) {
+                return $this->invalid($extension, 'foreign_key_referenced_column_missing', [
+                    'foreign_key' => $foreignKey->name(),
+                    'referenced_table' => $referencedTable->name(),
+                    'referenced_column' => $column,
+                ]);
+            }
+        }
+
+        if (!$this->definitionHasUniqueColumns($referencedTable, $foreignKey->referencedColumns())) {
+            return $this->invalid($extension, 'foreign_key_reference_not_unique', [
+                'foreign_key' => $foreignKey->name(),
+                'referenced_table' => $referencedTable->name(),
+                'referenced_columns' => $foreignKey->referencedColumns(),
+            ]);
+        }
+
+        return WorkflowResult::success(null);
+    }
+
+    private function validateDatabaseReference(Extension $extension, ExtensionDatabaseForeignKey $foreignKey, Table $referencedTable): WorkflowResult
+    {
+        foreach ($foreignKey->referencedColumns() as $column) {
+            if (!$referencedTable->hasColumn($column)) {
+                return $this->invalid($extension, 'foreign_key_referenced_column_missing', [
+                    'foreign_key' => $foreignKey->name(),
+                    'referenced_table' => $referencedTable->getName(),
+                    'referenced_column' => $column,
+                ]);
+            }
+        }
+
+        if (!$this->databaseTableHasUniqueColumns($referencedTable, $foreignKey->referencedColumns())) {
+            return $this->invalid($extension, 'foreign_key_reference_not_unique', [
+                'foreign_key' => $foreignKey->name(),
+                'referenced_table' => $referencedTable->getName(),
+                'referenced_columns' => $foreignKey->referencedColumns(),
+            ]);
+        }
+
+        return WorkflowResult::success(null);
+    }
+
+    /**
+     * @param list<string> $columns
+     */
+    private function definitionHasUniqueColumns(ExtensionDatabaseTable $table, array $columns): bool
+    {
+        if ($this->sameColumns($table->primaryKey(), $columns)) {
+            return true;
+        }
+
+        foreach ($table->indexes() as $index) {
+            if ($index->unique() && $this->sameColumns($index->columns(), $columns)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param list<string> $columns
+     */
+    private function databaseTableHasUniqueColumns(Table $table, array $columns): bool
+    {
+        foreach ($table->getIndexes() as $index) {
+            if (($index->isPrimary() || $index->isUnique()) && $this->sameColumns($index->getColumns(), $columns)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param list<string> $left
+     * @param list<string> $right
+     */
+    private function sameColumns(array $left, array $right): bool
+    {
+        return array_map('strtolower', $left) === array_map('strtolower', $right);
+    }
+
+    private function referencedPhysicalTableName(Extension $extension, ExtensionDatabaseForeignKey $foreignKey, string $databasePrefix): string
+    {
+        return $databasePrefix.str_replace('-', '_', $extension->extensionName()).'_'.$foreignKey->referencedTable();
+    }
+
+    /**
+     * @param list<string> $tableNames
+     *
+     * @return list<string>
+     */
+    private function orderedTablesForDrop(array $tableNames): array
+    {
+        $ownedTables = array_fill_keys($tableNames, true);
+        $referencedBy = [];
+
+        foreach ($tableNames as $tableName) {
+            $referencedBy[$tableName] = [];
+        }
+
+        $schemaManager = $this->connection->createSchemaManager();
+
+        foreach ($tableNames as $tableName) {
+            try {
+                $table = $schemaManager->introspectTable($tableName);
+            } catch (Throwable) {
+                continue;
+            }
+
+            foreach ($table->getForeignKeys() as $foreignKey) {
+                $referencedTable = $foreignKey->getForeignTableName();
+                if ($referencedTable === $tableName || !isset($ownedTables[$referencedTable])) {
+                    continue;
+                }
+
+                $referencedBy[$referencedTable][] = $tableName;
+            }
+        }
+
+        $ordered = [];
+        $visited = [];
+        $visiting = [];
+
+        $visit = function (string $tableName) use (&$visit, &$ordered, &$visited, &$visiting, $referencedBy): void {
+            if (isset($visited[$tableName])) {
+                return;
+            }
+
+            if (isset($visiting[$tableName])) {
+                return;
+            }
+
+            $visiting[$tableName] = true;
+
+            foreach ($referencedBy[$tableName] ?? [] as $referencingTable) {
+                $visit($referencingTable);
+            }
+
+            unset($visiting[$tableName]);
+            $visited[$tableName] = true;
+            $ordered[] = $tableName;
+        };
+
+        foreach ($tableNames as $tableName) {
+            $visit($tableName);
+        }
+
+        return $ordered;
     }
 
     private function isOwnedTableName(Extension $extension, string $tableName): bool

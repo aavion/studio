@@ -1,7 +1,7 @@
 # Developer Worklog
 
 > **Status**: Active  
-> **Updated**: 2026-06-19  
+> **Updated**: 2026-06-20  
 > **Owner**: Core  
 > **Purpose:** Keeps track of changes and upcoming tasks. 
 
@@ -77,10 +77,17 @@
 - [ ] Captcha/rate-limit follow-up: add a short-lived opaque 429 recovery context when real captcha challenges are wired, so verified provider-backed solves can reset only the whitelisted/resettable descriptor and subject scope that produced the rendered 429 without exposing bucket IDs, subject keys, IP data, or limiter internals.
 - [ ] Aggregation/rate-limit follow-up: evaluate short-lived emergency country/continent traffic-shedding buckets for DDoS-like spikes. Treat this as aggregate rate limiting, not auto-ban or geo-blocking; ignore `n/a` GeoIP, keep thresholds extreme, preserve trusted-user recovery and Owner/API access, and use brief windows such as 5-15 minutes.
 - [ ] Audit follow-up: decide whether optional branding extensions need capabilities beyond `system-template`; extension CSS class namespace validation is now enforced for extension-owned selectors.
+- [ ] Extension database follow-up: design safe update handling for existing extension-owned table definitions after extension updates, including table/column/index/FK drift detection, explicit diagnostics, and a versioned update or migration-like operation instead of silently mutating existing tables during activation.
+- [ ] Extension reference follow-up: design stable lookup/reference interfaces for core-owned users, ACL groups, content items, and content schema entities so extensions can persist portable IDs in their own tables without DB-level foreign keys that could block core deletions or couple core lifecycle semantics to extension tables. Lookup APIs must return explicit missing/deleted fallbacks, for example a deleted-user display label, so extension logic can handle unavailable core data without broken references.
+- [ ] Extension API follow-up: before public extension API release, add a documented handler context or safe facade so extension API handlers can use controlled domain services instead of direct low-level Doctrine/DBAL access.
+- [ ] Extension runtime follow-up: before enabling broader extension-owned services, routes, event subscribers, or Messenger handlers, define the active-extension gate, ownership attribution, validator policy, fault handling, and reviewable contribution interfaces for each surface.
 - [ ] Evaluate whether the documented minimum memory requirement should become 256M after PHPUnit 13.2/full-suite runs needed a higher CLI memory limit; do not fix this requirement until setup/init/lint/runtime memory behavior has been reviewed across target hosting platforms.
 
 ## Branch Logs
 **Usage:** Keep concise session notes in the active worklog and include the current branch in headings, using the form `### YYYY-MM-DD branch-name`. Place the newest branch/date heading directly below `## Branch Logs`; within a matching branch/date heading, add new notes at the top so the newest context stays first. Record meaningful committed or completed changes, decisions, blockers, and follow-ups; keep detailed verification in PR notes unless a result materially affects the worklog context. When switching to a different branch or after a PR is merged, compact the completed branch entry into [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), then create the new branch entry at the top.
+
+### 2026-06-20 feat-security-captcha-contract
+- Limited extension database foreign keys to extension-owned tables, with PK/unique reference validation and explicit follow-ups for safe update drift handling plus stable core-entity lookup/reference interfaces.
 
 ### 2026-06-19 feat-security-captcha-contract
 - Added the `api` extension scope, gated extension API endpoint/handler contributions behind it, exposed typed manifest variables through `ExtensionSettings::get($extension, 'manifest.{key}')` with persisted setting overrides, switched operation/command lifecycle asset rebuilds to synchronous execution, and changed content-schema purge to force-archive affected content while retaining still-referenced disabled schema copies with warning context.

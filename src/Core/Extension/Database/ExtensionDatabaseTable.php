@@ -13,12 +13,14 @@ final readonly class ExtensionDatabaseTable
      * @param list<ExtensionDatabaseColumn> $columns
      * @param list<string> $primaryKey
      * @param list<ExtensionDatabaseIndex> $indexes
+     * @param list<ExtensionDatabaseForeignKey> $foreignKeys
      */
     public function __construct(
         private string $name,
         private array $columns,
         private array $primaryKey = [],
         private array $indexes = [],
+        private array $foreignKeys = [],
     ) {
         $this->assertIdentifier($name, 'table');
 
@@ -36,8 +38,14 @@ final readonly class ExtensionDatabaseTable
             }
         }
 
+        $columnNames = [];
+        foreach ($columns as $column) {
+            $columnNames[$column->name()] = true;
+        }
+
         foreach ($primaryKey as $column) {
             $this->assertIdentifier($column, 'column');
+            $this->assertKnownColumn($column, $columnNames, 'primary_key_column_missing');
         }
 
         foreach ($indexes as $index) {
@@ -46,12 +54,28 @@ final readonly class ExtensionDatabaseTable
                     '%reason%' => 'table_index_invalid',
                 ]);
             }
+
+            foreach ($index->columns() as $column) {
+                $this->assertKnownColumn($column, $columnNames, 'index_column_missing');
+            }
+        }
+
+        foreach ($foreignKeys as $foreignKey) {
+            if (!$foreignKey instanceof ExtensionDatabaseForeignKey) {
+                throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_DATABASE_CONTRIBUTION_INVALID, [
+                    '%reason%' => 'table_foreign_key_invalid',
+                ]);
+            }
+
+            foreach ($foreignKey->localColumns() as $column) {
+                $this->assertKnownColumn($column, $columnNames, 'foreign_key_local_column_missing');
+            }
         }
     }
 
-    public static function create(string $name, array $columns, array $primaryKey = [], array $indexes = []): self
+    public static function create(string $name, array $columns, array $primaryKey = [], array $indexes = [], array $foreignKeys = []): self
     {
-        return new self($name, $columns, $primaryKey, $indexes);
+        return new self($name, $columns, $primaryKey, $indexes, $foreignKeys);
     }
 
     public function name(): string
@@ -90,6 +114,14 @@ final readonly class ExtensionDatabaseTable
         return $this->indexes;
     }
 
+    /**
+     * @return list<ExtensionDatabaseForeignKey>
+     */
+    public function foreignKeys(): array
+    {
+        return $this->foreignKeys;
+    }
+
     private function assertIdentifier(string $value, string $label): void
     {
         if (1 !== preg_match('/^[a-z][a-z0-9_]*$/', $value)) {
@@ -97,5 +129,19 @@ final readonly class ExtensionDatabaseTable
                 '%reason%' => $label.'_identifier_invalid',
             ], [$label => $value]);
         }
+    }
+
+    /**
+     * @param array<string, true> $columnNames
+     */
+    private function assertKnownColumn(string $column, array $columnNames, string $reason): void
+    {
+        if (isset($columnNames[$column])) {
+            return;
+        }
+
+        throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_DATABASE_CONTRIBUTION_INVALID, [
+            '%reason%' => $reason,
+        ], ['column' => $column]);
     }
 }
