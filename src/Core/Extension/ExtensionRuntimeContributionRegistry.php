@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Extension;
 
+use App\Api\ApiMessageKey;
 use App\Api\Endpoint\ApiEndpointDefinition;
 use App\Api\Endpoint\ApiEndpointHandlerInterface;
 use App\Api\Endpoint\ApiEndpointHandlerProviderInterface;
@@ -320,14 +321,27 @@ final class ExtensionRuntimeContributionRegistry implements StaticViewInjectionP
 
     private function addApiEndpointDefinition(Extension $extension, ApiEndpointDefinition $definition): void
     {
+        $this->assertApiScope($extension);
         ExtensionApiContributionGuard::assertEndpoint($extension, $definition);
         $this->apiEndpointDefinitions[] = $definition;
     }
 
     private function addApiEndpointHandler(Extension $extension, ApiEndpointHandlerInterface $handler): void
     {
+        $this->assertApiScope($extension);
         ExtensionApiContributionGuard::assertHandler($extension, $handler);
         $this->apiEndpointHandlers[] = $handler;
+    }
+
+    private function assertApiScope(Extension $extension): void
+    {
+        if ($extension->hasScope(ExtensionScope::Api)) {
+            return;
+        }
+
+        throw MessageException::invalidArgument(ApiMessageKey::API_ENDPOINT_OWNER_INVALID, [
+            '%owner%' => $extension->extensionName(),
+        ], ['extension' => $extension->extensionName(), 'required_scope' => ExtensionScope::Api->value]);
     }
 
     private function addLiveEndpointDefinition(Extension $extension, LiveEndpointDefinition $definition): void

@@ -12,6 +12,7 @@ enum ExtensionScope: string
     case BackendTheme = 'backend-theme';
     case SystemTemplate = 'system-template';
     case Module = 'module';
+    case Api = 'api';
     case CaptchaProvider = 'captcha-provider';
     case EditorProvider = 'editor-provider';
     case Database = 'database';
@@ -53,7 +54,7 @@ enum ExtensionScope: string
     {
         return match ($this) {
             self::FrontendTheme, self::BackendTheme, self::SystemTemplate, self::CaptchaProvider, self::EditorProvider => true,
-            self::Module, self::Database, self::ContentSchema => false,
+            self::Module, self::Api, self::Database, self::ContentSchema => false,
         };
     }
 

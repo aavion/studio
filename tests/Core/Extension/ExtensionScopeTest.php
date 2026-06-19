@@ -29,8 +29,8 @@ final class ExtensionScopeTest extends TestCase
     public function testItParsesDatabaseAndContentSchemaScopes(): void
     {
         self::assertSame(
-            [ExtensionScope::Module, ExtensionScope::Database, ExtensionScope::ContentSchema],
-            ExtensionScope::fromManifestValue('[module, database, content-schema]'),
+            [ExtensionScope::Module, ExtensionScope::Api, ExtensionScope::Database, ExtensionScope::ContentSchema],
+            ExtensionScope::fromManifestValue('[module, api, database, content-schema]'),
         );
     }
 

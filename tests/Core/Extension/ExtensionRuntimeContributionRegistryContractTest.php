@@ -10,6 +10,7 @@ use App\Core\Extension\Database\ExtensionDatabaseTable;
 use App\Core\Extension\ExtensionRuntimeContributionRegistry;
 use App\Core\Extension\ExtensionScope;
 use App\Core\Extension\ExtensionStatus;
+use App\Api\Endpoint\ApiEndpointDefinition;
 use App\Entity\Extension;
 use PHPUnit\Framework\TestCase;
 
@@ -55,6 +56,25 @@ final class ExtensionRuntimeContributionRegistryContractTest extends TestCase
                     ['identifier' => 'subtitle', 'type' => 'string'],
                 ],
             ]),
+        );
+    }
+
+    public function testItRejectsApiContributionsWithoutApiScope(): void
+    {
+        $this->expectExceptionMessage('message.api.endpoint.owner_invalid');
+
+        (new ExtensionRuntimeContributionRegistry())->add(
+            $this->extension([ExtensionScope::Module]),
+            new ApiEndpointDefinition(
+                'extension',
+                'GET',
+                '/api/v1/extensions/demo-module/demo',
+                'api_v1_endpoint_dispatch',
+                'getDemoModuleExtensionEndpoint',
+                'Return extension demo data.',
+                'extensions.demo-module.demo',
+                ['extensions-demo-module-demo'],
+            ),
         );
     }
 
