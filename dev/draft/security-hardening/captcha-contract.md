@@ -30,7 +30,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 
 1. Define captcha provider and result contracts for render, validate, provider key, label key, and failure reason.
 2. Add a resolver that selects a provider by workflow configuration and returns `none` behavior when disabled or unavailable.
-3. Add workflow keys for first expected consumers: registration, contact, guest comments, and future login step-up.
+3. Add workflow keys for first expected consumers: registration, public custom-form submits (content forms like contact, package forms like guest comments), and future login step-up.
 4. Add a global captcha form field that delegates rendering/validation to the resolver.
 5. Add validation mapping for recoverable failures and suspicious failures.
 6. Add success/failure hooks to the abuse facade so verified provider success can reset scoped buckets and failure can record signals.
@@ -39,7 +39,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 
 - Provider key `none` always validates successfully.
 - Missing or disabled provider validates successfully unless a future provider-required policy is explicitly configured for a workflow.
-- Successful validation from `none`, a missing provider, or a disabled provider is graceful workflow success, not verified human success. It must not trigger rate-limit resets, ban relief, budget refill, or `429` recovery behavior.
+- Successful validation from `none`, a missing provider, or a disabled provider is graceful workflow success, not verified human success. It must not trigger rate-limit resets, ban relief, budget refill, or other recovery behavior.
 - Captcha result exposes only stable failure codes and safe context.
 - Captcha result must distinguish graceful unavailable-provider success from verified challenge success.
 - Provider contracts are package-facing extension points and must be documented.
@@ -83,3 +83,11 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 
 - Workflows can add captcha once and remain provider-agnostic.
 - Future provider branches can implement only the contract without touching core forms.
+
+## Additional notes
+
+- Captcha have to be be automatically active and working on pages, where the captcha form field or twig component is added. No extra setup needed. This makes it universally usable, e.g. on schema-defined custom forms on content pages or by other packages. 
+- To make the above statement work, we need a robust identifier to distinguish multiple rendered captcha-fields by form, not because multiple captchas on one page is a preferred design choice, but if we allow captchas to be added to any form, chances are that there might be cases where multiple captcha-enabled forms are rendered on one page.
+- When no captcha provider is selected or the selected default is inactive or unavailable, this field renders as a hidden success field to not block workflows. This hidden parameter must be distinguishable from real human-solved captcha challenges. 
+- Captchas must use stable cryptographic verifyable one-shot keys to prevent abusive bruteforcing/guessing and should use a package-owned `/api/live/...`-endpoint for challenge injections/updates. 
+- There should be a Twig function to render a standalone captcha form only with captcha and submit (only when there's an active and usable captcha provider) that may be used on e.g. optional (owner-activatable) `429` recovery views. 
