@@ -87,6 +87,7 @@
 **Usage:** Keep concise session notes in the active worklog and include the current branch in headings, using the form `### YYYY-MM-DD branch-name`. Place the newest branch/date heading directly below `## Branch Logs`; within a matching branch/date heading, add new notes at the top so the newest context stays first. Record meaningful committed or completed changes, decisions, blockers, and follow-ups; keep detailed verification in PR notes unless a result materially affects the worklog context. When switching to a different branch or after a PR is merged, compact the completed branch entry into [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), then create the new branch entry at the top.
 
 ### 2026-06-20 feat-security-captcha-contract
+- Split oversized extension/OpenAPI contract collaborators into focused contribution expansion/guarding, endpoint/view/scheduler storage, extension database naming/reference/order helpers, and OpenAPI component/tag factories without changing runtime behavior.
 - Fixed review findings by keeping early `bin/init` Composer platform checks aligned with `--no-dev` bootstrap installs, restricting extension language catalogues to documented `*.yaml` files, and configuring English as the Symfony translator fallback.
 - Limited extension database foreign keys to extension-owned tables, with PK/unique reference validation and explicit follow-ups for safe update drift handling plus stable core-entity lookup/reference interfaces.
 
