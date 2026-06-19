@@ -941,7 +941,7 @@ CSS);
         self::assertTrue($result->isSuccess());
     }
 
-    public function testItAcceptsExtensionTranslationYmlFilesInOwnedNamespace(): void
+    public function testItRejectsExtensionTranslationYmlFiles(): void
     {
         $this->writeFile('languages/en/messages.yml', "ext:\n  system:\n    title: Demo\n");
 
@@ -950,7 +950,8 @@ CSS);
             ExtensionSpec::create()->withInventoryDepth(4)->withYamlLinting(),
         );
 
-        self::assertTrue($result->isSuccess());
+        self::assertFalse($result->isSuccess());
+        self::assertSame('language_path_invalid', $result->firstIssue()?->context()['reason']);
     }
 
     public function testItAcceptsExtensionTranslationFilesUsingManifestSlugWhenDirectoryDiffers(): void

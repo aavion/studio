@@ -34,7 +34,7 @@ final readonly class ExtensionTranslationNamespaceValidator
         $extensionName = $this->translationExtensionName($candidate);
         $translationFiles = array_values(array_filter(
             $files,
-            static fn (string $file): bool => 1 === preg_match('#^languages/[a-z][a-z0-9]*(?:[_-][A-Za-z0-9]+)*/[^/]+\.ya?ml$#', $file),
+            static fn (string $file): bool => 1 === preg_match('#^languages/[a-z][a-z0-9]*(?:[_-][A-Za-z0-9]+)*/[^/]+\.yaml$#', $file),
         ));
         $issues = [];
 

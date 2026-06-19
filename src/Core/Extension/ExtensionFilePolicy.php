@@ -192,7 +192,7 @@ final readonly class ExtensionFilePolicy
 
     private function isLanguageFile(string $path): bool
     {
-        return 1 === preg_match('#^languages/[a-z][a-z0-9]*(?:[_-][A-Za-z0-9]+)*/[^/]+\.ya?ml$#', $path);
+        return 1 === preg_match('#^languages/[a-z][a-z0-9]*(?:[_-][A-Za-z0-9]+)*/[^/]+\.yaml$#', $path);
     }
 
     private static function normalizedPath(string $path): string

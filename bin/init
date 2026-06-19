@@ -450,7 +450,7 @@ final class InitCommand
         }
 
         $lock = $this->readComposerLock();
-        foreach (['packages', 'packages-dev'] as $section) {
+        foreach ($this->composerLockPackageSectionsForEarlyPlatformChecks() as $section) {
             foreach (($lock[$section] ?? []) as $package) {
                 if (is_array($package)) {
                     foreach ($this->phpExtensionRequirements($package['require'] ?? []) as $extension) {
@@ -473,7 +473,7 @@ final class InitCommand
 
         $lock = $this->readComposerLock();
         $versions[] = $lock['platform']['php'] ?? null;
-        foreach (['packages', 'packages-dev'] as $section) {
+        foreach ($this->composerLockPackageSectionsForEarlyPlatformChecks() as $section) {
             foreach (($lock[$section] ?? []) as $package) {
                 if (is_array($package)) {
                     $versions[] = $package['require']['php'] ?? null;
@@ -494,6 +494,23 @@ final class InitCommand
         }
 
         return $minimum;
+    }
+
+    /**
+     * @return non-empty-list<string>
+     */
+    private function composerLockPackageSectionsForEarlyPlatformChecks(): array
+    {
+        return $this->includeDevComposerPackagesForEarlyPlatformChecks()
+            ? ['packages', 'packages-dev']
+            : ['packages'];
+    }
+
+    private function includeDevComposerPackagesForEarlyPlatformChecks(): bool
+    {
+        $environment = $_SERVER['APP_ENV'] ?? $_ENV['APP_ENV'] ?? getenv('APP_ENV');
+
+        return is_string($environment) && in_array($environment, ['dev', 'test'], true);
     }
 
     /**
