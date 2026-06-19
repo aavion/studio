@@ -163,6 +163,16 @@ class Extension
     }
 
     /**
+     * @return array<string, array{key: string, source_key: string, value: mixed, type: string}>
+     */
+    public function manifestVariables(): array
+    {
+        $variables = $this->metadata['variables'] ?? [];
+
+        return is_array($variables) ? $variables : [];
+    }
+
+    /**
      * @param list<ExtensionScope|string> $scopes
      * @param array<string, mixed> $metadata
      */

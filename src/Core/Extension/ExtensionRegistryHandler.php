@@ -35,6 +35,7 @@ final readonly class ExtensionRegistryHandler
         ?ExtensionLifecycleStore $store = null,
         ?ExtensionRegistrySyncFinalizer $syncFinalizer = null,
         private ?ExtensionContentSchemaImpact $contentSchemaImpact = null,
+        private ExtensionManifestVariables $manifestVariables = new ExtensionManifestVariables(),
     ) {
         $this->validationSpec = $validationSpec ?? ExtensionSpec::create()
             ->withInventoryDepth(4)
@@ -252,9 +253,12 @@ final readonly class ExtensionRegistryHandler
      */
     private function metadata(ExtensionCandidate $candidate, string $state, array $issues = []): array
     {
+        $extensionName = $this->extensionName($candidate);
+
         return [
             'registry_state' => $state,
             'manifest' => $candidate->manifest()->all(),
+            'variables' => $this->manifestVariables->fromManifest($extensionName, $candidate->manifest()),
             'slug' => $candidate->manifest()->get('EXTENSION_SLUG'),
             'display_name' => $candidate->manifest()->get('EXTENSION_NAME'),
             'author' => $candidate->manifest()->get('EXTENSION_AUTHOR'),

@@ -30,6 +30,7 @@ final readonly class ExtensionFaultResetter
         private ExtensionValidator $validator = new ExtensionValidator(),
         private PathGuard $pathGuard = new PathGuard(),
         ?ExtensionSpec $validationSpec = null,
+        private ExtensionManifestVariables $manifestVariables = new ExtensionManifestVariables(),
     ) {
         $this->validationSpec = $validationSpec ?? ExtensionSpec::create()
             ->withInventoryDepth(4)
@@ -212,6 +213,7 @@ final readonly class ExtensionFaultResetter
         return [
             'registry_state' => 'available',
             'manifest' => $candidate->manifest()->all(),
+            'variables' => $this->manifestVariables->fromManifest($extension->extensionName(), $candidate->manifest()),
             'display_name' => $candidate->manifest()->get('EXTENSION_NAME'),
             'description' => $candidate->manifest()->get('EXTENSION_DESCRIPTION'),
             'dependencies' => $candidate->manifest()->get('EXTENSION_DEPENDENCIES'),

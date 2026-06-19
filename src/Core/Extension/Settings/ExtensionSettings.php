@@ -6,6 +6,7 @@ namespace App\Core\Extension\Settings;
 
 use App\Core\Config\ConfigMessageKey;
 use App\Core\Config\ConfigValueType;
+use App\Core\Extension\ActiveExtensionProviderInterface;
 use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
 use App\Core\Message\MessageReporterInterface;
@@ -24,6 +25,7 @@ final readonly class ExtensionSettings
     public function __construct(
         private Connection $connection,
         private ?MessageReporterInterface $messageReporter = null,
+        private ?ActiveExtensionProviderInterface $activeExtensionProvider = null,
     ) {
     }
 
@@ -50,7 +52,7 @@ final readonly class ExtensionSettings
         }
 
         if (!is_string($value)) {
-            return $default;
+            return $this->manifestDefault($extensionName, $key, $default);
         }
 
         try {
@@ -165,6 +167,35 @@ final readonly class ExtensionSettings
             is_string($value) => ConfigValueType::String,
             default => ConfigValueType::Json,
         };
+    }
+
+    private function manifestDefault(string $extensionName, string $key, mixed $default): mixed
+    {
+        if (!str_starts_with($key, 'manifest.')) {
+            return $default;
+        }
+
+        $manifestKey = substr($key, strlen('manifest.'));
+        if ('' === $manifestKey || null === $this->activeExtensionProvider) {
+            return $default;
+        }
+
+        try {
+            $extension = $this->activeExtensionProvider->extension($extensionName);
+        } catch (Throwable) {
+            return $default;
+        }
+
+        if (null === $extension) {
+            return $default;
+        }
+
+        $configKey = 'ext.'.str_replace('-', '_', $extensionName).'.'.$manifestKey;
+        $variable = $extension->manifestVariables()[$configKey] ?? null;
+
+        return is_array($variable) && array_key_exists('value', $variable)
+            ? $variable['value']
+            : $default;
     }
 
     private function validate(string $extensionName, string $key, string $operation): bool
