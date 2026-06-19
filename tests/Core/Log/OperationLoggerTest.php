@@ -51,15 +51,15 @@ final class OperationLoggerTest extends TestCase
         $logger = new OperationLogger(new MessageReporter($messageLogger));
 
         $logger->logFinished([
-            'operation' => 'package.install.verify',
+            'operation' => 'extension.install.verify',
             'status' => 'requires_review',
             'result' => [
                 'status' => 'requires_review',
-                'context' => ['live_operation_continuation' => ['operation' => 'package.install.apply']],
+                'context' => ['live_operation_continuation' => ['operation' => 'extension.install.apply']],
             ],
         ]);
         $logger->logFinished([
-            'operation' => 'package.install.apply',
+            'operation' => 'extension.install.apply',
             'status' => 'failed',
             'result' => ['status' => 'failed', 'issues' => [['code' => 'failed']]],
         ]);

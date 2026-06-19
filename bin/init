@@ -7,8 +7,8 @@ ini_set('memory_limit', '512M');
 ini_set('max_execution_time', 0);
 
 use App\Localization\CoreTranslationBootstrapper;
-use App\Core\Package\PackageAssetFilesystem;
-use App\Core\Package\PackageAssetRegistryWriter;
+use App\Core\Extension\ExtensionAssetFilesystem;
+use App\Core\Extension\ExtensionAssetRegistryWriter;
 use Symfony\Component\Dotenv\Dotenv;
 
 final class InitReporter
@@ -162,7 +162,7 @@ final class InitCommand
         }
 
         $console = [PHP_BINARY, $this->projectDir.'/bin/console'];
-        $this->ensurePackageAssetRegistries();
+        $this->ensureExtensionAssetRegistries();
         $this->runSymfonyAssetSetup($console);
 
         if ($this->reporter->hasFailures()) {
@@ -189,20 +189,20 @@ final class InitCommand
     {
         $this->runRequiredCommand([...$console, 'cache:clear', '--no-warmup'], 'Symfony cache is cleared without warmup.');
         $this->runRequiredCommand([...$console, 'assets:install', 'public'], 'Bundle assets are installed.');
-        $this->runRequiredCommand([...$console, 'importmap:install'], 'Importmap packages are installed.');
+        $this->runRequiredCommand([...$console, 'importmap:install'], 'Import map dependencies are installed.');
         $this->runOptionalCommand([...$console, 'ux:icons:lock'], 'Symfony UX icons are locked locally.');
         $this->runOptionalCommand([...$console, 'mercure:install'], 'Optional Mercure hub binary is installed when supported.');
         $this->runRequiredCommand([...$console, 'tailwind:build'], 'Tailwind CSS is built.');
         $this->runRequiredCommand([...$console, 'cache:warmup'], 'Symfony cache is warmed.');
     }
 
-    private function ensurePackageAssetRegistries(): void
+    private function ensureExtensionAssetRegistries(): void
     {
         try {
-            (new PackageAssetRegistryWriter(new PackageAssetFilesystem($this->projectDir)))->ensureRegistryFilesExist();
-            $this->reporter->success('Package asset registry files exist for Tailwind and AssetMapper.');
+            (new ExtensionAssetRegistryWriter(new ExtensionAssetFilesystem($this->projectDir)))->ensureRegistryFilesExist();
+            $this->reporter->success('Extension asset registry files exist for Tailwind and AssetMapper.');
         } catch (Throwable $throwable) {
-            $this->reporter->failure('Package asset registry files could not be prepared: '.$throwable->getMessage());
+            $this->reporter->failure('Extension asset registry files could not be prepared: '.$throwable->getMessage());
         }
     }
 
@@ -450,10 +450,12 @@ final class InitCommand
         }
 
         $lock = $this->readComposerLock();
-        foreach (($lock['packages'] ?? []) as $package) {
-            if (is_array($package)) {
-                foreach ($this->phpExtensionRequirements($package['require'] ?? []) as $extension) {
-                    $extensions[] = $extension;
+        foreach (['packages', 'packages-dev'] as $section) {
+            foreach (($lock[$section] ?? []) as $package) {
+                if (is_array($package)) {
+                    foreach ($this->phpExtensionRequirements($package['require'] ?? []) as $extension) {
+                        $extensions[] = $extension;
+                    }
                 }
             }
         }
@@ -471,9 +473,11 @@ final class InitCommand
 
         $lock = $this->readComposerLock();
         $versions[] = $lock['platform']['php'] ?? null;
-        foreach (($lock['packages'] ?? []) as $package) {
-            if (is_array($package)) {
-                $versions[] = $package['require']['php'] ?? null;
+        foreach (['packages', 'packages-dev'] as $section) {
+            foreach (($lock[$section] ?? []) as $package) {
+                if (is_array($package)) {
+                    $versions[] = $package['require']['php'] ?? null;
+                }
             }
         }
 
@@ -504,9 +508,9 @@ final class InitCommand
         }
 
         $extensions = [];
-        foreach ($requirements as $package => $constraint) {
-            if (is_string($package) && str_starts_with($package, 'ext-')) {
-                $extensions[] = substr($package, 4);
+        foreach ($requirements as $extension => $constraint) {
+            if (is_string($extension) && str_starts_with($extension, 'ext-')) {
+                $extensions[] = substr($extension, 4);
             }
         }
 

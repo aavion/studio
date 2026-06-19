@@ -9,9 +9,9 @@ use App\Core\Operation\OperationActionInterface;
 use App\Core\Operation\Filesystem\RemovePathAction;
 use App\Core\Operation\Process\PhpCliUnavailableAction;
 use App\Core\Operation\Process\RunCommandAction;
-use App\Core\Package\PackageAssetSyncAction;
-use App\Core\Package\PackageAssetSyncPackage;
-use App\Core\Package\PackageAssetSyncer;
+use App\Core\Extension\ExtensionAssetSyncAction;
+use App\Core\Extension\ExtensionAssetSyncTarget;
+use App\Core\Extension\ExtensionAssetSyncer;
 use App\Core\Process\PhpCliBinaryManager;
 use App\Core\Translation\TranslationAggregateAction;
 use App\Core\Translation\TranslationCatalogueAggregator;
@@ -20,21 +20,21 @@ final readonly class AssetRebuildQueueFactory
 {
     public function __construct(
         private string $projectDir,
-        private PackageAssetSyncer $packageAssetSyncer,
+        private ExtensionAssetSyncer $extensionAssetSyncer,
         private TranslationCatalogueAggregator $translationCatalogueAggregator,
         private PhpCliBinaryManager $phpCliBinaryManager = new PhpCliBinaryManager(),
     ) {
     }
 
     /**
-     * @param list<PackageAssetSyncPackage> $packages
+     * @param list<ExtensionAssetSyncTarget> $extensions
      */
-    public function create(string $environment, array $packages, string $trigger = 'manual', bool $persistPhpBinaryPreference = true): ActionQueue
+    public function create(string $environment, array $extensions, string $trigger = 'manual', bool $persistPhpBinaryPreference = true): ActionQueue
     {
         $isProduction = 'prod' === $environment;
         $actions = [
-            new PackageAssetSyncAction($this->packageAssetSyncer, $packages),
-            new TranslationAggregateAction($this->translationCatalogueAggregator, $packages),
+            new ExtensionAssetSyncAction($this->extensionAssetSyncer, $extensions),
+            new TranslationAggregateAction($this->translationCatalogueAggregator, $extensions),
             $this->consoleCommand('assets:install', $environment, $persistPhpBinaryPreference),
             $this->consoleCommand('importmap:install', $environment, $persistPhpBinaryPreference),
             $this->consoleCommand('ux:translator:warm-cache', $environment, $persistPhpBinaryPreference),
@@ -52,7 +52,7 @@ final readonly class AssetRebuildQueueFactory
         return ActionQueue::create('asset rebuild', $actions, context: [
             'environment' => $environment,
             'trigger' => '' === trim($trigger) ? 'manual' : trim($trigger),
-            'package_count' => count($packages),
+            'extension_count' => count($extensions),
             'production_compile' => $isProduction,
         ]);
     }

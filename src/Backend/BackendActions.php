@@ -18,23 +18,23 @@ use App\Core\Operation\Live\LiveOperationStarter;
 use App\Core\Operation\OperationExecutor;
 use App\Core\Operation\Process\PhpCliUnavailableAction;
 use App\Core\Operation\Process\RunCommandAction;
-use App\Core\Package\PackageAssetRebuildDispatcher;
-use App\Core\Package\PackageDiscoveryRunner;
+use App\Core\Extension\ExtensionAssetRebuildDispatcher;
+use App\Core\Extension\ExtensionDiscoveryRunner;
 use App\Core\Process\PhpCliBinaryManager;
 use App\Core\Workflow\WorkflowResult;
 use Symfony\Component\HttpKernel\KernelInterface;
 
 final readonly class BackendActions
 {
-    public const PACKAGE_DISCOVERY = 'package_discovery';
+    public const EXTENSION_DISCOVERY = 'extension_discovery';
     public const ASSET_REBUILD = 'asset_rebuild';
     public const CACHE_CLEAR = 'cache_clear';
     public const GEOIP_DATABASE_UPDATE = 'geoip_database_update';
 
     public function __construct(
         private KernelInterface $kernel,
-        private PackageDiscoveryRunner $packageDiscoveryRunner,
-        private PackageAssetRebuildDispatcher $assetRebuildDispatcher,
+        private ExtensionDiscoveryRunner $extensionDiscoveryRunner,
+        private ExtensionAssetRebuildDispatcher $assetRebuildDispatcher,
         private OperationExecutor $operationExecutor,
         private LiveOperationStarter $liveOperationStarter,
         private PhpCliBinaryManager $phpCliBinaryManager,
@@ -51,12 +51,12 @@ final readonly class BackendActions
     {
         $actor ??= AccessActor::fromAccess(AccessLevel::ADMIN);
         $definitions = [
-            self::PACKAGE_DISCOVERY => [
-                'id' => self::PACKAGE_DISCOVERY,
-                'label_key' => 'admin.actions.package_discovery.label',
+            self::EXTENSION_DISCOVERY => [
+                'id' => self::EXTENSION_DISCOVERY,
+                'label_key' => 'admin.actions.extension_discovery.label',
                 'variant' => 'secondary',
                 'live' => true,
-                'access_feature' => 'admin.packages',
+                'access_feature' => 'admin.extensions',
             ],
             self::ASSET_REBUILD => [
                 'id' => self::ASSET_REBUILD,
@@ -116,7 +116,7 @@ final readonly class BackendActions
         }
 
         return match ($action) {
-            self::PACKAGE_DISCOVERY => ($this->packageDiscoveryRunner)('admin_ui'),
+            self::EXTENSION_DISCOVERY => ($this->extensionDiscoveryRunner)('admin_ui'),
             self::ASSET_REBUILD => $this->assetRebuildDispatcher->dispatch($this->kernel->getEnvironment(), 'admin_ui'),
             self::CACHE_CLEAR => $this->clearCache(),
             self::GEOIP_DATABASE_UPDATE => $this->startLive($action, $actor),
@@ -143,13 +143,13 @@ final readonly class BackendActions
         }
 
         return match ($action) {
-            self::PACKAGE_DISCOVERY => $this->liveOperationStarter->start(
-                LiveOperationQueueFactory::PACKAGE_DISCOVERY,
+            self::EXTENSION_DISCOVERY => $this->liveOperationStarter->start(
+                LiveOperationQueueFactory::EXTENSION_DISCOVERY,
                 ['environment' => $this->kernel->getEnvironment(), 'trigger' => 'admin_ui'],
-                'Package discovery',
+                'Extension discovery',
             ),
             self::ASSET_REBUILD => $this->liveOperationStarter->start(
-                LiveOperationQueueFactory::PACKAGE_ASSET_REBUILD,
+                LiveOperationQueueFactory::EXTENSION_ASSET_REBUILD,
                 ['environment' => $this->kernel->getEnvironment(), 'trigger' => 'admin_ui'],
                 'Asset rebuild',
             ),
@@ -207,7 +207,7 @@ final readonly class BackendActions
     private function actionAllows(string $action, AccessActor $actor): bool
     {
         if (!in_array($action, [
-            self::PACKAGE_DISCOVERY,
+            self::EXTENSION_DISCOVERY,
             self::ASSET_REBUILD,
             self::CACHE_CLEAR,
             self::GEOIP_DATABASE_UPDATE,

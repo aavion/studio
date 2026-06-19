@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Scheduler;
 
-use App\Core\Package\ActivePackageProviderInterface;
+use App\Core\Extension\ActiveExtensionProviderInterface;
 use App\Entity\SchedulerTask;
 use DateTimeImmutable;
 
@@ -12,7 +12,7 @@ final readonly class SchedulerDueTaskSelector
 {
     public function __construct(
         private SchedulerSettings $settings,
-        private ActivePackageProviderInterface $activePackageProvider,
+        private ActiveExtensionProviderInterface $activeExtensionProvider,
     ) {
     }
 
@@ -54,11 +54,11 @@ final readonly class SchedulerDueTaskSelector
             return true;
         }
 
-        if (null === $this->activePackageProvider->package($task->source())) {
+        if (null === $this->activeExtensionProvider->extension($task->source())) {
             return false;
         }
 
-        return SchedulerTaskType::ActionQueue !== $task->type() || $this->settings->packageActionQueuesEnabled();
+        return SchedulerTaskType::ActionQueue !== $task->type() || $this->settings->extensionActionQueuesEnabled();
     }
 
     /**

@@ -1,0 +1,9 @@
+EXTENSION_AUTHOR=aavion Media
+EXTENSION_SLUG=demo-module
+EXTENSION_NAME=Demo Module
+EXTENSION_DESCRIPTION=Demo module used to exercise extension registry, asset discovery, templates, and future lifecycle UI flows.
+EXTENSION_VERSION=0.1.3
+EXTENSION_SCOPE=module
+EXTENSION_DEPENDENCIES=[["system","0.2.6"]]
+EXTENSION_LICENSE=MIT
+EXTENSION_IMAGE=assets/preview.svg

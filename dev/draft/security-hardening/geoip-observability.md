@@ -19,7 +19,7 @@ Codex may create local commits for this branch when each commit has a clear them
 
 - Existing `GeoIpResolverInterface` and `NullGeoIpResolver` decisions from the logging/statistics draft.
 - Existing protected settings, scheduler, message, audit, access-log, and statistics foundations.
-- MaxMind/GeoIP2 package already listed as the first provider choice.
+- MaxMind/GeoIP2 extension already listed as the first provider choice.
 
 ## Legacy inspiration
 
@@ -48,7 +48,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - No public API response adds GeoIP data in this branch.
 - GeoIP enablement, database path/status, and the MaxMind license key are protected/audited Statistics configuration surfaces; license material remains secret-only. Disabled, unconfigured, expired, or failed providers must fall back to `NullGeoIpResolver`.
 - GeoIP settings and the manual database-update action should declare stable access metadata for the later ACL matrix. Initial defaults are Owner-only and non-configurable in this slice; a later Admin ACL enforcement branch may surface them in an Owner-only matrix with `Feature`, `Required ACL`, and `Configurable` columns.
-- The first MaxMind implementation uses the installed `geoip2/geoip2` package against a configured local `.mmdb` database. Request-time lookups must not download databases or require outbound network access.
+- The first MaxMind implementation uses the installed `geoip2/geoip2` extension against a configured local `.mmdb` database. Request-time lookups must not download databases or require outbound network access.
 - The first production settings surface intentionally avoids a provider dropdown, Account ID field, and explicit GeoIP locale field until the product has a concrete need for them. MaxMind Reader locales are derived from `localization.default_language` with `en` as stable fallback.
 - New setups explicitly seed GeoIP as disabled, keep the MaxMind license key empty and sensitive, and use `var/geoip2/GeoLite2-City.mmdb` as the default project-relative database path.
 - License key configuration is sensitive. Empty sensitive form submissions preserve existing stored values, API/settings read models return redacted display values, and PHPUnit coverage must use fakes or dummy strings rather than real MaxMind credentials.

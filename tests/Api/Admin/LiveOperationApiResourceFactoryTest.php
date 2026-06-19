@@ -13,8 +13,8 @@ final class LiveOperationApiResourceFactoryTest extends TestCase
     {
         $resource = (new LiveOperationApiResourceFactory())->started([
             'operation_id' => '1234567890abcdef1234567890abcdef',
-            'operation' => 'package.lifecycle',
-            'label' => 'Package demo activate',
+            'operation' => 'extension.lifecycle',
+            'label' => 'Extension demo activate',
             'status' => 'queued',
         ]);
 

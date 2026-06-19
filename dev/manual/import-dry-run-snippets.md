@@ -3,7 +3,7 @@
 > **Status**: Draft  
 > **Updated**: 2026-05-23  
 > **Owner**: Core  
-> **Purpose:** Capture early dry-run and diff ideas for future package, JSON, database, and operation imports.  
+> **Purpose:** Capture early dry-run and diff ideas for future extension, JSON, database, and operation imports.  
 
 ## Overview
 
@@ -12,8 +12,8 @@ Import workflows should be reviewable before they mutate files, entities, assets
 ## File import sketch
 
 ```php
-$planner = new PackageOperationPlanner();
-$queueResult = $planner->copyFiles($candidate, $projectDir, $files, targetPrefix: 'packages/demo');
+$planner = new ExtensionOperationPlanner();
+$queueResult = $planner->copyFiles($candidate, $projectDir, $files, targetPrefix: 'extensions/demo');
 
 if (!$queueResult->isSuccess()) {
     return $queueResult;
@@ -29,7 +29,7 @@ The UI can render:
 - affected paths;
 - highest risk;
 - text diffs;
-- package features;
+- extension features;
 - preflight issues.
 
 ## Entity import sketch
@@ -74,7 +74,7 @@ Action logs should be emitted for dry-run summaries and final execution. Future 
 
 - operation name;
 - actor or automation id;
-- source package/import id;
+- source extension/import id;
 - status counts;
 - issue payloads;
 - context payload;
@@ -82,7 +82,7 @@ Action logs should be emitted for dry-run summaries and final execution. Future 
 
 ## References
 
-- [Package lifecycle snippets](package-lifecycle-snippets.md)
+- [Extension lifecycle snippets](extension-lifecycle-snippets.md)
 - [Operation issue catalog](operation-issue-catalog.md)
 - [Diff and review tools draft](../draft/0.3.x-DiffReviewTools.md)
 - [Import/export and collaboration draft](../draft/0.4.x-ImportExportCollaboration.md)

@@ -18,13 +18,13 @@ final class LiveEndpointRegistryTest extends TestCase
             $this->endpoint(
                 '/api/live/demo-pack/items',
                 'listItems',
-                'packages.demo-pack.live.items',
+                'extensions.demo-pack.live.items',
                 '#^/api/live/demo-pack/items(?:/.*)?$#',
             ),
             $this->endpoint(
                 '/api/live/demo-pack/items/special',
                 'specialItems',
-                'packages.demo-pack.live.items_special',
+                'extensions.demo-pack.live.items_special',
             ),
         ])]);
 
@@ -40,13 +40,13 @@ final class LiveEndpointRegistryTest extends TestCase
             $this->endpoint(
                 '/api/live/demo-pack/items',
                 'listItems',
-                'packages.demo-pack.live.items',
+                'extensions.demo-pack.live.items',
                 '#^/api/live/demo-pack/items(?:/.*)?$#',
             ),
             $this->endpoint(
                 '/api/live/demo-pack/items/special',
                 'specialChildren',
-                'packages.demo-pack.live.items_special_children',
+                'extensions.demo-pack.live.items_special_children',
                 '#^/api/live/demo-pack/items/special(?:/.*)?$#',
             ),
         ])]);
@@ -80,10 +80,10 @@ final class LiveEndpointRegistryTest extends TestCase
     private function endpoint(string $path, string $operationId, string $handlerKey, ?string $pathPattern = null): LiveEndpointDefinition
     {
         return new LiveEndpointDefinition(
-            'package',
+            'extension',
             Request::METHOD_GET,
             $path,
-            'api_live_package_dispatch',
+            'api_live_extension_dispatch',
             $operationId,
             'Run a demo live endpoint.',
             $handlerKey,

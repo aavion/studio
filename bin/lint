@@ -173,7 +173,7 @@ function filesWithExtensions(string $root, array $extensions): array
 {
     $excluded = [
         '.git',
-        'assets/packages',
+        'assets/extensions',
         'node_modules',
         'public/assets',
         'tests/Fixtures',
@@ -807,7 +807,7 @@ function containsUxIconConfig(string $root, array $files): bool
  */
 function uxIconTemplateFiles(string $root): array
 {
-    $collected = collectTargetFiles($root, ['templates', 'packages']);
+    $collected = collectTargetFiles($root, ['templates', 'extensions']);
     $groups = groupFilesByExtension($collected['files']);
 
     return $groups['twig'] ?? [];

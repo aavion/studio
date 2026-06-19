@@ -1,0 +1,79 @@
+{% extends '@frontend/frontend.html.twig' %}
+
+{% block title %}{{ 'ext.demo-module.demo.typography.title'|trans }}{% endblock %}
+
+{% macro markdown_example(title_key, markdown_key, profile) %}
+    {% set markdown_source = markdown_key|trans %}
+    <article class="demo-module-frontend-markdown-example">
+        <h3>{{ title_key|trans }}</h3>
+        <div class="demo-module-frontend-markdown-example-grid">
+            <div class="demo-module-frontend-markdown-source">
+                <p class="system-kicker">{{ 'ext.demo-module.demo.typography.example.source'|trans }}</p>
+                <pre><code>{{ markdown_source }}</code></pre>
+            </div>
+            <div class="demo-module-frontend-markdown-result">
+                <p class="system-kicker">{{ 'ext.demo-module.demo.typography.example.result'|trans }}</p>
+                <div class="system-markdown">
+                    {{ markdown_source|render_markdown(profile)|raw }}
+                </div>
+            </div>
+        </div>
+    </article>
+{% endmacro %}
+
+{% block frontend_body %}
+    {% import _self as examples %}
+
+    <section class="system-frontend-content-page demo-module-frontend-typography-guide">
+        {% include '@frontend/partials/typography/_page-header.html.twig' with {
+            kicker: 'ext.demo-module.demo.kicker'|trans,
+            title: 'ext.demo-module.demo.typography.title'|trans,
+            subtitle: 'ext.demo-module.demo.typography.subtitle'|trans,
+        } only %}
+
+        <section class="system-panel demo-module-frontend-typography-section">
+            <header>
+                <p class="system-kicker">{{ 'ext.demo-module.demo.typography.basic.kicker'|trans }}</p>
+                <h2>{{ 'ext.demo-module.demo.typography.basic.title'|trans }}</h2>
+            </header>
+            <div class="system-markdown">
+                {{ 'ext.demo-module.demo.typography.basic.markdown'|trans|render_markdown('basic')|raw }}
+            </div>
+            <div class="demo-module-frontend-typography-examples">
+                {{ examples.markdown_example('ext.demo-module.demo.typography.basic.examples.headings.title', 'ext.demo-module.demo.typography.basic.examples.headings.markdown', 'basic') }}
+                {{ examples.markdown_example('ext.demo-module.demo.typography.basic.examples.lists.title', 'ext.demo-module.demo.typography.basic.examples.lists.markdown', 'basic') }}
+                {{ examples.markdown_example('ext.demo-module.demo.typography.basic.examples.quote_code.title', 'ext.demo-module.demo.typography.basic.examples.quote_code.markdown', 'basic') }}
+            </div>
+        </section>
+
+        <section class="system-panel demo-module-frontend-typography-section">
+            <header>
+                <p class="system-kicker">{{ 'ext.demo-module.demo.typography.allrounder.kicker'|trans }}</p>
+                <h2>{{ 'ext.demo-module.demo.typography.allrounder.title'|trans }}</h2>
+            </header>
+            <div class="system-markdown">
+                {{ 'ext.demo-module.demo.typography.allrounder.markdown'|trans|render_markdown|raw }}
+            </div>
+            <div class="demo-module-frontend-typography-examples">
+                {{ examples.markdown_example('ext.demo-module.demo.typography.allrounder.examples.tables_tasks.title', 'ext.demo-module.demo.typography.allrounder.examples.tables_tasks.markdown', 'allrounder') }}
+                {{ examples.markdown_example('ext.demo-module.demo.typography.allrounder.examples.footnotes_descriptions.title', 'ext.demo-module.demo.typography.allrounder.examples.footnotes_descriptions.markdown', 'allrounder') }}
+                {{ examples.markdown_example('ext.demo-module.demo.typography.allrounder.examples.toc_attributes.title', 'ext.demo-module.demo.typography.allrounder.examples.toc_attributes.markdown', 'allrounder') }}
+            </div>
+        </section>
+
+        <section class="system-panel demo-module-frontend-typography-section">
+            <header>
+                <p class="system-kicker">{{ 'ext.demo-module.demo.typography.design.kicker'|trans }}</p>
+                <h2>{{ 'ext.demo-module.demo.typography.design.title'|trans }}</h2>
+            </header>
+            <div class="system-markdown">
+                {{ 'ext.demo-module.demo.typography.design.markdown'|trans|render_markdown('design')|raw }}
+            </div>
+            <div class="demo-module-frontend-typography-examples">
+                {{ examples.markdown_example('ext.demo-module.demo.typography.design.examples.trusted_html.title', 'ext.demo-module.demo.typography.design.examples.trusted_html.markdown', 'design') }}
+                {{ examples.markdown_example('ext.demo-module.demo.typography.design.examples.embed.title', 'ext.demo-module.demo.typography.design.examples.embed.markdown', 'design') }}
+                {{ examples.markdown_example('ext.demo-module.demo.typography.design.examples.attributes.title', 'ext.demo-module.demo.typography.design.examples.attributes.markdown', 'design') }}
+            </div>
+        </section>
+    </section>
+{% endblock %}

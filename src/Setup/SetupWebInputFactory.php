@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Setup;
 
-use App\View\SystemPackageMetadataProvider;
+use App\View\SystemExtensionMetadataProvider;
 use Throwable;
 
 final readonly class SetupWebInputFactory
@@ -106,7 +106,7 @@ final readonly class SetupWebInputFactory
 
     private function appName(): string
     {
-        return (new SystemPackageMetadataProvider($this->projectDir))->metadata()['name'];
+        return (new SystemExtensionMetadataProvider($this->projectDir))->metadata()['name'];
     }
 
     /**

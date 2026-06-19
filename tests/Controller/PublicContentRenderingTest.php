@@ -57,7 +57,7 @@ final class PublicContentRenderingTest extends WebTestCase
                 'title' => $event->contentView()->title(),
                 'path' => $event->request()->getPathInfo(),
             ];
-            $event->set('package_marker', 'demo');
+            $event->set('extension_marker', 'demo');
         });
 
         $client->request('GET', '/news/first-update');
@@ -241,7 +241,7 @@ final class PublicContentRenderingTest extends WebTestCase
             $event->addInjection(new StaticViewInjection(
                 'test-public-docs',
                 ViewSurface::Public,
-                'package-docs',
+                'extension-docs',
                 'ui.content.fields',
                 '@frontend/content/injections/static.html.twig',
             ));
@@ -254,7 +254,7 @@ final class PublicContentRenderingTest extends WebTestCase
             ));
         });
 
-        $client->request('GET', '/package-docs');
+        $client->request('GET', '/extension-docs');
 
         self::assertResponseIsSuccessful();
         self::assertSelectorExists('[data-injection="test-public-docs"]');

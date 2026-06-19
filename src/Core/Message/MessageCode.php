@@ -18,7 +18,7 @@ use App\Core\Messenger\MessengerMessageCode;
 use App\Core\Operation\Filesystem\FilesystemMessageCode;
 use App\Core\Operation\OperationMessageCode;
 use App\Core\Operation\Process\ProcessMessageCode;
-use App\Core\Package\PackageMessageCode;
+use App\Core\Extension\ExtensionMessageCode;
 use App\Core\Routing\RoutingMessageCode;
 use App\Core\Security\SystemSecurityMessageCode;
 use App\Core\Translation\TranslationMessageCode;
@@ -48,7 +48,7 @@ final class MessageCode
             ManifestMessageCode::class,
             MessengerMessageCode::class,
             OperationMessageCode::class,
-            PackageMessageCode::class,
+            ExtensionMessageCode::class,
             ProcessMessageCode::class,
             RoutingMessageCode::class,
             SchedulerMessageCode::class,

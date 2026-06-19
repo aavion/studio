@@ -69,7 +69,7 @@ final readonly class SetupDefaultSeed
             ['key' => ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY, 'value' => $this->setting($input, ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY, []), 'type' => ConfigValueType::Json],
             ['key' => SchedulerSettings::ENABLED_KEY, 'value' => $this->setting($input, SchedulerSettings::ENABLED_KEY, true), 'type' => ConfigValueType::Boolean],
             ['key' => SchedulerSettings::GET_AUTH_ENABLED_KEY, 'value' => $this->setting($input, SchedulerSettings::GET_AUTH_ENABLED_KEY, false), 'type' => ConfigValueType::Boolean],
-            ['key' => SchedulerSettings::PACKAGE_ACTION_QUEUES_ENABLED_KEY, 'value' => $this->setting($input, SchedulerSettings::PACKAGE_ACTION_QUEUES_ENABLED_KEY, false), 'type' => ConfigValueType::Boolean],
+            ['key' => SchedulerSettings::EXTENSION_ACTION_QUEUES_ENABLED_KEY, 'value' => $this->setting($input, SchedulerSettings::EXTENSION_ACTION_QUEUES_ENABLED_KEY, false), 'type' => ConfigValueType::Boolean],
             ['key' => SchedulerSettings::WEB_TRIGGER_ENABLED_KEY, 'value' => $this->setting($input, SchedulerSettings::WEB_TRIGGER_ENABLED_KEY, false), 'type' => ConfigValueType::Boolean],
             ['key' => AdminFeatureOverrideStore::CONFIG_KEY, 'value' => $this->setting($input, AdminFeatureOverrideStore::CONFIG_KEY, (new AdminFeatureDefaults())->overrides()), 'type' => ConfigValueType::Json],
         ];

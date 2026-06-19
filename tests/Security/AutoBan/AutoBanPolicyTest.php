@@ -12,7 +12,7 @@ use App\Database\DatabaseReadyState;
 use App\Localization\TranslationLanguageCatalog;
 use App\Security\AutoBan\AutoBanPolicy;
 use App\Setup\SetupCompletionMarker;
-use App\View\SystemPackageMetadataProvider;
+use App\View\SystemExtensionMetadataProvider;
 use Doctrine\DBAL\DriverManager;
 use PHPUnit\Framework\TestCase;
 
@@ -26,7 +26,7 @@ final class AutoBanPolicyTest extends TestCase
             databaseReadyState: new DatabaseReadyState(new SetupCompletionMarker(), sys_get_temp_dir().'/missing-auto-ban-config', 'test'),
             defaultProvider: new CoreConfigDefaultProvider(new CoreSettingsRegistry(
                 new TranslationLanguageCatalog($projectDir),
-                new SystemPackageMetadataProvider($projectDir),
+                new SystemExtensionMetadataProvider($projectDir),
             )),
         ));
 

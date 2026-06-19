@@ -1,0 +1,6 @@
+EXTENSION_AUTHOR=Aavion Test Fixtures
+EXTENSION_SLUG=missing-extension-files
+EXTENSION_NAME=Missing Extension Files
+EXTENSION_VERSION=0.1.0
+EXTENSION_SCOPE=frontend-theme
+EXTENSION_DEPENDENCIES=[]

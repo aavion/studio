@@ -9,12 +9,12 @@ use App\Api\Endpoint\ApiEndpointAccessPolicy;
 use App\Api\Endpoint\ApiEndpointDefinition;
 use App\Api\Endpoint\ApiEndpointProviderInterface;
 use App\Api\Endpoint\ApiEndpointRegistry;
-use App\View\SystemPackageMetadataProvider;
+use App\View\SystemExtensionMetadataProvider;
 use PHPUnit\Framework\TestCase;
 
 final class OpenApiDocumentFactoryTest extends TestCase
 {
-    public function testItUsesSystemPackageManifestNameForApiTitle(): void
+    public function testItUsesSystemExtensionManifestNameForApiTitle(): void
     {
         $projectDir = sys_get_temp_dir().'/studio-openapi-manifest-'.bin2hex(random_bytes(4));
         mkdir($projectDir);
@@ -29,7 +29,7 @@ final class OpenApiDocumentFactoryTest extends TestCase
             $document = (new OpenApiDocumentFactory(
                 new ApiEndpointRegistry([$this->provider()]),
                 new ApiEndpointAccessPolicy(),
-                new SystemPackageMetadataProvider($projectDir),
+                new SystemExtensionMetadataProvider($projectDir),
             ))->create();
         } finally {
             unlink($projectDir.'/.manifest');
@@ -51,7 +51,7 @@ final class OpenApiDocumentFactoryTest extends TestCase
         $document = (new OpenApiDocumentFactory(
             new ApiEndpointRegistry([$this->provider()]),
             new ApiEndpointAccessPolicy(),
-            new SystemPackageMetadataProvider(dirname(__DIR__, 3)),
+            new SystemExtensionMetadataProvider(dirname(__DIR__, 3)),
         ))->create();
 
         self::assertContains([
@@ -84,7 +84,7 @@ final class OpenApiDocumentFactoryTest extends TestCase
         $document = (new OpenApiDocumentFactory(
             new ApiEndpointRegistry([$this->provider()]),
             new ApiEndpointAccessPolicy(),
-            new SystemPackageMetadataProvider(dirname(__DIR__, 3)),
+            new SystemExtensionMetadataProvider(dirname(__DIR__, 3)),
         ))->create();
 
         self::assertArrayHasKey('ApiDataEnvelope', $document['components']['schemas']);

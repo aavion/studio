@@ -1,0 +1,4 @@
+APP_VERSION=0.1.0-fixture
+APP_DATE=2026-05-22
+APP_CHANNEL=test-fixture
+APP_SOURCE=tests/Fixtures/extensions

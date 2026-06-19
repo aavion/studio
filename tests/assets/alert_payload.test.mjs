@@ -132,7 +132,7 @@ test('createAlertElement filters unsafe action links before rendering and storag
         id: 'client-alert',
         message: 'Client alert',
         actions: [
-            { label: 'Open', href: '/admin/packages', target: '_blank' },
+            { label: 'Open', href: '/admin/extensions', target: '_blank' },
             { label: 'Script', href: 'javascript:alert(1)' },
             { label: 'Hostless http', href: 'http:evil.example.test' },
             { label: 'External', href: 'https://example.test/privacy', target: '_self' },
@@ -143,13 +143,13 @@ test('createAlertElement filters unsafe action links before rendering and storag
     const payload = JSON.parse(alert.dataset.alertPayload);
 
     assert.equal(actions.length, 3);
-    assert.equal(actions[0].href, '/admin/packages');
+    assert.equal(actions[0].href, '/admin/extensions');
     assert.equal(actions[0].target, '_blank');
     assert.equal(actions[0].rel, 'noopener noreferrer');
     assert.equal(actions[1].href, 'https://example.test/privacy');
     assert.equal(actions[2].dataset.alertActionEvent, 'operation-overlay:show');
     assert.deepEqual(payload.actions, [
-        { label: 'Open', href: '/admin/packages', target: '_blank' },
+        { label: 'Open', href: '/admin/extensions', target: '_blank' },
         { label: 'External', href: 'https://example.test/privacy', target: '_self' },
         { label: 'Event', event: 'operation-overlay:show', detail: { id: 'operation-1' } },
     ]);

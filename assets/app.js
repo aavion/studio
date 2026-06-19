@@ -7,9 +7,9 @@ import './js/backend/index.js';
 import './js/backend/admin/index.js';
 import './js/backend/editor/index.js';
 import './js/backend/setup/index.js';
-import './js/packages/extension.js';
-import './js/packages/frontend-theme.js';
-import './js/packages/backend-theme.js';
+import './js/extensions/extension.js';
+import './js/extensions/frontend-theme.js';
+import './js/extensions/backend-theme.js';
 
 registerReactControllerComponents();
 registerVueControllerComponents();

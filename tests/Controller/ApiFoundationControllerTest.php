@@ -38,7 +38,7 @@ final class ApiFoundationControllerTest extends WebTestCase
         self::assertContains('/api/v1/status', $paths);
         self::assertContains('/api/v1/openapi.json', $paths);
         self::assertContains('/api/v1/content', $paths);
-        self::assertContains('/api/v1/packages', $paths);
+        self::assertContains('/api/v1/extensions', $paths);
         self::assertNotContains('/api/v1/admin', $paths);
         self::assertNotContains('/api/v1/user', $paths);
     }
@@ -290,7 +290,7 @@ final class ApiFoundationControllerTest extends WebTestCase
         );
 
         self::assertContains('/api/v1/admin/settings', $paths);
-        self::assertContains('/api/v1/admin/packages', $paths);
+        self::assertContains('/api/v1/admin/extensions', $paths);
         self::assertContains('/api/v1/admin/users', $paths);
         self::assertContains('/api/v1/admin/permissions', $paths);
         self::assertNotContains('/api/v1/status', $paths);

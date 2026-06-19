@@ -1,3 +1,3 @@
-[submodule "packages/icon-captcha"]
-	path = packages/icon-captcha
+[submodule "extensions/icon-captcha"]
+	path = extensions/icon-captcha
 	url = https://github.com/aavion/icon-captcha.git

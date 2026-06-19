@@ -26,14 +26,14 @@ Future operational screens should reuse common patterns:
 | Screen | Likely primary content |
 |--------|------------------------|
 | Theme management | Frontend and backend theme cards with preview-image space, version labels, immutable system fallback, and a single quick use/active/repair control. |
-| Package management | Extension package registry rows plus the immutable virtual system package so application and package update flows can share one UI foundation. |
-| Package detail | Manifest metadata, current status, scopes, package-owned lifecycle buttons, and non-menu review screens before state changes, including separate irreversible flows for data purge and physical package deletion. Later iterations can add inventory, features, lint results, and compatibility notes. |
+| Extension management | Extension registry rows plus the immutable virtual system extension so application and extension update flows can share one UI foundation. |
+| Extension detail | Manifest metadata, current status, scopes, extension-owned lifecycle buttons, and non-menu review screens before state changes, including separate irreversible flows for data purge and physical extension deletion. Later iterations can add inventory, features, lint results, and compatibility notes. |
 | System information | Read-only setup preflight status, server/PHP/Composer summary values, media capabilities such as GD and Imagick, and a reduced PHP configuration table. Do not embed raw `phpinfo()` output or expose request, cookie, environment, or secret values. |
 | Backend actions | CSRF-protected POST buttons for discovery, asset rebuild dispatch, cache clearing, and later long-running ActionLog overlays. |
 | Import review | Diffs, risks, affected paths/entities, confirmation. |
 | Action log | Timeline, status counts, issues, context payload. |
 | Backup/restore | Snapshot metadata, checksums, retention, restore plan. |
-| Package lifecycle | Discovery state, activation status, scopes, dependencies, rollback notes. |
+| Extension lifecycle | Discovery state, activation status, scopes, dependencies, rollback notes. |
 
 ## Accessibility notes
 
@@ -49,7 +49,7 @@ Keep these as baseline checks:
 
 ## References
 
-- [Package developer guidelines](theme-module-developer-guidelines.md)
+- [Extension developer guidelines](theme-module-developer-guidelines.md)
 - [System theme and design system draft](../draft/0.1.x-SystemThemeDesignSystem.md)
 - [Admin interface and setup UI draft](../draft/0.2.x-AdminInterfaceSetupUi.md)
 - [Operational admin workflows draft](../draft/0.4.x-OperationalAdminWorkflows.md)

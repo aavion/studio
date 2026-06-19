@@ -12,7 +12,7 @@ use App\Core\Config\ConfigValueType;
 use App\Core\Config\Settings\CoreSettingsRegistry;
 use App\Core\Geo\MaxMindGeoIpConfig;
 use App\Localization\TranslationLanguageCatalog;
-use App\View\SystemPackageMetadataProvider;
+use App\View\SystemExtensionMetadataProvider;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use PHPUnit\Framework\TestCase;
@@ -43,7 +43,7 @@ final class SettingsApiReadModelTest extends TestCase
     {
         $projectDir = dirname(__DIR__, 3);
 
-        return new CoreSettingsRegistry(new TranslationLanguageCatalog($projectDir), new SystemPackageMetadataProvider($projectDir));
+        return new CoreSettingsRegistry(new TranslationLanguageCatalog($projectDir), new SystemExtensionMetadataProvider($projectDir));
     }
 
     private function connection(): Connection

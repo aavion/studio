@@ -18,7 +18,7 @@ The first example is a LogViewer and statistics module. Logging and statistics c
 
 Editor integrations are another natural module family. CodeMirror can remain the first core editor integration, while a TinyMCE module may later replace or complement it if the editor provider contract can define the needed feature set cleanly. This keeps the door open for other editor providers without baking one UI editor permanently into core.
 
-Import/export workflows also have a split boundary. Core should define operation formats, validators, parsers, serializers, dry-run behavior, and diff contracts. Optional first-party modules can provide richer admin UI surfaces such as copy/paste import panels with diff view, import presets, export preset management, saved scopes, and LLM collaboration packages.
+Import/export workflows also have a split boundary. Core should define operation formats, validators, parsers, serializers, dry-run behavior, and diff contracts. Optional first-party modules can provide richer admin UI surfaces such as copy/paste import panels with diff view, import presets, export preset management, saved scopes, and LLM collaboration extensions.
 
 Other candidates include breadcrumbs, lightbox/gallery presentation helpers, specialized media widgets, dashboard widgets, and public-theme helper modules. These should be added only when their contracts are clear enough that they do not become hidden core dependencies.
 

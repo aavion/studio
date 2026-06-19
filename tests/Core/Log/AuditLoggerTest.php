@@ -26,9 +26,9 @@ final class AuditLoggerTest extends TestCase
 
         (new AuditLogger($monolog))->log(
             AccessActor::fromAccess(9, ['site_operations'], '10000000-0000-7000-8000-000000000001', 'admin'),
-            'package.activate',
+            'extension.activate',
             [
-                'package' => 'demo-module',
+                'extension' => 'demo-module',
                 'api_token' => 'secret',
             ],
         );
@@ -37,11 +37,11 @@ final class AuditLoggerTest extends TestCase
 
         self::assertCount(1, $records);
         self::assertSame(Level::Info, $records[0]->level);
-        self::assertSame('package.activate', $records[0]->message);
+        self::assertSame('extension.activate', $records[0]->message);
         self::assertSame('admin', $records[0]->context['user']);
         self::assertSame(9, $records[0]->context['user_access_level']);
-        self::assertSame('package.activate', $records[0]->context['action']);
-        self::assertSame('demo-module', $records[0]->context['context']['package']);
+        self::assertSame('extension.activate', $records[0]->context['action']);
+        self::assertSame('demo-module', $records[0]->context['context']['extension']);
         self::assertSame('[redacted]', $records[0]->context['context']['api_token']);
     }
 

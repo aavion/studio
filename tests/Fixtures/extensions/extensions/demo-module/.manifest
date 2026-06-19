@@ -1,0 +1,8 @@
+EXTENSION_AUTHOR=Aavion Test Fixtures
+EXTENSION_SLUG=demo-module
+EXTENSION_NAME=Demo Module
+EXTENSION_DESCRIPTION=Demo module extension used to exercise extension lifecycle, assets, settings, and future admin UI flows.
+EXTENSION_VERSION=0.1.0
+EXTENSION_SCOPE=module
+EXTENSION_DEPENDENCIES=[]
+EXTENSION_NAMESPACE=DemoModule

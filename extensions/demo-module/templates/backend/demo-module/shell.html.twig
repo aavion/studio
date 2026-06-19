@@ -1,0 +1,127 @@
+{% extends '@backend/admin.html.twig' %}
+
+{% block title %}{{ 'ext.demo-module.demo.backend.title'|trans }}{% endblock %}
+
+{% block admin_sidebar %}
+    {% set demo_base = extension_setting('demo-module', 'demo.route', 'demo')|default('demo')|trim('/') %}
+    {% set demo_base = demo_base == '' ? 'demo' : demo_base %}
+
+    <nav aria-label="{{ 'ui.admin.navigation'|trans }}">
+        <ul class="system-backend-nav">
+            <li><a href="{{ path('content_show', {path: demo_base ~ '/backend'}) }}" aria-current="page">{{ 'ext.demo-module.demo.backend.nav_overview'|trans }}</a></li>
+            <li><a href="#editor-demo">{{ 'ui.editor.area'|trans }}</a></li>
+            <li><a href="#setup-demo">{{ 'ui.setup.area'|trans }}</a></li>
+            <li><a href="{{ path('content_show', {path: demo_base}) }}">{{ 'ext.demo-module.demo.frontend.title'|trans }}</a></li>
+        </ul>
+    </nav>
+{% endblock %}
+
+{% block admin_body %}
+    {% set demo_base = extension_setting('demo-module', 'demo.route', 'demo')|default('demo')|trim('/') %}
+    {% set demo_base = demo_base == '' ? 'demo' : demo_base %}
+
+    {% set action_buttons %}
+        {% include '@backend/partials/actions/_button-group.html.twig' with {
+            actions: [
+                {label: 'ext.demo-module.demo.actions.primary'|trans, href: path('content_show', {path: demo_base}), variant: 'primary'},
+                {label: 'ext.demo-module.demo.actions.secondary'|trans, href: '#setup-demo', variant: 'secondary'},
+            ],
+        } only %}
+    {% endset %}
+
+    {% include '@backend/admin/partials/_page-header.html.twig' with {
+        eyebrow: 'ext.demo-module.demo.kicker'|trans,
+        title: 'ext.demo-module.demo.backend.title'|trans,
+        actions: action_buttons,
+    } only %}
+
+    <div class="demo-module-grid">
+        <section class="system-panel">
+            <h2>{{ 'ext.demo-module.demo.backend.overview_title'|trans }}</h2>
+            <p class="system-muted">{{ 'ext.demo-module.demo.backend.overview_text'|trans }}</p>
+            <div class="system-page-actions">
+                <span class="system-badge system-badge-success">{{ 'ext.demo-module.demo.badges.success'|trans }}</span>
+                <span class="system-badge system-badge-warning">{{ 'ext.demo-module.demo.badges.warning'|trans }}</span>
+                <span class="system-badge system-badge-exception">{{ 'ext.demo-module.demo.badges.exception'|trans }}</span>
+            </div>
+        </section>
+
+        {% include '@backend/partials/feedback/_empty-state.html.twig' with {
+            title: 'ext.demo-module.demo.empty.title'|trans,
+            message: 'ext.demo-module.demo.empty.message'|trans,
+        } only %}
+    </div>
+
+    <section class="system-panel">
+        <h2>{{ 'ext.demo-module.demo.table.title'|trans }}</h2>
+        <table class="system-table">
+            <thead>
+                <tr>
+                    <th>{{ 'ext.demo-module.demo.table.name'|trans }}</th>
+                    <th>{{ 'ext.demo-module.demo.table.scope'|trans }}</th>
+                    <th>{{ 'ext.demo-module.demo.table.status'|trans }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ 'ext.demo-module.demo.table.system'|trans }}</td>
+                    <td><span class="system-badge system-badge-neutral">system-template</span></td>
+                    <td><span class="system-badge system-badge-success">{{ 'ext.demo-module.demo.badges.success'|trans }}</span></td>
+                </tr>
+                <tr>
+                    <td>{{ 'ext.demo-module.demo.table.theme'|trans }}</td>
+                    <td><span class="system-badge system-badge-info">frontend-theme</span></td>
+                    <td><span class="system-badge system-badge-warning">{{ 'ext.demo-module.demo.badges.warning'|trans }}</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section id="editor-demo" class="system-backend-editor-workspace">
+        <aside class="system-backend-editor-panel">
+            {% include '@backend/editor/partials/_workspace-header.html.twig' with {
+                title: 'ext.demo-module.demo.editor.title'|trans,
+                status: 'ext.demo-module.demo.badges.info'|trans,
+            } only %}
+        </aside>
+        <div class="system-backend-editor-canvas">
+            {% include '@backend/partials/forms/_field.html.twig' with {
+                id: 'demo_backend_title',
+                label: 'ext.demo-module.demo.form.title_label'|trans,
+                required: true,
+                help: 'ext.demo-module.demo.form.help'|trans,
+                control: '<input id="demo_backend_title" class="system-control" value="' ~ ('ext.demo-module.demo.form.value'|trans|e('html_attr')) ~ '">',
+            } only %}
+            {% include '@backend/partials/forms/_field.html.twig' with {
+                id: 'demo_backend_body',
+                label: 'ext.demo-module.demo.form.body_label'|trans,
+                control: '<textarea id="demo_backend_body" class="system-control" rows="5">' ~ ('ext.demo-module.demo.form.body_value'|trans|e) ~ '</textarea>',
+            } only %}
+        </div>
+    </section>
+
+    <section id="setup-demo" class="system-panel">
+        {% include '@backend/setup/partials/_step-header.html.twig' with {
+            title: 'ext.demo-module.demo.setup.title'|trans,
+            step: 'ext.demo-module.demo.setup.step'|trans,
+        } only %}
+        <ol class="system-backend-setup-steps">
+            <li class="system-backend-setup-step">
+                <span class="system-badge system-badge-success">{{ 'ext.demo-module.demo.badges.success'|trans }}</span>
+                <span>{{ 'ext.demo-module.demo.setup.item_environment'|trans }}</span>
+            </li>
+            <li class="system-backend-setup-step">
+                <span class="system-badge system-badge-info">{{ 'ext.demo-module.demo.badges.info'|trans }}</span>
+                <span>{{ 'ext.demo-module.demo.setup.item_extensions'|trans }}</span>
+            </li>
+        </ol>
+    </section>
+
+    {% include '@backend/operations/action-log-overlay.html.twig' with {
+        summary: {status: 'ext.demo-module.demo.badges.success'|trans},
+        entries: [
+            {label: 'ext.demo-module.demo.operations.discovery'|trans, status: 'ext.demo-module.demo.badges.success'|trans},
+            {label: 'ext.demo-module.demo.operations.assets'|trans, status: 'ext.demo-module.demo.badges.info'|trans},
+        ],
+    } only %}
+{% endblock %}

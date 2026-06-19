@@ -1,0 +1,237 @@
+ext:
+  demo-module:
+    navigation:
+      demo: 'Demo'
+      frontend: 'Frontend shell'
+      backend: 'Backend shell'
+      typography: 'Typography guide'
+    dynamic:
+      after_content:
+        label: 'Demo module note'
+        text: 'Demo module after-content injection rendered for this content entity.'
+    settings:
+      display_mode:
+        label: 'Display mode'
+        help: 'Controls how the demo module renders its sample output.'
+        options:
+          compact: 'Compact'
+          expanded: 'Expanded'
+      demo_route:
+        label: 'Primary demo route'
+        help: 'Controls which public path the demo module uses as its stable route parent.'
+    widget: 'Demo module widget'
+    demo:
+      kicker: 'System UI'
+      frontend:
+        title: 'Frontend shell demo'
+        subtitle: 'A temporary preview for public theme layout, navigation, actions, forms, feedback, and status colors.'
+        content_title: 'Content preview'
+        content_text: 'This card uses the same fallback components that public content rendering can reuse.'
+        rich_text: 'Readable copy, focused actions, and restrained contrast should remain stable across themes.'
+      typography:
+        title: 'Typography guide'
+        subtitle: 'A renderer-backed Markdown preview for tuning readable content, schema field output, and trusted design blocks.'
+        example:
+          source: 'Markdown input'
+          result: 'Rendered output'
+        basic:
+          kicker: 'Safety-first basic'
+          title: 'Basic Markdown'
+          markdown: |
+            # Basic heading
+
+            Basic Markdown is the safest public profile. It supports paragraphs, **strong text**, _emphasis_, inline `code`, links such as [the project homepage](https://github.com/aavion/studio), and hard line breaks.\
+            This line intentionally follows a Markdown hard break.
+
+            > Quotes remain available for simple citations or highlighted notes.
+
+            - unordered item
+            - another unordered item
+
+            1. ordered item
+            2. second ordered item
+
+            Raw HTML is escaped in this profile: <strong>not trusted HTML</strong>.
+          examples:
+            headings:
+              title: 'Headings, emphasis, links, and line breaks'
+              markdown: |
+                # Main heading
+
+                Paragraph text can use **strong text**, _emphasis_, `inline code`, and [a link](https://example.com).
+
+                A backslash creates a hard break.\
+                This line stays in the same paragraph but starts on a new visual line.
+            lists:
+              title: 'Ordered and unordered lists'
+              markdown: |
+                - First unordered item
+                - Second unordered item
+                  - Nested item
+
+                1. First ordered item
+                2. Second ordered item
+            quote_code:
+              title: 'Quotes and fenced code blocks'
+              markdown: |
+                > Use quotes for citations, notes, or short callouts.
+
+                ```markdown
+                # This is shown as code
+
+                **It is not rendered here.**
+                ```
+        allrounder:
+          kicker: 'Default allrounder'
+          title: 'Rich safe Markdown'
+          markdown: |
+            # Allrounder heading {.demo-heading}
+
+            [TOC]
+
+            ## Tables and task lists
+
+            | Feature | Result |
+            | --- | --- |
+            | Tables | Rendered |
+            | Task lists | Rendered |
+
+            - [x] Render GitHub-style task items
+            - [ ] Keep raw HTML escaped
+
+            ## Description lists, marks, and footnotes
+
+            Term
+            : A compact description list entry for glossary-like content.
+
+            ==Highlighted text== is available for editorial emphasis.
+
+            Footnotes stay close to longer articles.[^note]
+
+            [^note]: Footnotes render through the safe allrounder profile.
+
+            External links like https://example.com are autolinked and receive external-link attributes.
+
+            <aside>This raw HTML is escaped by the allrounder profile.</aside>
+          examples:
+            tables_tasks:
+              title: 'Tables, task lists, and strikethrough'
+              markdown: |
+                | Syntax | Result |
+                | --- | --- |
+                | Pipe characters | table columns |
+                | `- [x]` | task item |
+
+                - [x] Write the example
+                - [ ] Polish the copy
+
+                ~~Removed text~~ can stay visible in editorial notes.
+            footnotes_descriptions:
+              title: 'Description lists, highlights, and footnotes'
+              markdown: |
+                Markdown profile
+                : A named rendering configuration with a known security level.
+
+                ==Highlighted text== can draw attention without writing raw HTML.
+
+                Longer content can use footnotes.[^guide]
+
+                [^guide]: Footnotes are useful for sources, context, and editorial notes.
+            toc_attributes:
+              title: 'Table of contents and safe attributes'
+              markdown: |
+                [TOC]
+
+                ## First section
+
+                The heading receives an anchor.
+
+                ## Highlighted section {.demo-module-frontend-attribute}
+
+                Safe attributes can be attached where the profile allows them.
+        design:
+          kicker: 'Trusted design'
+          title: 'Full design Markdown'
+          markdown: |
+            # Design heading {.demo-design-heading}
+
+            Design Markdown is intended for trusted schema, admin, or editor-controlled blocks where more layout control is acceptable.
+
+            <aside class="demo-module-frontend-callout" data-demo="design">
+                <strong>Trusted HTML:</strong> this block is intentionally rendered as HTML in the design profile.
+            </aside>
+
+            https://youtu.be/dQw4w9WgXcQ
+
+            ## Attribute-controlled blocks
+
+            Paragraphs can opt into controlled attributes when the profile allows them.
+            {.demo-module-frontend-attribute}
+          examples:
+            trusted_html:
+              title: 'Trusted HTML'
+              markdown: |
+                <section class="demo-module-frontend-callout">
+                    <strong>Trusted HTML</strong> can be mixed into design Markdown.
+                </section>
+
+                This profile is only for trusted schema, admin, or editor-controlled content.
+            embed:
+              title: 'Embeds'
+              markdown: |
+                A supported media URL can turn into an embed.
+
+                https://youtu.be/dQw4w9WgXcQ
+            attributes:
+              title: 'Custom attributes'
+              markdown: |
+                ## A styled heading {.demo-module-frontend-attribute}
+
+                Paragraph attributes can also be attached.
+                {.demo-module-frontend-callout data-demo="typography"}
+      backend:
+        title: 'Backend shell demo'
+        nav_overview: 'Overview'
+        overview_title: 'Operational surface'
+        overview_text: 'The backend shell keeps navigation, status, forms, operations, and workspace areas visually aligned.'
+      editor:
+        title: 'Editor workspace'
+      setup:
+        title: 'Setup flow'
+        step: 'Step 1 of 2'
+        item_environment: 'Environment checked'
+        item_extensions: 'Extension lifecycle ready'
+      actions:
+        primary: 'Open counterpart'
+        secondary: 'Secondary action'
+      empty:
+        title: 'Empty state'
+        message: 'Use this state when a list, table, or workflow has no entries yet.'
+      form:
+        kicker: 'Form preview'
+        title: 'Field primitives'
+        title_label: 'Title'
+        status_label: 'Status'
+        body_label: 'Body'
+        help: 'Short help text stays close to the control.'
+        value: 'Demo value'
+        body_value: 'Structured content can use the same control spacing.'
+        status_option: 'Draft'
+      status:
+        title: 'Status language'
+      badges:
+        success: 'Success'
+        info: 'Info'
+        warning: 'Warning'
+        error: 'Error'
+        exception: 'Exception'
+      table:
+        title: 'Extension overview'
+        name: 'Name'
+        scope: 'Scope'
+        status: 'Status'
+        system: 'System extension'
+        theme: 'Active theme'
+      operations:
+        discovery: 'Discovery completed'
+        assets: 'Asset rebuild queued'

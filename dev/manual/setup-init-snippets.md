@@ -16,13 +16,13 @@
 - run without vendor dependencies already installed;
 - verify PHP version and required extensions;
 - resolve Composer through system Composer or `bin/composer`;
-- synchronize configured Git submodules before Composer runs so package submodules are present in clean checkouts;
+- synchronize configured Git submodules before Composer runs so extension submodules are present in clean checkouts;
 - remove an existing `vendor/` tree before Composer install so corrupt vendor packages cannot poison dependency resolution;
 - install production dependencies first;
 - generate core-only runtime translation catalogues from `translations/languages/{locale}` before Symfony console consumers run;
 - resolve Symfony environment consistently with Symfony's dotenv behavior;
 - install development dependencies for `dev` and `test`;
-- refresh public assets, ImportMap packages, Symfony UX icon locks, and Tailwind after dependencies are available;
+- refresh public assets, ImportMap dependencies, Symfony UX icon locks, and Tailwind after dependencies are available;
 - treat Symfony UX icon lock failures as warnings so offline init runs can still complete;
 - run AssetMapper compilation only for `prod`;
 - return clear success, warning, and failure summaries.
@@ -50,7 +50,7 @@ Symfony environment resolution should match Symfony precedence as closely as pra
 - dry-run planning without writing env files, running commands, or seeding the database;
 - setup action logs with halt-on-error results.
 
-After migrations and initial data seeding, setup clears the cache and then runs serial subprocesses in order: `packages:discover --run-now --trigger=setup`, `assets:rebuild --trigger=setup --json`, `mercure:stop`, and `mercure:health`. This keeps cold setup memory bounded per process while still allowing system-default active packages to contribute assets and translations after the package registry is available. Setup asks the asset rebuild for JSON output so non-blocking rebuild warnings can be surfaced in the setup action log. The Mercure stop/health pair ensures a local optional hub is not left running with pre-setup placeholder secrets before health can restart it with the persisted setup secrets. `bin/init` still generates core-only runtime catalogues before Symfony console consumers run; setup runs the package-aware rebuild afterwards so active package translations can be aggregated once the database is initialized.
+After migrations and initial data seeding, setup clears the cache and then runs serial subprocesses in order: `extensions:discover --run-now --trigger=setup`, `assets:rebuild --trigger=setup --json`, `mercure:stop`, and `mercure:health`. This keeps cold setup memory bounded per process while still allowing system-default active extensions to contribute assets and translations after the extension registry is available. Setup asks the asset rebuild for JSON output so non-blocking rebuild warnings can be surfaced in the setup action log. The Mercure stop/health pair ensures a local optional hub is not left running with pre-setup placeholder secrets before health can restart it with the persisted setup secrets. `bin/init` still generates core-only runtime catalogues before Symfony console consumers run; setup runs the extension-aware rebuild afterwards so active extension translations can be aggregated once the database is initialized.
 
 Setup subprocesses provide a local `COMPOSER_HOME` under `var/composer-home` when no explicit Composer home is present, and fall back to `var` as `HOME` when the web server environment omits it. This keeps web setup compatible with Composer without relying on shell-only environment variables.
 

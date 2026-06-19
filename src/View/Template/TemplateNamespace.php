@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\View\Template;
 
 use App\Core\Message\MessageException;
-use App\Core\Package\PackageScope;
+use App\Core\Extension\ExtensionScope;
 use App\View\ViewMessageCode;
 use App\View\ViewMessageKey;
 
@@ -40,16 +40,16 @@ enum TemplateNamespace: string
         };
     }
 
-    public function overrideScope(): PackageScope
+    public function overrideScope(): ExtensionScope
     {
         return match ($this) {
-            self::Frontend => PackageScope::FrontendTheme,
-            self::Backend => PackageScope::BackendTheme,
-            self::Root => PackageScope::SystemTemplate,
+            self::Frontend => ExtensionScope::FrontendTheme,
+            self::Backend => ExtensionScope::BackendTheme,
+            self::Root => ExtensionScope::SystemTemplate,
         };
     }
 
-    public function packageRelativeDirectory(): string
+    public function extensionRelativeDirectory(): string
     {
         return match ($this) {
             self::Frontend => 'templates/frontend',

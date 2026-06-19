@@ -671,7 +671,7 @@ final class RateLimitEnforcerTest extends TestCase
             ['/cron/run', 'POST', [], 'security.rate.scheduler', 2],
             ['/setup/review', 'POST', ['_setup_action' => 'apply'], 'security.rate.setup_apply', 3],
             ['/admin/settings/security', 'POST', [], 'security.rate.website_burst', 8],
-            ['/admin/packages/upload', 'POST', [], 'security.rate.website_burst', 6],
+            ['/admin/extensions/upload', 'POST', [], 'security.rate.website_burst', 6],
             ['/admin/logs/download', 'GET', [], 'security.rate.website_burst', 8],
         ];
 

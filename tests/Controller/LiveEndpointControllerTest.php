@@ -46,13 +46,13 @@ final class LiveEndpointControllerTest extends TestCase
     public function testExplicitMinimumAccessLevelWinsOverPublicFlag(): void
     {
         $endpoint = new LiveEndpointDefinition(
-            'package',
+            'extension',
             Request::METHOD_GET,
             '/api/live/demo-pack/admin-action',
-            'api_live_package_dispatch',
+            'api_live_extension_dispatch',
             'runAdminAction',
             'Run an admin live action.',
-            'packages.demo-pack.live.admin_action',
+            'extensions.demo-pack.live.admin_action',
             minimumAccessLevel: AccessLevel::ADMIN,
         );
         $controller = $this->controller($endpoint, null);
@@ -62,16 +62,16 @@ final class LiveEndpointControllerTest extends TestCase
         self::assertSame(Response::HTTP_FORBIDDEN, $response->getStatusCode());
     }
 
-    public function testItRejectsPatternMatchesOutsideTheRequestedPackageSlug(): void
+    public function testItRejectsPatternMatchesOutsideTheRequestedExtensionSlug(): void
     {
         $endpoint = new LiveEndpointDefinition(
-            'package',
+            'extension',
             Request::METHOD_GET,
             '/api/live/demo-pack/admin-action',
-            'api_live_package_dispatch',
+            'api_live_extension_dispatch',
             'runAdminAction',
             'Run an admin live action.',
-            'packages.demo-pack.live.admin_action',
+            'extensions.demo-pack.live.admin_action',
             pathPattern: '#^/api/live/other-pack/.*$#',
         );
         $controller = $this->controller($endpoint, null, expectsUser: false);
@@ -86,7 +86,7 @@ final class LiveEndpointControllerTest extends TestCase
         $handler = new class implements LiveEndpointHandlerInterface {
             public function liveEndpointHandlerKey(): string
             {
-                return 'packages.demo-pack.live.admin_action';
+                return 'extensions.demo-pack.live.admin_action';
             }
 
             public function handleLiveRequest(Request $request, LiveEndpointDefinition $endpoint): Response
@@ -119,13 +119,13 @@ final class LiveEndpointControllerTest extends TestCase
     private function endpoint(int $minimumAccessLevel): LiveEndpointDefinition
     {
         return new LiveEndpointDefinition(
-            'package',
+            'extension',
             Request::METHOD_GET,
             '/api/live/demo-pack/admin-action',
-            'api_live_package_dispatch',
+            'api_live_extension_dispatch',
             'runAdminAction',
             'Run an admin live action.',
-            'packages.demo-pack.live.admin_action',
+            'extensions.demo-pack.live.admin_action',
             minimumAccessLevel: $minimumAccessLevel,
         );
     }

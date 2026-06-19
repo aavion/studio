@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Core\Translation;
 
 use App\Core\Filesystem\PathGuard;
-use App\Core\Package\PackageAssetSyncPackage;
+use App\Core\Extension\ExtensionAssetSyncTarget;
 
 final readonly class TranslationSourceCollector
 {
@@ -18,29 +18,29 @@ final readonly class TranslationSourceCollector
     }
 
     /**
-     * @param list<PackageAssetSyncPackage> $packages
+     * @param list<ExtensionAssetSyncTarget> $extensions
      *
      * @return list<array{locale: string, path: string}>
      */
-    public function sources(array $packages): array
+    public function sources(array $extensions): array
     {
-        return array_merge($this->coreSources(), $this->packageSources($packages));
+        return array_merge($this->coreSources(), $this->extensionSources($extensions));
     }
 
     /**
-     * @param iterable<PackageAssetSyncPackage> $packages
+     * @param iterable<ExtensionAssetSyncTarget> $extensions
      *
-     * @return list<PackageAssetSyncPackage>
+     * @return list<ExtensionAssetSyncTarget>
      */
-    public function sortedPackages(iterable $packages): array
+    public function sortedExtensions(iterable $extensions): array
     {
         $sorted = [];
 
-        foreach ($packages as $package) {
-            $sorted[] = $package;
+        foreach ($extensions as $extension) {
+            $sorted[] = $extension;
         }
 
-        usort($sorted, static fn (PackageAssetSyncPackage $left, PackageAssetSyncPackage $right): int => $left->identifier() <=> $right->identifier());
+        usort($sorted, static fn (ExtensionAssetSyncTarget $left, ExtensionAssetSyncTarget $right): int => $left->identifier() <=> $right->identifier());
 
         return $sorted;
     }
@@ -61,17 +61,17 @@ final readonly class TranslationSourceCollector
     }
 
     /**
-     * @param list<PackageAssetSyncPackage> $packages
+     * @param list<ExtensionAssetSyncTarget> $extensions
      *
      * @return list<array{locale: string, path: string}>
      */
-    private function packageSources(array $packages): array
+    private function extensionSources(array $extensions): array
     {
         $sources = [];
 
-        foreach ($packages as $package) {
-            $languageRoot = $package->directory().'/languages';
-            if (!$this->isSafePackageLanguageRoot($languageRoot)) {
+        foreach ($extensions as $extension) {
+            $languageRoot = $extension->directory().'/languages';
+            if (!$this->isSafeExtensionLanguageRoot($languageRoot)) {
                 continue;
             }
 
@@ -115,14 +115,14 @@ final readonly class TranslationSourceCollector
         return $sources;
     }
 
-    private function isSafePackageLanguageRoot(string $path): bool
+    private function isSafeExtensionLanguageRoot(string $path): bool
     {
         if (!$this->pathGuard->isRelativePath($path)) {
             return false;
         }
 
         $relativePath = $this->pathGuard->relativePath($path);
-        if (!str_starts_with($relativePath, 'packages/') || !str_ends_with($relativePath, '/languages')) {
+        if (!str_starts_with($relativePath, 'extensions/') || !str_ends_with($relativePath, '/languages')) {
             return false;
         }
 

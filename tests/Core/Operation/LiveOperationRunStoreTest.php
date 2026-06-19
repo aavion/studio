@@ -154,18 +154,18 @@ final class LiveOperationRunStoreTest extends TestCase
     {
         $projectDir = $this->createTemporaryDirectory('live-operation-review');
         $store = new LiveOperationRunStore($projectDir, 'test');
-        $run = $store->create('package.install.dry_run', [], 'Install package dry-run');
+        $run = $store->create('extension.install.dry_run', [], 'Install extension dry-run');
         $result = WorkflowResult::requiresReview(null, [
             Message::info(
                 OperationMessageCode::OPERATION_ACTION_REQUIRED,
                 OperationMessageKey::OPERATION_ACTION_REQUIRED,
-                ['%operation%' => 'Install package'],
+                ['%operation%' => 'Install extension'],
             ),
         ], [
             'live_operation_continuation' => [
-                'operation' => 'package.install.apply',
-                'payload' => ['package' => 'demo-module'],
-                'label' => 'Install package',
+                'operation' => 'extension.install.apply',
+                'payload' => ['extension' => 'demo-module'],
+                'label' => 'Install extension',
             ],
         ]);
 
@@ -180,9 +180,9 @@ final class LiveOperationRunStoreTest extends TestCase
         self::assertTrue($payload['can_continue']);
         self::assertSame('requires_review', $payload['result']['status']);
         self::assertSame([
-            'operation' => 'package.install.apply',
-            'payload' => ['package' => 'demo-module'],
-            'label' => 'Install package',
+            'operation' => 'extension.install.apply',
+            'payload' => ['extension' => 'demo-module'],
+            'label' => 'Install extension',
         ], $continuation);
         self::assertNull($store->continuation($run['operation_id'], 'wrong-token'));
     }

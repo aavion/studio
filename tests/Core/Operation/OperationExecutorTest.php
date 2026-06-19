@@ -14,8 +14,8 @@ use App\Core\Operation\OperationActionInterface;
 use App\Core\Operation\OperationExecutor;
 use App\Core\Operation\OperationMessageCode;
 use App\Core\Operation\OperationMessageKey;
-use App\Core\Package\PackageMessageCode;
-use App\Core\Package\PackageMessageKey;
+use App\Core\Extension\ExtensionMessageCode;
+use App\Core\Extension\ExtensionMessageKey;
 use App\Core\Workflow\WorkflowResult;
 use App\Core\Workflow\WorkflowStatus;
 use App\Tests\Support\NullWorkflowResultMessageReporter;
@@ -30,7 +30,7 @@ final class OperationExecutorTest extends TestCase
         $queue = ActionQueue::create('import', [
             new TestOperationAction('copy_file', 'Copy file', WorkflowResult::success()),
         ], context: [
-            'package' => 'demo',
+            'extension' => 'demo',
         ])->add(new TestOperationAction('write_config', 'Write config', WorkflowResult::success(), DryRunRisk::Medium));
 
         $plan = (new OperationExecutor(new NullWorkflowResultMessageReporter()))->planQueue($queue);
@@ -38,7 +38,7 @@ final class OperationExecutorTest extends TestCase
         self::assertSame('import', $plan->name());
         self::assertSame(['copy_file' => 1, 'write_config' => 1], $plan->actionCounts());
         self::assertSame(DryRunRisk::Medium, $plan->highestRisk());
-        self::assertSame(['package' => 'demo'], $plan->context());
+        self::assertSame(['extension' => 'demo'], $plan->context());
         self::assertCount(2, $queue);
     }
 
@@ -134,24 +134,24 @@ final class OperationExecutorTest extends TestCase
     public function testItPreservesReviewRequiredActionContext(): void
     {
         $issue = Message::info(OperationMessageCode::OPERATION_ACTION_REQUIRED, OperationMessageKey::OPERATION_ACTION_REQUIRED, [
-            '%operation%' => 'Install package',
+            '%operation%' => 'Install extension',
         ]);
 
         $execution = (new OperationExecutor(new NullWorkflowResultMessageReporter()))->executeQueue(ActionQueue::create('continue', [
             new TestOperationAction('review', 'Review change', WorkflowResult::requiresReview(null, [$issue], [
                 'live_operation_continuation' => [
-                    'operation' => 'package.install.apply',
+                    'operation' => 'extension.install.apply',
                     'payload' => ['install_id' => 'abc'],
-                    'label' => 'Install package',
+                    'label' => 'Install extension',
                 ],
             ])),
         ], context: [
-            'operation' => 'package.install.verify',
+            'operation' => 'extension.install.verify',
         ]));
 
         self::assertSame(WorkflowStatus::RequiresReview, $execution->result()->status());
-        self::assertSame('package.install.verify', $execution->result()->context()['operation']);
-        self::assertSame('package.install.apply', $execution->result()->context()['live_operation_continuation']['operation']);
+        self::assertSame('extension.install.verify', $execution->result()->context()['operation']);
+        self::assertSame('extension.install.apply', $execution->result()->context()['live_operation_continuation']['operation']);
     }
 
     public function testItPreservesFailedStatusWhenContinuingAfterFailures(): void
@@ -217,12 +217,12 @@ final class OperationExecutorTest extends TestCase
     public function testItPassesActionResultsToTheMessageReporter(): void
     {
         $logger = new RecordingWorkflowResultMessageReporter();
-        $message = Message::info(PackageMessageCode::PACKAGE_DISCOVERY_COMPLETED, PackageMessageKey::PACKAGE_DISCOVERY_COMPLETED, [
+        $message = Message::info(ExtensionMessageCode::EXTENSION_DISCOVERY_COMPLETED, ExtensionMessageKey::EXTENSION_DISCOVERY_COMPLETED, [
             '%count%' => 1,
         ]);
 
         $execution = (new OperationExecutor($logger))->executeQueue(ActionQueue::create('logged queue', [
-            new TestOperationAction('discover', 'Discover packages', WorkflowResult::success(context: [
+            new TestOperationAction('discover', 'Discover extensions', WorkflowResult::success(context: [
                 'database_password' => 'secret',
             ], messages: [$message])),
         ]));
@@ -232,7 +232,7 @@ final class OperationExecutorTest extends TestCase
         self::assertSame([$message], $logger->records[0]['result']->messages());
         self::assertSame([
             'queue' => 'logged queue',
-            'action' => 'Discover packages',
+            'action' => 'Discover extensions',
             'type' => 'discover',
             'index' => 1,
             'total' => 1,

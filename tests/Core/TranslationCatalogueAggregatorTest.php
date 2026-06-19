@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Core;
 
-use App\Core\Package\PackageAssetSyncPackage;
-use App\Core\Package\PackageScope;
+use App\Core\Extension\ExtensionAssetSyncTarget;
+use App\Core\Extension\ExtensionScope;
 use App\Core\Translation\TranslationCatalogueAggregator;
 use App\Core\Translation\TranslationCatalogueCollisionException;
 use App\Core\Translation\TranslationMessageKey;
@@ -22,7 +22,7 @@ final class TranslationCatalogueAggregatorTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->root = $this->createTemporaryDirectory('system-package-translations');
+        $this->root = $this->createTemporaryDirectory('system-extension-translations');
         $this->writeTestFile($this->root, 'translations/languages/en/ui.yaml', "ui:\n  app:\n    name: Studio\n");
         $this->writeTestFile($this->root, 'translations/languages/de/ui.yaml', "ui:\n  app:\n    name: Studio\n");
         $this->writeTestFile($this->root, 'translations/runtime/test/messages.fr.yaml', "stale: true\n");
@@ -34,14 +34,14 @@ final class TranslationCatalogueAggregatorTest extends TestCase
         $this->removeDirectory($this->root);
     }
 
-    public function testItAggregatesCoreAndActivePackageTranslationCatalogues(): void
+    public function testItAggregatesCoreAndActiveExtensionTranslationCatalogues(): void
     {
-        $this->writeTestFile($this->root, 'packages/demo/languages/en/demo.yaml', "pkg:\n  demo:\n    label: Demo\n");
-        $this->writeTestFile($this->root, 'packages/demo/languages/de/demo.yaml', "pkg:\n  demo:\n    label: Demo\n");
-        $this->writeTestFile($this->root, 'packages/inactive/languages/en/inactive.yaml', "pkg:\n  inactive:\n    label: Hidden\n");
+        $this->writeTestFile($this->root, 'extensions/demo/languages/en/demo.yaml', "ext:\n  demo:\n    label: Demo\n");
+        $this->writeTestFile($this->root, 'extensions/demo/languages/de/demo.yaml', "ext:\n  demo:\n    label: Demo\n");
+        $this->writeTestFile($this->root, 'extensions/inactive/languages/en/inactive.yaml', "ext:\n  inactive:\n    label: Hidden\n");
 
         $result = $this->aggregator()->aggregate([
-            new PackageAssetSyncPackage('demo', 'packages/demo', [PackageScope::Module]),
+            new ExtensionAssetSyncTarget('demo', 'extensions/demo', [ExtensionScope::Module]),
         ]);
 
         self::assertTrue($result->isSuccess());
@@ -55,16 +55,16 @@ final class TranslationCatalogueAggregatorTest extends TestCase
 
         $english = Yaml::parseFile($this->root.'/translations/runtime/test/messages.en.yaml');
         self::assertSame('Studio', $english['ui']['app']['name']);
-        self::assertSame('Demo', $english['pkg']['demo']['label']);
-        self::assertArrayNotHasKey('inactive', $english['pkg']);
+        self::assertSame('Demo', $english['ext']['demo']['label']);
+        self::assertArrayNotHasKey('inactive', $english['ext']);
     }
 
-    public function testItIgnoresNonPackageTranslationPaths(): void
+    public function testItIgnoresNonExtensionTranslationPaths(): void
     {
-        $this->writeTestFile($this->root, 'external/demo/languages/en/demo.yaml', "pkg:\n  demo: true\n");
+        $this->writeTestFile($this->root, 'external/demo/languages/en/demo.yaml', "ext:\n  demo: true\n");
 
         $result = $this->aggregator()->aggregate([
-            new PackageAssetSyncPackage('demo', 'external/demo', [PackageScope::Module]),
+            new ExtensionAssetSyncTarget('demo', 'external/demo', [ExtensionScope::Module]),
         ]);
 
         self::assertTrue($result->isSuccess());
@@ -74,10 +74,10 @@ final class TranslationCatalogueAggregatorTest extends TestCase
 
     public function testItRejectsTranslationKeyCollisions(): void
     {
-        $this->writeTestFile($this->root, 'packages/demo/languages/en/demo.yaml', "ui:\n  app:\n    name: Override\n");
+        $this->writeTestFile($this->root, 'extensions/demo/languages/en/demo.yaml', "ui:\n  app:\n    name: Override\n");
 
         $result = $this->aggregator()->aggregate([
-            new PackageAssetSyncPackage('demo', 'packages/demo', [PackageScope::Module]),
+            new ExtensionAssetSyncTarget('demo', 'extensions/demo', [ExtensionScope::Module]),
         ]);
 
         self::assertFalse($result->isSuccess());

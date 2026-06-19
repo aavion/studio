@@ -8,7 +8,7 @@ use App\Api\Http\ApiResponder;
 use App\Core\Message\Message;
 use App\Security\SecurityMessageCode;
 use App\Security\SecurityMessageKey;
-use App\View\SystemPackageMetadataProvider;
+use App\View\SystemExtensionMetadataProvider;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
@@ -20,7 +20,7 @@ final readonly class ApiSecurityHandler implements AuthenticationEntryPointInter
 {
     public function __construct(
         private ApiResponder $responder,
-        private SystemPackageMetadataProvider $systemPackageMetadata,
+        private SystemExtensionMetadataProvider $systemExtensionMetadata,
     ) {
     }
 
@@ -82,7 +82,7 @@ final readonly class ApiSecurityHandler implements AuthenticationEntryPointInter
 
     private function apiTitle(): string
     {
-        $name = trim((string) $this->systemPackageMetadata->metadata()['name']);
+        $name = trim((string) $this->systemExtensionMetadata->metadata()['name']);
 
         return ('' !== $name ? $name : 'System').' API';
     }

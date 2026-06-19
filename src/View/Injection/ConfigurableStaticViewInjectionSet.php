@@ -12,7 +12,7 @@ final readonly class ConfigurableStaticViewInjectionSet
      * @param list<ConfigurableStaticViewInjectionRoute> $routes
      */
     public function __construct(
-        private string $packageName,
+        private string $extensionName,
         private string $configKey,
         private ViewSurface $surface,
         private string $defaultBaseSlug,
@@ -20,9 +20,9 @@ final readonly class ConfigurableStaticViewInjectionSet
     ) {
     }
 
-    public function packageName(): string
+    public function extensionName(): string
     {
-        return $this->packageName;
+        return $this->extensionName;
     }
 
     public function configKey(): string

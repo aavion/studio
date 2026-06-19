@@ -14,7 +14,7 @@ final class Version20260531000000 extends AbstractMigration
 {
     public function getDescription(): string
     {
-        return 'Create the initial core configuration, ACL, package, menu, content schema, revision, and field value tables.';
+        return 'Create the initial core configuration, ACL, extension, menu, content schema, revision, and field value tables.';
     }
 
     public function up(Schema $schema): void
@@ -49,16 +49,16 @@ final class Version20260531000000 extends AbstractMigration
         $config->addColumn('modified_by', 'string', ['length' => 180, 'notnull' => false]);
         $this->addPrimaryKey($config, 'config_key');
 
-        $packageSetting = $schema->createTable('package_setting_entry');
-        $packageSetting->addColumn('package_name', 'string', ['length' => 120]);
-        $packageSetting->addColumn('setting_key', 'string', ['length' => 160]);
-        $packageSetting->addColumn('value', 'json');
-        $packageSetting->addColumn('value_type', 'string', ['length' => 255]);
-        $packageSetting->addColumn('metadata', 'json');
-        $packageSetting->addColumn('modified_at', 'datetime_immutable');
-        $packageSetting->addColumn('modified_by', 'string', ['length' => 180, 'notnull' => false]);
-        $this->addPrimaryKey($packageSetting, 'package_name', 'setting_key');
-        $this->addIndex($packageSetting, ['package_name'], 'idx_package_setting_package');
+        $extensionSetting = $schema->createTable('extension_setting_entry');
+        $extensionSetting->addColumn('extension_name', 'string', ['length' => 120]);
+        $extensionSetting->addColumn('setting_key', 'string', ['length' => 160]);
+        $extensionSetting->addColumn('value', 'json');
+        $extensionSetting->addColumn('value_type', 'string', ['length' => 255]);
+        $extensionSetting->addColumn('metadata', 'json');
+        $extensionSetting->addColumn('modified_at', 'datetime_immutable');
+        $extensionSetting->addColumn('modified_by', 'string', ['length' => 180, 'notnull' => false]);
+        $this->addPrimaryKey($extensionSetting, 'extension_name', 'setting_key');
+        $this->addIndex($extensionSetting, ['extension_name'], 'idx_extension_setting_extension');
 
         $schedulerTask = $schema->createTable('scheduler_task');
         $schedulerTask->addColumn('identifier', 'string', ['length' => 160]);
@@ -322,10 +322,10 @@ final class Version20260531000000 extends AbstractMigration
         $this->addIndex($apiKey, ['user_uid', 'status'], 'idx_api_key_user_status');
         $apiKey->addForeignKeyConstraint('user_account', ['user_uid'], ['uid'], ['onDelete' => 'CASCADE'], $this->schemaObjectName('fk_api_key_user'));
 
-        $extension = $schema->createTable('extension_package');
+        $extension = $schema->createTable('extension');
         $extension->addColumn('uid', 'string', ['length' => 36]);
-        $extension->addColumn('package_scopes', 'json');
-        $extension->addColumn('package_name', 'string', ['length' => 120]);
+        $extension->addColumn('extension_scopes', 'json');
+        $extension->addColumn('extension_name', 'string', ['length' => 120]);
         $extension->addColumn('path', 'string', ['length' => 512]);
         $extension->addColumn('manifest_version', 'string', ['length' => 40, 'notnull' => false]);
         $extension->addColumn('installed_version', 'string', ['length' => 40, 'notnull' => false]);
@@ -334,8 +334,8 @@ final class Version20260531000000 extends AbstractMigration
         $extension->addColumn('metadata', 'json');
         $extension->addColumn('modified_at', 'datetime_immutable');
         $this->addPrimaryKey($extension, 'uid');
-        $this->addUniqueIndex($extension, ['package_name'], 'uniq_extension_package_name');
-        $this->addIndex($extension, ['status'], 'idx_extension_package_status');
+        $this->addUniqueIndex($extension, ['extension_name'], 'uniq_extension_name');
+        $this->addIndex($extension, ['status'], 'idx_extension_status');
 
         $menu = $schema->createTable('site_menu');
         $menu->addColumn('uid', 'string', ['length' => 36]);
@@ -482,7 +482,7 @@ final class Version20260531000000 extends AbstractMigration
             'content_schema',
             'site_menu_item',
             'site_menu',
-            'extension_package',
+            'extension',
             'api_key',
             'account_token',
             'user_acl_group',
@@ -494,7 +494,7 @@ final class Version20260531000000 extends AbstractMigration
             'message_log_entry',
             'scheduler_task_run',
             'scheduler_task',
-            'package_setting_entry',
+            'extension_setting_entry',
             'config_entry',
             'access_statistic_event',
             'state_marker',

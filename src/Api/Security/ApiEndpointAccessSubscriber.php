@@ -10,7 +10,7 @@ use App\Api\Http\ApiResponder;
 use App\Core\Message\Message;
 use App\Security\SecurityMessageCode;
 use App\Security\SecurityMessageKey;
-use App\View\SystemPackageMetadataProvider;
+use App\View\SystemExtensionMetadataProvider;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -22,7 +22,7 @@ final readonly class ApiEndpointAccessSubscriber implements EventSubscriberInter
     public function __construct(
         private ApiEndpointRegistry $endpoints,
         private ApiResponder $responder,
-        private SystemPackageMetadataProvider $systemPackageMetadata,
+        private SystemExtensionMetadataProvider $systemExtensionMetadata,
         private ApiRequestMethodPolicy $methodPolicy = new ApiRequestMethodPolicy(),
     ) {
     }
@@ -84,7 +84,7 @@ final readonly class ApiEndpointAccessSubscriber implements EventSubscriberInter
 
     private function apiTitle(): string
     {
-        $name = trim((string) $this->systemPackageMetadata->metadata()['name']);
+        $name = trim((string) $this->systemExtensionMetadata->metadata()['name']);
 
         return ('' !== $name ? $name : 'System').' API';
     }

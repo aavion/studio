@@ -100,7 +100,7 @@ final class SetupDefaultSeedTest extends TestCase
             ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY,
             SchedulerSettings::ENABLED_KEY,
             SchedulerSettings::GET_AUTH_ENABLED_KEY,
-            SchedulerSettings::PACKAGE_ACTION_QUEUES_ENABLED_KEY,
+            SchedulerSettings::EXTENSION_ACTION_QUEUES_ENABLED_KEY,
             SchedulerSettings::WEB_TRIGGER_ENABLED_KEY,
             AdminFeatureOverrideStore::CONFIG_KEY,
         ];

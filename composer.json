@@ -121,7 +121,7 @@
     "autoload": {
         "exclude-from-classmap": [
             "tests/Fixtures/",
-            "packages/"
+            "extensions/"
         ],
         "psr-4": {
             "App\\": "src/"
@@ -140,11 +140,11 @@
             "tailwind:build": "symfony-cmd"
         },
         "post-install-cmd": [
-            "@php bin/ensure-package-asset-registries",
+            "@php bin/ensure-extension-asset-registries",
             "@auto-scripts"
         ],
         "post-update-cmd": [
-            "@php bin/ensure-package-asset-registries",
+            "@php bin/ensure-extension-asset-registries",
             "@auto-scripts"
         ]
     }

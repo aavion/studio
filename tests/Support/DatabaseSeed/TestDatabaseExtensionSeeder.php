@@ -8,10 +8,10 @@ final class TestDatabaseExtensionSeeder
 {
     public static function seed(TestDatabaseSeedWriter $writer): void
     {
-        $writer->insert('extension_package', [
+        $writer->insert('extension', [
             'uid' => '00000000-0000-7000-8000-000000000401',
-            'package_scopes' => $writer->json(['frontend-theme', 'backend-theme', 'system-template']),
-            'package_name' => 'system',
+            'extension_scopes' => $writer->json(['frontend-theme', 'backend-theme', 'system-template']),
+            'extension_name' => 'system',
             'path' => '.',
             'manifest_version' => '1',
             'installed_version' => '0.1.0-dev',

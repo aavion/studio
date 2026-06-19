@@ -1,0 +1,237 @@
+ext:
+  demo-module:
+    navigation:
+      demo: 'Demo'
+      frontend: 'Frontend-Shell'
+      backend: 'Backend-Shell'
+      typography: 'Typografie-Guide'
+    dynamic:
+      after_content:
+        label: 'Demo-Modul-Hinweis'
+        text: 'Demo-Modul-Injektion nach dem Inhalt fuer diese Content-Entity.'
+    settings:
+      display_mode:
+        label: 'Anzeigemodus'
+        help: 'Steuert, wie das Demo-Modul seine Beispielausgabe rendert.'
+        options:
+          compact: 'Kompakt'
+          expanded: 'Erweitert'
+      demo_route:
+        label: 'Primaere Demo-Route'
+        help: 'Steuert, welchen oeffentlichen Pfad das Demo-Modul als stabilen Route-Parent verwendet.'
+    widget: 'Demo-Modul-Widget'
+    demo:
+      kicker: 'System-UI'
+      frontend:
+        title: 'Frontend-Shell-Demo'
+        subtitle: 'Eine temporaere Vorschau fuer oeffentliches Theme-Layout, Navigation, Aktionen, Formulare, Feedback und Statusfarben.'
+        content_title: 'Content-Vorschau'
+        content_text: 'Diese Karte nutzt dieselben Fallback-Komponenten, die oeffentliches Content-Rendering wiederverwenden kann.'
+        rich_text: 'Lesbare Texte, fokussierte Aktionen und zurueckhaltende Kontraste sollen ueber Themes hinweg stabil bleiben.'
+      typography:
+        title: 'Typografie-Guide'
+        subtitle: 'Eine renderer-gestuetzte Markdown-Vorschau zum Feinjustieren von lesbarem Content, Schema-Feldausgaben und trusted Design-Bloecken.'
+        example:
+          source: 'Markdown-Eingabe'
+          result: 'Gerenderte Ausgabe'
+        basic:
+          kicker: 'Safety-first Basic'
+          title: 'Basic Markdown'
+          markdown: |
+            # Basic Heading
+
+            Basic Markdown ist das sicherste oeffentliche Profil. Es unterstuetzt Absaetze, **fetten Text**, _Hervorhebung_, inline `code`, Links wie [die Projektseite](https://github.com/aavion/studio) und harte Zeilenumbrueche.\
+            Diese Zeile folgt absichtlich auf einen Markdown-Hardbreak.
+
+            > Zitate bleiben fuer einfache Hervorhebungen oder kurze Hinweise verfuegbar.
+
+            - ungeordneter Eintrag
+            - weiterer ungeordneter Eintrag
+
+            1. geordneter Eintrag
+            2. zweiter geordneter Eintrag
+
+            Raw HTML wird in diesem Profil escaped: <strong>kein trusted HTML</strong>.
+          examples:
+            headings:
+              title: 'Headings, Hervorhebung, Links und Zeilenumbrueche'
+              markdown: |
+                # Hauptueberschrift
+
+                Absatztext kann **fetten Text**, _Hervorhebung_, `Inline-Code` und [einen Link](https://example.com) nutzen.
+
+                Ein Backslash erzeugt einen harten Umbruch.\
+                Diese Zeile bleibt im selben Absatz, beginnt aber visuell neu.
+            lists:
+              title: 'Geordnete und ungeordnete Listen'
+              markdown: |
+                - Erster ungeordneter Eintrag
+                - Zweiter ungeordneter Eintrag
+                  - Verschachtelter Eintrag
+
+                1. Erster geordneter Eintrag
+                2. Zweiter geordneter Eintrag
+            quote_code:
+              title: 'Zitate und fenced Code-Bloecke'
+              markdown: |
+                > Nutze Zitate fuer Quellen, Hinweise oder kurze Callouts.
+
+                ```markdown
+                # Das wird als Code angezeigt
+
+                **Es wird hier nicht gerendert.**
+                ```
+        allrounder:
+          kicker: 'Default-Allrounder'
+          title: 'Rich Safe Markdown'
+          markdown: |
+            # Allrounder Heading {.demo-heading}
+
+            [TOC]
+
+            ## Tabellen und Task-Listen
+
+            | Feature | Ergebnis |
+            | --- | --- |
+            | Tabellen | Gerendert |
+            | Task-Listen | Gerendert |
+
+            - [x] GitHub-artige Task Items rendern
+            - [ ] Raw HTML weiter escapen
+
+            ## Description Lists, Marks und Footnotes
+
+            Begriff
+            : Ein kompakter Description-List-Eintrag fuer glossarartigen Content.
+
+            ==Markierter Text== ist fuer redaktionelle Hervorhebungen verfuegbar.
+
+            Footnotes bleiben nah an laengeren Artikeln.[^note]
+
+            [^note]: Footnotes rendern ueber das sichere Allrounder-Profil.
+
+            Externe Links wie https://example.com werden automatisch verlinkt und erhalten External-Link-Attribute.
+
+            <aside>Dieses Raw HTML wird vom Allrounder-Profil escaped.</aside>
+          examples:
+            tables_tasks:
+              title: 'Tabellen, Task-Listen und Strikethrough'
+              markdown: |
+                | Syntax | Ergebnis |
+                | --- | --- |
+                | Pipe-Zeichen | Tabellenspalten |
+                | `- [x]` | Task-Eintrag |
+
+                - [x] Beispiel schreiben
+                - [ ] Text polieren
+
+                ~~Geloeschter Text~~ kann in redaktionellen Notizen sichtbar bleiben.
+            footnotes_descriptions:
+              title: 'Description Lists, Highlights und Footnotes'
+              markdown: |
+                Markdown-Profil
+                : Eine benannte Rendering-Konfiguration mit bekannter Sicherheitsstufe.
+
+                ==Markierter Text== kann Aufmerksamkeit erzeugen, ohne Raw HTML zu schreiben.
+
+                Laengere Inhalte koennen Footnotes nutzen.[^guide]
+
+                [^guide]: Footnotes eignen sich fuer Quellen, Kontext und redaktionelle Notizen.
+            toc_attributes:
+              title: 'Table of contents und sichere Attribute'
+              markdown: |
+                [TOC]
+
+                ## Erster Abschnitt
+
+                Die Ueberschrift erhaelt einen Anchor.
+
+                ## Hervorgehobener Abschnitt {.demo-module-frontend-attribute}
+
+                Sichere Attribute koennen angehaengt werden, wenn das Profil sie erlaubt.
+        design:
+          kicker: 'Trusted Design'
+          title: 'Full Design Markdown'
+          markdown: |
+            # Design Heading {.demo-design-heading}
+
+            Design Markdown ist fuer trusted Schema-, Admin- oder Editor-gesteuerte Bloecke gedacht, bei denen mehr Layout-Kontrolle akzeptabel ist.
+
+            <aside class="demo-module-frontend-callout" data-demo="design">
+                <strong>Trusted HTML:</strong> Dieser Block wird im Design-Profil absichtlich als HTML gerendert.
+            </aside>
+
+            https://youtu.be/dQw4w9WgXcQ
+
+            ## Attribut-gesteuerte Bloecke
+
+            Absaetze koennen kontrollierte Attribute nutzen, wenn das Profil sie erlaubt.
+            {.demo-module-frontend-attribute}
+          examples:
+            trusted_html:
+              title: 'Trusted HTML'
+              markdown: |
+                <section class="demo-module-frontend-callout">
+                    <strong>Trusted HTML</strong> kann in Design-Markdown gemischt werden.
+                </section>
+
+                Dieses Profil ist nur fuer trusted Schema-, Admin- oder Editor-gesteuerten Content gedacht.
+            embed:
+              title: 'Embeds'
+              markdown: |
+                Eine unterstuetzte Medien-URL kann zu einem Embed werden.
+
+                https://youtu.be/dQw4w9WgXcQ
+            attributes:
+              title: 'Custom Attributes'
+              markdown: |
+                ## Eine gestaltete Ueberschrift {.demo-module-frontend-attribute}
+
+                Auch Absaetze koennen Attribute erhalten.
+                {.demo-module-frontend-callout data-demo="typography"}
+      backend:
+        title: 'Backend-Shell-Demo'
+        nav_overview: 'Uebersicht'
+        overview_title: 'Operationsflaeche'
+        overview_text: 'Die Backend-Shell haelt Navigation, Status, Formulare, Operationen und Workspace-Bereiche optisch zusammen.'
+      editor:
+        title: 'Editor-Workspace'
+      setup:
+        title: 'Setup-Ablauf'
+        step: 'Schritt 1 von 2'
+        item_environment: 'Umgebung geprueft'
+        item_extensions: 'Extension Lifecycle bereit'
+      actions:
+        primary: 'Gegenstueck oeffnen'
+        secondary: 'Sekundaere Aktion'
+      empty:
+        title: 'Empty State'
+        message: 'Nutze diesen Zustand, wenn eine Liste, Tabelle oder ein Workflow noch keine Eintraege hat.'
+      form:
+        kicker: 'Formularvorschau'
+        title: 'Feldprimitive'
+        title_label: 'Titel'
+        status_label: 'Status'
+        body_label: 'Body'
+        help: 'Kurze Hilfetexte bleiben nah am Control.'
+        value: 'Demo-Wert'
+        body_value: 'Strukturierter Content kann dieselben Control-Abstaende nutzen.'
+        status_option: 'Entwurf'
+      status:
+        title: 'Statussprache'
+      badges:
+        success: 'Success'
+        info: 'Info'
+        warning: 'Warnung'
+        error: 'Fehler'
+        exception: 'Exception'
+      table:
+        title: 'Extensionuebersicht'
+        name: 'Name'
+        scope: 'Scope'
+        status: 'Status'
+        system: 'System-Extension'
+        theme: 'Aktives Theme'
+      operations:
+        discovery: 'Discovery abgeschlossen'
+        assets: 'Asset-Rebuild eingereiht'

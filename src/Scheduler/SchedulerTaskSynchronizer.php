@@ -55,6 +55,6 @@ final readonly class SchedulerTaskSynchronizer
     {
         return $definition->trusted()
             || SchedulerTaskType::ActionQueue !== $definition->type()
-            || $this->settings->packageActionQueuesEnabled();
+            || $this->settings->extensionActionQueuesEnabled();
     }
 }

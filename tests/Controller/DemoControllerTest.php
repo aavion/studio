@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
-use App\Core\Package\PackageAssetSyncPackage;
-use App\Core\Package\PackageScope;
+use App\Core\Extension\ExtensionAssetSyncTarget;
+use App\Core\Extension\ExtensionScope;
 use App\Core\Translation\TranslationCatalogueAggregator;
 use App\Core\Translation\TranslationRuntimePath;
 use Doctrine\DBAL\Connection;
@@ -97,12 +97,12 @@ final class DemoControllerTest extends WebTestCase
 
     private function requireDemoModule(): void
     {
-        if (is_file(self::demoModulePath().'/package.php')) {
+        if (is_file(self::demoModulePath().'/extension.php')) {
             return;
         }
 
-        fwrite(STDERR, "[NOTICE] Demo module package is not available; skipping portable demo module route tests.\n");
-        self::markTestSkipped('Demo module package is not available.');
+        fwrite(STDERR, "[NOTICE] Demo module extension is not available; skipping portable demo module route tests.\n");
+        self::markTestSkipped('Demo module extension is not available.');
     }
 
     /**
@@ -110,12 +110,12 @@ final class DemoControllerTest extends WebTestCase
      */
     private function activateDemoModule(): void
     {
-        $this->connection?->delete('extension_package', ['package_name' => 'demo-module']);
-        $this->connection?->insert('extension_package', [
+        $this->connection?->delete('extension', ['extension_name' => 'demo-module']);
+        $this->connection?->insert('extension', [
             'uid' => '00000000-0000-7000-8000-000000000101',
-            'package_name' => 'demo-module',
-            'path' => 'packages/demo-module',
-            'package_scopes' => json_encode(['module'], JSON_THROW_ON_ERROR),
+            'extension_name' => 'demo-module',
+            'path' => 'extensions/demo-module',
+            'extension_scopes' => json_encode(['module'], JSON_THROW_ON_ERROR),
             'manifest_version' => '0.1.1',
             'installed_version' => '0.1.1',
             'status' => 'active',
@@ -123,9 +123,9 @@ final class DemoControllerTest extends WebTestCase
                 'display_name' => 'Demo Module',
                 'description' => 'Demo module route fixture.',
                 'manifest' => [
-                    'PACKAGE_NAME' => 'Demo Module',
-                    'PACKAGE_VERSION' => '0.1.1',
-                    'PACKAGE_SCOPE' => 'module',
+                    'EXTENSION_NAME' => 'Demo Module',
+                    'EXTENSION_VERSION' => '0.1.1',
+                    'EXTENSION_SCOPE' => 'module',
                 ],
             ], JSON_THROW_ON_ERROR),
             'modified_at' => '2026-05-26 00:00:00',
@@ -137,9 +137,9 @@ final class DemoControllerTest extends WebTestCase
      */
     private function setDemoRoute(string $route): void
     {
-        $this->connection?->delete('package_setting_entry', ['package_name' => 'demo-module', 'setting_key' => 'demo.route']);
-        $this->connection?->insert('package_setting_entry', [
-            'package_name' => 'demo-module',
+        $this->connection?->delete('extension_setting_entry', ['extension_name' => 'demo-module', 'setting_key' => 'demo.route']);
+        $this->connection?->insert('extension_setting_entry', [
+            'extension_name' => 'demo-module',
             'setting_key' => 'demo.route',
             'value' => json_encode($route, JSON_THROW_ON_ERROR),
             'value_type' => 'string',
@@ -158,7 +158,7 @@ final class DemoControllerTest extends WebTestCase
         }
 
         $result = (new TranslationCatalogueAggregator($projectDir, runtimePath: new TranslationRuntimePath($projectDir, 'test')))->aggregate([
-            new PackageAssetSyncPackage('demo-module', 'packages/demo-module', [PackageScope::Module]),
+            new ExtensionAssetSyncTarget('demo-module', 'extensions/demo-module', [ExtensionScope::Module]),
         ]);
 
         self::assertTrue($result->isSuccess(), json_encode($result->toArray(), JSON_THROW_ON_ERROR));
@@ -185,6 +185,6 @@ final class DemoControllerTest extends WebTestCase
 
     private static function demoModulePath(): string
     {
-        return dirname(__DIR__, 2).'/packages/demo-module';
+        return dirname(__DIR__, 2).'/extensions/demo-module';
     }
 }

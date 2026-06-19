@@ -19,7 +19,7 @@ final class PublicHookFailedEvent extends Event
         private readonly Message $issue,
         private readonly Throwable $exception,
         private readonly array $context = [],
-        private readonly ?string $package = null,
+        private readonly ?string $extension = null,
     ) {
     }
 
@@ -51,8 +51,8 @@ final class PublicHookFailedEvent extends Event
         return $this->context;
     }
 
-    public function package(): ?string
+    public function extension(): ?string
     {
-        return $this->package;
+        return $this->extension;
     }
 }

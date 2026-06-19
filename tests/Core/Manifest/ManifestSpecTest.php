@@ -33,10 +33,10 @@ final class ManifestSpecTest extends TestCase
 
     public function testItBuildsNamespacedSpecsFromShortKeys(): void
     {
-        $spec = ManifestSpec::forNamespace('PACKAGE', ['VERSION', 'AUTHOR', 'NAME'], ['NAME', 'VERSION']);
+        $spec = ManifestSpec::forNamespace('EXTENSION', ['VERSION', 'AUTHOR', 'NAME'], ['NAME', 'VERSION']);
 
-        self::assertSame(['PACKAGE_NAME', 'PACKAGE_VERSION'], $spec->requiredKeys());
-        self::assertSame(['PACKAGE_VERSION', 'PACKAGE_AUTHOR', 'PACKAGE_NAME'], $spec->allowedKeys());
+        self::assertSame(['EXTENSION_NAME', 'EXTENSION_VERSION'], $spec->requiredKeys());
+        self::assertSame(['EXTENSION_VERSION', 'EXTENSION_AUTHOR', 'EXTENSION_NAME'], $spec->allowedKeys());
         self::assertFalse($spec->allowsUnknownKeys());
     }
 
@@ -69,7 +69,7 @@ final class ManifestSpecTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Invalid manifest key "theme.version".');
 
-        ManifestSpec::forNamespace('PACKAGE', ['theme.version']);
+        ManifestSpec::forNamespace('EXTENSION', ['theme.version']);
     }
 
     public function testItRejectsRequiredKeysOutsideAllowedKeys(): void

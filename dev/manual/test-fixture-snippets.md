@@ -3,35 +3,35 @@
 > **Status**: Draft  
 > **Updated**: 2026-05-24  
 > **Owner**: Core  
-> **Purpose:** Track reusable test fixtures, intentionally invalid packages, and when to prefer repository fixtures over temporary test data.  
+> **Purpose:** Track reusable test fixtures, intentionally invalid extensions, and when to prefer repository fixtures over temporary test data.  
 
 ## Overview
 
-Fixtures should make future tests cheaper to write without hiding behavior. Keep reusable fixtures small, deterministic, and representative of real package shapes.
+Fixtures should make future tests cheaper to write without hiding behavior. Keep reusable fixtures small, deterministic, and representative of real extension shapes.
 
-## Valid package fixtures
+## Valid extension fixtures
 
-Valid package fixtures live under `tests/Fixtures/packages/` and mirror the standard discovery paths:
+Valid extension fixtures live under `tests/Fixtures/extensions/` and mirror the standard discovery paths:
 
 ```text
-tests/Fixtures/packages/
+tests/Fixtures/extensions/
   .manifest
-  packages/demo-theme/
-  packages/demo-module/
+  extensions/demo-theme/
+  extensions/demo-module/
   var/cache/test/imports/demo-import/
 ```
 
 Current intended use:
 
-- package discovery smoke tests;
-- package validation and feature inspection;
+- extension discovery smoke tests;
+- extension validation and feature inspection;
 - preflight linting happy paths;
-- package operation planning;
+- extension operation planning;
 - later installer and dry-run examples.
 
-## Invalid package fixtures
+## Invalid extension fixtures
 
-Invalid fixtures live under `tests/Fixtures/packages-invalid/`:
+Invalid fixtures live under `tests/Fixtures/extensions-invalid/`:
 
 | Fixture | Purpose |
 |---------|---------|
@@ -72,7 +72,7 @@ The current database seed includes:
 Keep lifecycle setup visible because it is the right home for shared test setup such as:
 
 - generated demo databases;
-- generated package caches;
+- generated extension caches;
 - copied fixture repositories;
 - expensive integration fixtures;
 - suite-wide cleanup that should run after PHPUnit exits.
@@ -82,7 +82,7 @@ Prefer per-test temporary directories through `FilesystemTestHelper` for filesys
 ## References
 
 - [Core architecture snippets](core-architecture-snippets.md)
-- [Package lifecycle snippets](package-lifecycle-snippets.md)
-- `tests/Core/Package/PackageFixtureTest.php`
+- [Extension lifecycle snippets](extension-lifecycle-snippets.md)
+- `tests/Core/Extension/ExtensionFixtureTest.php`
 - `tests/Support/TestSuiteLifecycle.php`
 - `tests/bootstrap.php`

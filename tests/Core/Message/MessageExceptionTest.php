@@ -9,7 +9,7 @@ use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
 use App\Core\Message\MessageException;
 use App\Core\Message\MessageLevel;
-use App\Core\Package\PackageMessageKey;
+use App\Core\Extension\ExtensionMessageKey;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
@@ -34,7 +34,7 @@ final class MessageExceptionTest extends TestCase
 
     public function testItCanBeCreatedFromAMessage(): void
     {
-        $message = Message::success(PackageMessageKey::PACKAGE_REQUIRED_FILE_MISSING);
+        $message = Message::success(ExtensionMessageKey::EXTENSION_REQUIRED_FILE_MISSING);
         $exception = MessageException::fromMessage($message);
 
         self::assertSame($message, $exception->message());

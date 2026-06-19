@@ -53,9 +53,9 @@ services:
         App\View\Injection\DynamicViewInjectionProviderInterface:
             tags:
                 - { name: 'system.dynamic_view_injection_provider', priority: 0 }
-        App\Core\Package\Settings\PackageSettingProviderInterface:
+        App\Core\Extension\Settings\ExtensionSettingProviderInterface:
             tags:
-                - { name: 'system.package_setting_provider', priority: 0 }
+                - { name: 'system.extension_setting_provider', priority: 0 }
         App\Core\Operation\Live\LiveOperationQueueProviderInterface:
             tags:
                 - { name: 'system.live_operation_queue_provider', priority: 0 }
@@ -103,7 +103,6 @@ services:
             - '../src/**/*Item.php'
             - '../src/**/*Message.php'
             - '../src/**/*Mode.php'
-            - '../src/**/*Package.php'
             - '../src/**/*Path.php'
             - '../src/**/*Plan.php'
             - '../src/**/*Queue.php'
@@ -113,7 +112,6 @@ services:
             - '../src/**/*Source.php'
             - '../src/Debug/RouteRenderOptions.php'
             - '../src/Core/Geo/GeoIp2MaxMindDatabaseReader.php'
-            - '../src/Core/Package/PackageSpec.php'
             - '../src/**/*Spec.php'
             - '../src/**/*Status.php'
             - '../src/**/*Type.php'
@@ -167,7 +165,7 @@ services:
 
     App\Content\Api\ContentApiPath: ~
 
-    App\Core\Package\PackageDependencyManifestValidator:
+    App\Core\Extension\ExtensionDependencyManifestValidator:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
@@ -231,9 +229,9 @@ services:
             $staticProviders: !tagged_iterator { tag: system.static_view_injection_provider }
             $dynamicProviders: !tagged_iterator { tag: system.dynamic_view_injection_provider }
 
-    App\Core\Package\Settings\PackageSettingRegistry:
+    App\Core\Extension\Settings\ExtensionSettingRegistry:
         arguments:
-            $providers: !tagged_iterator { tag: system.package_setting_provider }
+            $providers: !tagged_iterator { tag: system.extension_setting_provider }
 
     App\Scheduler\SchedulerTaskRegistry:
         arguments:
@@ -310,7 +308,7 @@ services:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
-    App\Core\Package\PackageAssetSyncer:
+    App\Core\Extension\ExtensionAssetSyncer:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
@@ -318,13 +316,13 @@ services:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
-    App\Core\Package\PackageRegistryHandler:
+    App\Core\Extension\ExtensionRegistryHandler:
         arguments:
             $projectDir: '%kernel.project_dir%'
             $environment: '%kernel.environment%'
             $validationSpec: null
 
-    App\Core\Package\PackageRegistrySyncFinalizer:
+    App\Core\Extension\ExtensionRegistrySyncFinalizer:
         arguments:
             $environment: '%kernel.environment%'
 
@@ -333,47 +331,47 @@ services:
             $projectDir: '%kernel.project_dir%'
             $environment: '%kernel.environment%'
 
-    App\Core\Package\PackageDiscoveryRunner:
+    App\Core\Extension\ExtensionDiscoveryRunner:
         arguments:
             $projectDir: '%kernel.project_dir%'
             $environment: '%kernel.environment%'
 
-    App\Core\Package\PackageRemover:
+    App\Core\Extension\ExtensionRemover:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
-    App\Core\Package\PackageFilesystemRemover:
+    App\Core\Extension\ExtensionFilesystemRemover:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
-    App\Core\Package\Install\PackageInstallFilesystem:
+    App\Core\Extension\Install\ExtensionInstallFilesystem:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
-    App\Core\Package\Install\PackageUploadStager:
+    App\Core\Extension\Install\ExtensionUploadStager:
         arguments:
             $environment: '%kernel.environment%'
 
-    App\Core\Package\Install\PackageInstallVerifier:
+    App\Core\Extension\Install\ExtensionInstallVerifier:
         arguments:
             $environment: '%kernel.environment%'
 
-    App\Core\Package\Install\PackageInstallApplier:
+    App\Core\Extension\Install\ExtensionInstallApplier:
         arguments:
             $environment: '%kernel.environment%'
 
-    App\Core\Package\PackageFaultResetter:
-        arguments:
-            $projectDir: '%kernel.project_dir%'
-            $environment: '%kernel.environment%'
-
-    App\Core\Package\PackagePhpLoader:
+    App\Core\Extension\ExtensionFaultResetter:
         arguments:
             $projectDir: '%kernel.project_dir%'
             $environment: '%kernel.environment%'
-            $runtimeContributions: '@App\Core\Package\PackageRuntimeContributionRegistry'
 
-    App\Core\Package\PackageRuntimeFailureHandler:
+    App\Core\Extension\ExtensionPhpLoader:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+            $environment: '%kernel.environment%'
+            $runtimeContributions: '@App\Core\Extension\ExtensionRuntimeContributionRegistry'
+
+    App\Core\Extension\ExtensionRuntimeFailureHandler:
         arguments:
             $environment: '%kernel.environment%'
 
@@ -381,17 +379,17 @@ services:
         arguments:
             $providers: !tagged_iterator { tag: system.event_hook_provider }
 
-    App\Core\Package\ActivePackageAssetProviderInterface:
-        alias: App\Core\Package\ActivePackageAssetProvider
+    App\Core\Extension\ActiveExtensionAssetProviderInterface:
+        alias: App\Core\Extension\ActiveExtensionAssetProvider
 
-    App\Core\Package\ActivePackageProviderInterface:
-        alias: App\Core\Package\ActivePackageProvider
+    App\Core\Extension\ActiveExtensionProviderInterface:
+        alias: App\Core\Extension\ActiveExtensionProvider
 
-    App\Core\Package\PackageLifecycleAssetRebuilderInterface:
-        alias: App\Core\Package\PackageLifecycleAssetRebuilder
+    App\Core\Extension\ExtensionLifecycleAssetRebuilderInterface:
+        alias: App\Core\Extension\ExtensionLifecycleAssetRebuilder
 
-    App\Core\Package\PackageLifecycleCleanupRunnerInterface:
-        alias: App\Core\Package\PackageLifecycleCleanupRunner
+    App\Core\Extension\ExtensionLifecycleCleanupRunnerInterface:
+        alias: App\Core\Extension\ExtensionLifecycleCleanupRunner
 
     App\Core\Messenger\DeferredMessengerDrainStarterInterface:
         alias: App\Core\Messenger\DeferredMessengerDrainProcessStarter
@@ -540,7 +538,7 @@ services:
         arguments:
             $maintenanceEnabled: '%env(bool:APP_MAINTENANCE)%'
 
-    App\View\SystemPackageMetadataProvider:
+    App\View\SystemExtensionMetadataProvider:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
@@ -548,7 +546,7 @@ services:
         arguments:
             $debug: '%kernel.debug%'
 
-    App\View\Template\PackageTemplatePathResolver:
+    App\View\Template\ExtensionTemplatePathResolver:
         arguments:
             $projectDir: '%kernel.project_dir%'
 

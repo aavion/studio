@@ -14,8 +14,8 @@ Core should stay useful across app setup, themes, modules, imports, updates, and
 Core can provide:
 
 - manifest parsing and validation primitives;
-- package discovery sources;
-- package inventories and feature inspection;
+- extension discovery sources;
+- extension inventories and feature inspection;
 - syntax lint providers;
 - checksums;
 - structured diffs;
@@ -27,9 +27,9 @@ Core can provide:
 
 ## Lifecycle responsibilities
 
-Installer or package-type lifecycle code should decide:
+Installer or extension-type lifecycle code should decide:
 
-- package activation and deactivation;
+- extension activation and deactivation;
 - dependency maps;
 - version compatibility;
 - migrations;
@@ -57,21 +57,21 @@ Use one-active-provider configuration where only one implementation can be selec
 
 Dependency maps are intentionally deferred. They should likely include:
 
-- package id;
-- package type;
+- extension id;
+- extension type;
 - version constraints;
 - required core version;
 - required PHP extensions;
 - required Composer packages;
-- required packages;
-- conflicting packages;
+- required extensions;
+- conflicting extensions;
 - optional integrations.
 
-Do not make `PackageValidator` enforce dependency maps until installer workflows can decide how to display, resolve, and roll back dependency decisions.
+Do not make `ExtensionValidator` enforce dependency maps until installer workflows can decide how to display, resolve, and roll back dependency decisions.
 
 ## References
 
-- [Package lifecycle snippets](package-lifecycle-snippets.md)
-- [Package developer guidelines](theme-module-developer-guidelines.md)
-- [Package modules and providers draft](../draft/0.2.x-PluginModules.md)
+- [Extension lifecycle snippets](extension-lifecycle-snippets.md)
+- [Extension developer guidelines](theme-module-developer-guidelines.md)
+- [Extension modules and providers draft](../draft/0.2.x-PluginModules.md)
 - [Self-update and release workflow draft](../draft/0.5.x-SelfUpdateReleaseWorkflow.md)

@@ -17,7 +17,7 @@ use App\Core\Config\Settings\CoreSettingsFormHandler;
 use App\Core\Log\AdminLogBrowser;
 use App\Core\Message\Message;
 use App\Core\Log\AuditLoggerInterface;
-use App\Core\Package\Settings\PackageSettingsFormHandler;
+use App\Core\Extension\Settings\ExtensionSettingsFormHandler;
 use App\Entity\UserAccount;
 use App\Form\FormErrorKey;
 use App\Form\FormSubmissionResult;
@@ -43,7 +43,7 @@ final class BackendController extends AbstractController
         private readonly CoreSettingsFormHandler $coreSettingsFormHandler,
         private readonly AdminFeatureAccessPolicy $adminAcl,
         private readonly AdminAclSettingsFormHandler $adminAclSettingsFormHandler,
-        private readonly PackageSettingsFormHandler $packageSettingsFormHandler,
+        private readonly ExtensionSettingsFormHandler $extensionSettingsFormHandler,
         private readonly AdminViewContextProvider $adminViewContextProvider,
         private readonly BackendActionResponder $backendActionResponder,
         private readonly AdminLogBrowser $logBrowser,
@@ -249,15 +249,15 @@ final class BackendController extends AbstractController
             $result = $this->formTokenValidator->isValid($expectedFormId, $formId, $token)
                 ? $this->coreSettingsFormHandler->submit($context['settings_section'], $request->request->all(), $this->actor()->userUid(), $this->actor())
                 : $this->invalidCsrfResult($request);
-        } elseif ('backend-admin-settings-packages' === $view->uid()) {
-            $expectedFormId = 'admin-settings-packages';
+        } elseif ('backend-admin-settings-extensions' === $view->uid()) {
+            $expectedFormId = 'admin-settings-extensions';
             $auditAction = 'settings.core.save';
-            $auditContext = ['section' => 'packages'];
+            $auditContext = ['section' => 'extensions'];
             if ($response = $this->mutationDeniedResponse($request, $view)) {
                 return $response;
             }
             $result = $this->formTokenValidator->isValid($expectedFormId, $formId, $token)
-                ? $this->coreSettingsFormHandler->submit('packages', $request->request->all(), $this->actor()->userUid(), $this->actor())
+                ? $this->coreSettingsFormHandler->submit('extensions', $request->request->all(), $this->actor()->userUid(), $this->actor())
                 : $this->invalidCsrfResult($request);
         } elseif ('backend-admin-settings-acl' === $view->uid()) {
             $expectedFormId = 'admin-settings-acl';
@@ -266,15 +266,15 @@ final class BackendController extends AbstractController
             $result = $this->formTokenValidator->isValid($expectedFormId, $formId, $token)
                 ? $this->adminAclSettingsFormHandler->submit($request->request->all(), $this->actor()->userUid())
                 : $this->invalidCsrfResult($request);
-        } elseif (isset($context['package_name']) && is_string($context['package_name'])) {
-            $expectedFormId = 'package-settings-'.preg_replace('/[^a-z0-9_]+/', '_', strtolower($context['package_name']));
-            $auditAction = 'settings.package.save';
-            $auditContext = ['package' => $context['package_name']];
+        } elseif (isset($context['extension_name']) && is_string($context['extension_name'])) {
+            $expectedFormId = 'extension-settings-'.preg_replace('/[^a-z0-9_]+/', '_', strtolower($context['extension_name']));
+            $auditAction = 'settings.extension.save';
+            $auditContext = ['extension' => $context['extension_name']];
             if ($response = $this->mutationDeniedResponse($request, $view)) {
                 return $response;
             }
             $result = $this->formTokenValidator->isValid($expectedFormId, $formId, $token)
-                ? $this->packageSettingsFormHandler->submit($context['package_name'], $request->request->all(), $this->actor()->userUid())
+                ? $this->extensionSettingsFormHandler->submit($context['extension_name'], $request->request->all(), $this->actor()->userUid())
                 : $this->invalidCsrfResult($request);
         }
 

@@ -3,7 +3,7 @@
 > **Status**: Draft  
 > **Updated**: 2026-06-18  
 > **Owner**: Core  
-> **Purpose:** Collect implementation notes for filesystem, package, operation, and configuration guards before they become formal security documentation.  
+> **Purpose:** Collect implementation notes for filesystem, extension, operation, and configuration guards before they become formal security documentation.  
 
 ## Overview
 
@@ -31,7 +31,7 @@ Filesystem write/copy actions should reject:
 Current default is conservative:
 
 - file inventories skip symlinks;
-- package copy planning rejects symlink sources;
+- extension copy planning rejects symlink sources;
 - filesystem actions block symlink target paths;
 - filesystem actions block symlink parent path segments.
 

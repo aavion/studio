@@ -27,7 +27,7 @@ final readonly class LiveEndpointController
     ) {
     }
 
-    #[Route('/api/live/{packageSlug}/{resourcePath}', name: 'api_live_package_dispatch', requirements: ['packageSlug' => '[a-z0-9]+(?:-[a-z0-9]+)*', 'resourcePath' => '.+'], methods: ['GET'], priority: -100)]
+    #[Route('/api/live/{extensionSlug}/{resourcePath}', name: 'api_live_extension_dispatch', requirements: ['extensionSlug' => '[a-z0-9]+(?:-[a-z0-9]+)*', 'resourcePath' => '.+'], methods: ['GET'], priority: -100)]
     public function dispatch(Request $request): Response
     {
         $endpoint = $this->endpoints->endpointForRequest($request);
@@ -73,7 +73,7 @@ final readonly class LiveEndpointController
 
     private function endpointMatchesRouteSlug(Request $request, string $endpointPath): bool
     {
-        $slug = (string) $request->attributes->get('packageSlug', '');
+        $slug = (string) $request->attributes->get('extensionSlug', '');
         if ('' === $slug && 1 === preg_match('#^/api/live/([a-z0-9]+(?:-[a-z0-9]+)*)/#', $request->getPathInfo(), $matches)) {
             $slug = $matches[1];
         }

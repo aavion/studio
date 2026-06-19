@@ -1,0 +1,39 @@
+{% extends '@backend/admin.html.twig' %}
+
+{% set settings_form = core_settings_form('extensions') %}
+{% set extension_settings = extension_setting_extensions() %}
+
+{% block title %}{{ 'admin.settings.extensions.title'|trans }}{% endblock %}
+
+{% block admin_sidebar %}
+    <nav aria-label="{{ 'ui.admin.navigation'|trans }}">
+        {% include '@backend/partials/navigation/_tree.html.twig' with {items: navigation} only %}
+    </nav>
+{% endblock %}
+
+{% block admin_body %}
+    {% include '@backend/admin/partials/_page-header.html.twig' with {
+        eyebrow: 'admin.settings.title'|trans,
+        title: 'admin.settings.extensions.title'|trans,
+    } only %}
+
+    <section class="system-panel">
+        <h2>{{ 'admin.settings.extensions.foundation_title'|trans }}</h2>
+        {% include '@backend/partials/forms/_dynamic.html.twig' with {form: settings_form} only %}
+        {% if extension_settings|length > 0 %}
+            <ul>
+                {% for extension in extension_settings %}
+                    <li>
+                        <a href="{{ extension.path }}">{{ extension.label }}</a>
+                        <code>{{ extension.extension_name }}</code>
+                        {% if extension.description %}
+                            <p class="system-muted">{{ extension.description }}</p>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="system-muted">{{ 'admin.settings.extensions.empty'|trans }}</p>
+        {% endif %}
+    </section>
+{% endblock %}

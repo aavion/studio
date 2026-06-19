@@ -7,14 +7,14 @@ namespace App\Api\Documentation;
 use App\Api\Endpoint\ApiEndpointDefinition;
 use App\Api\Endpoint\ApiEndpointAccessPolicy;
 use App\Api\Endpoint\ApiEndpointRegistry;
-use App\View\SystemPackageMetadataProvider;
+use App\View\SystemExtensionMetadataProvider;
 
 final readonly class OpenApiDocumentFactory
 {
     public function __construct(
         private ApiEndpointRegistry $endpoints,
         private ApiEndpointAccessPolicy $accessPolicy,
-        private SystemPackageMetadataProvider $systemPackageMetadata,
+        private SystemExtensionMetadataProvider $systemExtensionMetadata,
     ) {
     }
 
@@ -334,7 +334,7 @@ final readonly class OpenApiDocumentFactory
 
     private function apiTitle(): string
     {
-        $name = trim((string) $this->systemPackageMetadata->metadata()['name']);
+        $name = trim((string) $this->systemExtensionMetadata->metadata()['name']);
 
         return ('' !== $name ? $name : 'System').' API';
     }
@@ -344,7 +344,7 @@ final readonly class OpenApiDocumentFactory
      */
     private function optionalInfo(): array
     {
-        $metadata = $this->systemPackageMetadata->metadata();
+        $metadata = $this->systemExtensionMetadata->metadata();
         $info = [];
 
         if (is_string($metadata['description'] ?? null) && '' !== trim($metadata['description'])) {
@@ -406,7 +406,7 @@ final readonly class OpenApiDocumentFactory
             'backend-admin-backups' => ['summary' => 'Backend Admin Backups', 'description' => 'Administrative backup capabilities and future backup operations.', 'parent' => 'backend-admin', 'kind' => 'nav'],
             'backend-admin-logs' => ['summary' => 'Backend Admin Logs', 'description' => 'Administrative log source and log entry resources.', 'parent' => 'backend-admin', 'kind' => 'nav'],
             'backend-admin-operations' => ['summary' => 'Backend Admin Operations', 'description' => 'Administrative live-operation status, continuation, and maintenance resources.', 'parent' => 'backend-admin', 'kind' => 'nav'],
-            'backend-admin-packages' => ['summary' => 'Backend Admin Packages', 'description' => 'Administrative package management and lifecycle resources.', 'parent' => 'backend-admin', 'kind' => 'nav'],
+            'backend-admin-extensions' => ['summary' => 'Backend Admin Extensions', 'description' => 'Administrative extension management and lifecycle resources.', 'parent' => 'backend-admin', 'kind' => 'nav'],
             'backend-admin-permissions' => ['summary' => 'Backend Admin Permissions', 'description' => 'Endpoint access and API key capability matrix resources.', 'parent' => 'backend-admin', 'kind' => 'nav'],
             'backend-admin-scheduler' => ['summary' => 'Backend Admin Scheduler', 'description' => 'Administrative scheduler task and run resources.', 'parent' => 'backend-admin', 'kind' => 'nav'],
             'backend-admin-security' => ['summary' => 'Backend Admin Security', 'description' => 'Administrative security configuration, signals, and auto-ban resources.', 'parent' => 'backend-admin', 'kind' => 'nav'],
@@ -421,7 +421,7 @@ final readonly class OpenApiDocumentFactory
             'frontend-user' => ['summary' => 'Frontend User', 'description' => 'Authenticated user self-service resources.', 'kind' => 'nav'],
             'frontend-user-api-keys' => ['summary' => 'Frontend User API Keys', 'description' => 'Self-service API key list, creation, and revocation resources.', 'parent' => 'frontend-user', 'kind' => 'nav'],
             'frontend-user-profile' => ['summary' => 'Frontend User Profile', 'description' => 'Authenticated user profile resources.', 'parent' => 'frontend-user', 'kind' => 'nav'],
-            'packages-navigation' => ['summary' => 'Package Navigation', 'description' => 'Package API namespaces and registered package endpoint navigation. Package contribution tags should use packages-{package_slug}-*.', 'kind' => 'nav'],
+            'extensions-navigation' => ['summary' => 'Extension Navigation', 'description' => 'Extension API namespaces and registered extension endpoint navigation. Extension contribution tags should use extensions-{extension_slug}-*.', 'kind' => 'nav'],
             'system-api' => ['summary' => 'System API', 'description' => 'API documentation and API metadata resources.', 'kind' => 'nav'],
             'system-status' => ['summary' => 'System Status', 'description' => 'Status and healthcheck resources.', 'kind' => 'nav'],
         ];
