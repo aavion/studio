@@ -90,13 +90,11 @@ final class PackageDiscoveryTest extends TestCase
         $result = (new PackageDiscovery())->discover($this->projectDir, 'test');
 
         self::assertFalse($result->isSuccess());
-        self::assertCount(3, $result->issues());
+        self::assertCount(2, $result->issues());
         self::assertSame('manifest.missing_required_key', $result->issues()[0]->code());
         self::assertSame('PACKAGE_AUTHOR', $result->issues()[0]->context()['key']);
         self::assertSame('manifest.missing_required_key', $result->issues()[1]->code());
         self::assertSame('PACKAGE_VERSION', $result->issues()[1]->context()['key']);
-        self::assertSame('manifest.unknown_key', $result->issues()[2]->code());
-        self::assertSame('package', $result->issues()[2]->context()['source']);
     }
 
     public function testItReportsInvalidPackageScopes(): void

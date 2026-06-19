@@ -63,7 +63,7 @@ Required package manifest keys:
 | `PACKAGE_SCOPE` | One or more scopes, for example `[frontend-theme, module]`. |
 | `PACKAGE_DEPENDENCIES` | Dependency list, empty when no dependency is required. |
 
-Optional keys include `PACKAGE_SOURCE`, `PACKAGE_CHANNEL`, `PACKAGE_IMAGE`, `PACKAGE_NAMESPACE`, `PACKAGE_DESCRIPTION`, `PACKAGE_LICENSE`, and `PACKAGE_HOMEPAGE`. `PACKAGE_SOURCE` should point to the repository or release source root without a branch suffix, while `PACKAGE_CHANNEL` names the branch or channel; admin UI links may combine both values into a branch-specific URL where the source host supports it. Dependency entries use a compact JSON-like list of `[package, minimum-version]` pairs such as `[["system","0.1.0"],["demo-frontend-theme","0.1.1"]]`; malformed non-empty dependency declarations are validation errors. The virtual `system` package is treated as an active dependency backed by the root `.manifest`; real package dependencies still resolve against the persistent package registry.
+Optional well-known keys include `PACKAGE_SOURCE`, `PACKAGE_CHANNEL`, `PACKAGE_IMAGE`, `PACKAGE_NAMESPACE`, `PACKAGE_DESCRIPTION`, `PACKAGE_LICENSE`, and `PACKAGE_HOMEPAGE`; additional package-owned descriptor keys are allowed as long as they use the `PACKAGE_` prefix and the required keys are present and valid. `PACKAGE_SOURCE` should point to the repository or release source root without a branch suffix, while `PACKAGE_CHANNEL` names the branch or channel; admin UI links may combine both values into a branch-specific URL where the source host supports it. Dependency entries use a compact JSON-like list of `[package, minimum-version]` pairs such as `[["system","0.1.0"],["demo-frontend-theme","0.1.1"]]`; malformed non-empty dependency declarations are validation errors. The virtual `system` package is treated as an active dependency backed by the root `.manifest`; real package dependencies still resolve against the persistent package registry.
 
 The ZIP installer stages uploads under `var/cache/{APP_ENV}/package-installs`, verifies the manifest and package lint rules, then pauses the live operation with a review-required confirmation before copying files. `PACKAGE_SLUG` defines the target folder. If that package already exists, the apply step removes the existing package folder first, preserving whether it was active so activation can be restored after discovery. Update execution beyond ZIP uploads is deferred: a later updater should compare registered versions with manifest source metadata and use a narrow Git-backed stub for package or system updates.
 
@@ -83,14 +83,16 @@ $packageSpec = PackageSpec::create()
 $result = (new PackageValidator())->validate($candidate, $packageSpec);
 ```
 
-`package.php` is optional and must never be included during discovery. It may be included only after validation and activation. Packages are trusted code, so only administrators should install them. Package PHP classes should live below a package-owned root namespace derived from or declared for the package slug to avoid collisions.
+`package.php` is optional and must never be included during discovery. It may be included only after validation and activation. Packages are trusted code, so only administrators should install them. Package PHP files are allowed only as root `package.php` or below `src/`; package classes should live below a package-owned root namespace derived from or declared for the package slug to avoid collisions.
+
+Package validation ignores development-only metadata such as VCS files, editor settings, `docs/`, `tests/`, and common repository config directories. Public assets belong under `assets/` so the package asset sync can mirror them. Assets that must stay private to package code belong under `private-assets/`. Asset file types are not whitelist-limited, but executable/server-side files and bare HTML are blocked inside asset roots because mirrored assets can become publicly reachable. Templates belong under `templates/`. Translation sources belong under `languages/<locale>/*.yaml`, and `languages/en/` is required whenever a package ships translations. Package-local `vendor/` is allowed only when `composer.json` and `composer.lock` are present; `composer.json` is validated with Composer when available, but vendor contents are excluded from syntax and namespace linting. Package-local `assets/node_modules/` is allowed only when `assets/package.json` and a recognized Node lock file are present; node dependency contents are checked only shallowly.
 
 ## Feature inspection
 
 Package inspection currently reports:
 
 - templates;
-- assets;
+- public assets under `assets/`;
 - any PHP files;
 - `src/` PHP files;
 - Twig files;
@@ -116,7 +118,7 @@ Active package assets are exposed through generated registries rather than direc
 
 Static package assets such as images, fonts, SVGs, videos, and vendored dependency files are mirrored but not registered as standalone CSS/JS entries. They are served by AssetMapper only when referenced through mirrored package CSS, JavaScript, or templates. Source paths under `packages/<slug>/...` must not leak into public output.
 
-Active package translations are aggregated during the same rebuild queue. A package may ship source catalogues as `languages/<locale>/*.yaml`; if it ships any translation source, it must include at least one configured fallback catalogue under `languages/<fallback-locale>/` or the matching primary language directory. Package-owned keys must stay below `pkg.<package-slug>.*`. Inactive package language files are not aggregated, so disabled package copy cannot affect runtime translation fallback.
+Active package translations are aggregated during the same rebuild queue. A package may ship source catalogues as `languages/<locale>/*.yaml`; if it ships any translation source, it must include at least one English catalogue under `languages/en/`. Package-owned keys must stay below `pkg.<package-slug>.*`. Inactive package language files are not aggregated, so disabled package copy cannot affect runtime translation fallback.
 
 Template overrides are scope-bound. Any valid package scope may ship additive frontend and backend views under `templates/frontend/**` or `templates/backend/**`; only `frontend-theme` and `backend-theme` paths are searched before native templates and can override matching area templates. Module and provider package paths are searched after native templates, so they can provide package-specific views without replacing core UI. `system-template` may override root-level shared templates such as `templates/base.html.twig` and `templates/macros/core/**`. Packages may reference root templates through `@root/...` for fallback behavior even without `system-template`, but they must not replace root templates unless the scope is present. Package-owned macros are additive and belong under `templates/macros/{package-slug}/**`.
 

@@ -83,6 +83,7 @@
 **Usage:** Keep concise session notes in the active worklog and include the current branch in headings, using the form `### YYYY-MM-DD branch-name`. Place the newest branch/date heading directly below `## Branch Logs`; within a matching branch/date heading, add new notes at the top so the newest context stays first. Record meaningful committed or completed changes, decisions, blockers, and follow-ups; keep detailed verification in PR notes unless a result materially affects the worklog context. When switching to a different branch or after a PR is merged, compact the completed branch entry into [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), then create the new branch entry at the top.
 
 ### 2026-06-19 feat-security-captcha-contract
+- Relaxed and clarified package validation boundaries for development metadata, private assets, package-local dependency payloads, open `PACKAGE_*` manifest descriptors, and ZIP installer copy filtering.
 - Added early Git submodule synchronization to `bin/init` so clean checkouts initialize package submodules before Composer installs dependencies.
 
 ### 2026-06-18 feat-security-captcha-contract

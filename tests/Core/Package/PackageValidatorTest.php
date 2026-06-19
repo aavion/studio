@@ -10,7 +10,6 @@ use App\Core\Package\PackageInspection;
 use App\Core\Package\PackageManifestSpec;
 use App\Core\Package\PackageSource;
 use App\Core\Package\PackageSpec;
-use App\Core\Package\PackageTranslationNamespaceValidator;
 use App\Core\Package\PackageValidator;
 use App\Tests\Support\FilesystemTestHelper;
 use InvalidArgumentException;
@@ -63,10 +62,11 @@ final class PackageValidatorTest extends TestCase
         $this->writeFile('assets/app.js', 'export default true;');
         $this->writeFile('assets/images/logo.svg', '<svg></svg>');
         $this->writeFile('assets/fonts/demo.woff2', 'font');
+        $this->writeFile('private-assets/index.json', '{"items": []}');
         $this->writeFile('data/package.yaml', 'enabled: true');
         $this->writeFile('data/package.json', '{"enabled": true}');
         $this->writeFile('src/PackageExtension.php', '<?php class PackageExtension {}');
-        $this->writeFile('tools/helper.php', '<?php return true;');
+        $this->writeFile('package.php', '<?php return true;');
 
         $result = (new PackageValidator())->validate($this->candidate(), PackageSpec::create());
 
@@ -89,8 +89,8 @@ final class PackageValidatorTest extends TestCase
         self::assertSame(['templates/base.html.twig'], $inspection->templateFiles());
         self::assertSame(['assets/app.css', 'assets/app.js', 'assets/fonts/demo.woff2', 'assets/images/logo.svg'], $inspection->assetFiles());
         self::assertSame(['src/PackageExtension.php'], $inspection->sourcePhpFiles());
-        self::assertSame(['src/PackageExtension.php', 'tools/helper.php'], $inspection->phpFiles());
-        self::assertSame(['data/package.json'], $inspection->jsonFiles());
+        self::assertSame(['package.php', 'src/PackageExtension.php'], $inspection->phpFiles());
+        self::assertSame(['data/package.json', 'private-assets/index.json'], $inspection->jsonFiles());
         self::assertSame(['data/package.yaml'], $inspection->yamlFiles());
         self::assertSame(['assets/app.css'], $inspection->cssFiles());
         self::assertSame(['assets/app.js'], $inspection->javaScriptFiles());
@@ -141,6 +141,28 @@ final class PackageValidatorTest extends TestCase
         self::assertFalse($result->isSuccess());
         self::assertSame('package.identifier.invalid', $result->firstIssue()?->code());
         self::assertSame('PACKAGE_SLUG', $result->firstIssue()?->context()['key']);
+    }
+
+    public function testItAllowsAdditionalPackageManifestKeysWithPackagePrefix(): void
+    {
+        $result = (new PackageValidator())->validate(
+            $this->candidateWithManifest(['PACKAGE_DATE' => '2026-06-19']),
+            PackageSpec::create(),
+        );
+
+        self::assertTrue($result->isSuccess());
+    }
+
+    public function testItRejectsAdditionalPackageManifestKeysWithoutPackagePrefix(): void
+    {
+        $result = (new PackageValidator())->validate(
+            $this->candidateWithManifest(['CUSTOM_DATE' => '2026-06-19']),
+            PackageSpec::create(),
+        );
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('manifest.invalid_key', $result->firstIssue()?->code());
+        self::assertSame('PACKAGE_', $result->firstIssue()?->context()['expected_prefix']);
     }
 
     public function testItRejectsSlashSeparatedPackageSlugs(): void
@@ -919,6 +941,18 @@ CSS);
         self::assertTrue($result->isSuccess());
     }
 
+    public function testItAcceptsPackageTranslationYmlFilesInOwnedNamespace(): void
+    {
+        $this->writeFile('languages/en/messages.yml', "pkg:\n  system:\n    title: Demo\n");
+
+        $result = (new PackageValidator())->validate(
+            $this->candidate(),
+            PackageSpec::create()->withInventoryDepth(4)->withYamlLinting(),
+        );
+
+        self::assertTrue($result->isSuccess());
+    }
+
     public function testItAcceptsPackageTranslationFilesUsingManifestSlugWhenDirectoryDiffers(): void
     {
         $this->writeFile('languages/en/messages.yaml', "pkg:\n  demo-module:\n    title: Demo\n");
@@ -945,20 +979,17 @@ CSS);
         self::assertSame('languages/en', $result->firstIssue()?->context()['file']);
     }
 
-    public function testItAcceptsPrimaryLanguageForRegionalTranslationFallback(): void
+    public function testItRequiresEnglishEvenWhenOtherLanguagesExist(): void
     {
         $this->writeFile('languages/de/messages.yaml', "pkg:\n  system:\n    title: Demo\n");
 
-        $validator = new PackageValidator(
-            translationNamespaceValidator: new PackageTranslationNamespaceValidator(fallbackLocale: 'de_DE'),
-        );
-
-        $result = $validator->validate(
+        $result = (new PackageValidator())->validate(
             $this->candidate(),
             PackageSpec::create()->withInventoryDepth(4)->withYamlLinting(),
         );
 
-        self::assertTrue($result->isSuccess());
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.translation_fallback_missing', $result->firstIssue()?->code());
     }
 
     public function testItRejectsPackageTranslationFilesOutsideOwnedNamespace(): void
@@ -1071,12 +1102,15 @@ TWIG);
         $reasons = array_values(array_unique(array_map(static fn ($issue): string => $issue->context()['reason'], $result->issues())));
         self::assertContains('environment_file', $reasons);
         self::assertContains('reserved_project_path', $reasons);
+        self::assertContains('composer_dependency_manifest_missing', $reasons);
     }
 
-    public function testItWarnsAboutNonRuntimePackagePaths(): void
+    public function testItIgnoresDevelopmentOnlyPackagePaths(): void
     {
         $this->writeFile('docs/readme.md', 'notes');
         $this->writeFile('tests/PackageTest.php', '<?php');
+        $this->writeFile('.git/config', '[core]');
+        $this->writeFile('.editorconfig', "root = true\n");
 
         $result = (new PackageValidator())->validate(
             $this->candidate(),
@@ -1084,12 +1118,120 @@ TWIG);
         );
 
         self::assertTrue($result->isSuccess());
-        self::assertGreaterThanOrEqual(2, count($result->messages()));
-        self::assertSame([
-            'package.policy.warned_path',
-            'package.policy.warned_path',
-        ], array_map(static fn ($message): string => $message->code(), array_slice($result->messages(), 0, 2)));
-        self::assertSame('non_runtime_payload', $result->messages()[0]->context()['reason']);
+        self::assertSame([], $result->issues());
+    }
+
+    public function testItRejectsPackagePhpFilesOutsideSrcExceptPackageBootstrap(): void
+    {
+        $this->writeFile('package.php', '<?php return [];');
+        $this->writeFile('src/Extension.php', '<?php final class Extension {}');
+        $this->writeFile('tools/helper.php', '<?php return true;');
+
+        $result = (new PackageValidator())->validate(
+            $this->candidate(),
+            PackageSpec::create()->withInventoryDepth(4),
+        );
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.policy.blocked_path', $result->firstIssue()?->code());
+        self::assertSame('php_outside_src', $result->firstIssue()?->context()['reason']);
+        self::assertSame('tools/helper.php', $result->firstIssue()?->context()['path']);
+    }
+
+    public function testItRejectsTemplatesOutsideTemplateRoot(): void
+    {
+        $this->writeFile('views/page.html.twig', '<main></main>');
+
+        $result = (new PackageValidator())->validate(
+            $this->candidate(),
+            PackageSpec::create()->withInventoryDepth(4),
+        );
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('template_outside_templates', $result->firstIssue()?->context()['reason']);
+    }
+
+    public function testItAllowsUnknownAssetFileTypesInsideAssetRoots(): void
+    {
+        $this->writeFile('assets/models/scene.glb', 'binary');
+        $this->writeFile('private-assets/challenges/prompt.challenge', 'private');
+
+        $result = (new PackageValidator())->validate(
+            $this->candidate(),
+            PackageSpec::create()->withInventoryDepth(4),
+        );
+
+        self::assertTrue($result->isSuccess());
+    }
+
+    public function testItRejectsExecutableOrBareHtmlFilesInsideAssetRoots(): void
+    {
+        $this->writeFile('assets/shell.php', '<?php echo "no";');
+        $this->writeFile('assets/page.html', '<script>alert(1)</script>');
+        $this->writeFile('private-assets/script.py', 'print("no")');
+
+        $result = (new PackageValidator())->validate(
+            $this->candidate(),
+            PackageSpec::create()->withInventoryDepth(4),
+        );
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame(
+            ['asset_executable_file', 'asset_executable_file', 'asset_executable_file'],
+            array_map(static fn ($issue): string => $issue->context()['reason'], $result->issues()),
+        );
+    }
+
+    public function testItAcceptsPrivateAssetsWithoutAddingThemToSyncAssets(): void
+    {
+        $this->writeFile('private-assets/icons/icon.svg', '<svg></svg>');
+        $this->writeFile('private-assets/index.json', '{"icons": ["icon"]}');
+
+        $result = (new PackageValidator())->validate(
+            $this->candidate(),
+            PackageSpec::create()->withInventoryDepth(4)->withJsonLinting(),
+        );
+
+        self::assertTrue($result->isSuccess());
+
+        /** @var PackageInspection $inspection */
+        $inspection = $result->context()['inspection'];
+
+        self::assertSame([], $inspection->assetFiles());
+        self::assertSame(['private-assets/index.json'], $inspection->jsonFiles());
+    }
+
+    public function testItAllowsCommittedDependencyPayloadsWithMatchingManifests(): void
+    {
+        $this->writeFile('composer.json', '{"name": "aavion/demo-package", "type": "library", "require": {"php": ">=8.4"}}');
+        $this->writeFile('composer.lock', $this->emptyComposerLock());
+        $this->writeFile('vendor/vendor/package/src/Broken.php', '<?php class Broken {');
+        $this->writeFile('assets/package.json', '{"dependencies": {"library": "1.0.0"}}');
+        $this->writeFile('assets/package-lock.json', '{"lockfileVersion": 3}');
+        $this->writeFile('assets/node_modules/library/broken.js', 'const = ;');
+
+        $result = (new PackageValidator())->validate(
+            $this->candidate(),
+            PackageSpec::create()->withInventoryDepth(6)->withLintingChecks(),
+        );
+
+        self::assertTrue($result->isSuccess(), json_encode($result->toArray(), JSON_THROW_ON_ERROR));
+    }
+
+    public function testItValidatesPackageComposerManifestWhenPresent(): void
+    {
+        $this->writeFile('composer.json', '{"name": "Invalid Name"}');
+        $this->writeFile('composer.lock', $this->emptyComposerLock());
+        $this->writeFile('vendor/autoload.php', '<?php return true;');
+
+        $result = (new PackageValidator())->validate(
+            $this->candidate(),
+            PackageSpec::create()->withInventoryDepth(4)->withJsonLinting(),
+        );
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('package.policy.blocked_path', $result->firstIssue()?->code());
+        self::assertSame('composer_manifest_invalid', $result->firstIssue()?->context()['reason']);
     }
 
     public function testItBlocksDirectPhpCapabilitiesForInstallablePackages(): void
@@ -1213,5 +1355,25 @@ TWIG);
     private function writeFile(string $relativePath, string $contents): void
     {
         $this->writeTestFile($this->packageDir, $relativePath, $contents);
+    }
+
+    private function emptyComposerLock(): string
+    {
+        return <<<'JSON'
+{
+    "_readme": [],
+    "content-hash": "test",
+    "packages": [],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": {},
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": {},
+    "platform-dev": {},
+    "plugin-api-version": "2.6.0"
+}
+JSON;
     }
 }

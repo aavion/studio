@@ -104,6 +104,10 @@ final readonly class PackageInstallFilesystem
             $relative = substr($item->getPathname(), strlen($source) + 1);
             $destination = $target.DIRECTORY_SEPARATOR.$relative;
 
+            if ($this->skipInstallCopy($relative)) {
+                continue;
+            }
+
             if ($item->isLink()) {
                 throw new \RuntimeException(sprintf('Symlink "%s" must not be copied into a package.', $relative));
             }
@@ -189,5 +193,17 @@ final readonly class PackageInstallFilesystem
         }
 
         @unlink($path);
+    }
+
+    private function skipInstallCopy(string $relativePath): bool
+    {
+        $path = rtrim(str_replace('\\', '/', $relativePath), '/');
+
+        return 'tests' === $path
+            || str_starts_with($path, 'tests/')
+            || 1 === preg_match('#^(?:\.git|\.hg|\.svn)(?:/|$)#', $path)
+            || 1 === preg_match('#^\.(?:git|hg|svn).+#', $path)
+            || 1 === preg_match('#^(?:\.github|\.idea|\.vscode)(?:/|$)#', $path)
+            || in_array($path, ['.editorconfig'], true);
     }
 }

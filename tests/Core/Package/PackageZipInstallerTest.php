@@ -24,6 +24,7 @@ final class PackageZipInstallerTest extends KernelTestCase
         'zip-install-review',
         'zip-install-rollback',
         'zip-install-symlink',
+        'zip-install-skip',
     ];
 
     private const TEST_PACKAGE_DATABASE_SLUGS = [
@@ -43,6 +44,7 @@ final class PackageZipInstallerTest extends KernelTestCase
         '777777777777777777777777',
         '888888888888888888888888',
         '999999999999999999999999',
+        '121212121212121212121212',
     ];
 
     private string $projectDir;
@@ -315,6 +317,60 @@ final class PackageZipInstallerTest extends KernelTestCase
         self::assertSame('reserved_project_path', $verify->firstIssue()?->context()['reason']);
 
         $this->removePath($root);
+    }
+
+    public function testItSkipsDevelopmentArtifactsWhenApplyingZip(): void
+    {
+        if (!class_exists(ZipArchive::class)) {
+            self::markTestSkipped('ZipArchive is required for package ZIP installer tests.');
+        }
+
+        $installId = '121212121212121212121212';
+        $slug = 'zip-install-skip';
+        $target = $this->projectDir.'/packages/'.$slug;
+        $root = $this->installRoot($installId);
+        $this->removePath($target);
+        $this->deletePackageRow($slug);
+        $this->removePath($root);
+        mkdir($root, 0775, true);
+
+        $zip = new ZipArchive();
+        self::assertTrue(true === $zip->open($root.'/upload.zip', ZipArchive::CREATE | ZipArchive::OVERWRITE));
+        $zip->addFromString($slug.'/.manifest', <<<MANIFEST
+            PACKAGE_AUTHOR=Aavion Test
+            PACKAGE_SLUG={$slug}
+            PACKAGE_NAME=ZIP Install Test
+            PACKAGE_DESCRIPTION=Package ZIP installer test fixture.
+            PACKAGE_VERSION=1.0.0
+            PACKAGE_SCOPE=module
+            PACKAGE_DEPENDENCIES=[]
+            MANIFEST);
+        $zip->addFromString($slug.'/README.md', "# ZIP Install Test\n");
+        $zip->addFromString($slug.'/docs/readme.md', "Package docs\n");
+        $zip->addFromString($slug.'/.editorconfig', "root = true\n");
+        $zip->addFromString($slug.'/.git/config', "[core]\n");
+        $zip->addFromString($slug.'/tests/BrokenTest.php', '<?php class BrokenTest {');
+        $zip->close();
+
+        $verify = $this->installer()->verify(['install_id' => $installId]);
+        self::assertSame(WorkflowStatus::RequiresReview, $verify->status(), json_encode($verify->toArray(), JSON_THROW_ON_ERROR));
+
+        $apply = $this->installer()->apply([
+            'install_id' => $installId,
+            'package' => $slug,
+            'was_active' => false,
+        ]);
+
+        self::assertTrue($apply->isSuccess(), json_encode($apply->toArray(), JSON_THROW_ON_ERROR));
+        self::assertFileExists($target.'/.manifest');
+        self::assertFileExists($target.'/docs/readme.md');
+        self::assertFileDoesNotExist($target.'/.editorconfig');
+        self::assertFileDoesNotExist($target.'/.git/config');
+        self::assertFileDoesNotExist($target.'/tests/BrokenTest.php');
+
+        $this->removePath($target);
+        $this->removePath($root);
+        $this->deletePackageRow($slug);
     }
 
     public function testItRestoresActiveReverseDependentsAfterSuccessfulOverwrite(): void

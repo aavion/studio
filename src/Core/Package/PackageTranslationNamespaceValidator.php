@@ -8,7 +8,6 @@ use App\Core\Message\Message;
 use App\Core\Message\MessageLevel;
 use App\Core\Package\PackageMessageCode;
 use App\Core\Package\PackageMessageKey;
-use App\Localization\LocaleToken;
 use Symfony\Component\Yaml\Yaml;
 use Throwable;
 
@@ -21,9 +20,8 @@ final readonly class PackageTranslationNamespaceValidator
 
     public function __construct(
         private PackageValidationIssueFactory $issueFactory = new PackageValidationIssueFactory(),
-        string $fallbackLocale = 'en',
     ) {
-        $this->fallbackLocaleCandidates = $this->fallbackLocaleCandidates($fallbackLocale);
+        $this->fallbackLocaleCandidates = ['en'];
     }
 
     /**
@@ -36,7 +34,7 @@ final readonly class PackageTranslationNamespaceValidator
         $packageName = $this->translationPackageName($candidate);
         $translationFiles = array_values(array_filter(
             $files,
-            static fn (string $file): bool => 1 === preg_match('#^languages/[a-z][a-z0-9]*(?:[_-][A-Za-z0-9]+)*/[^/]+\.yaml$#', $file),
+            static fn (string $file): bool => 1 === preg_match('#^languages/[a-z][a-z0-9]*(?:[_-][A-Za-z0-9]+)*/[^/]+\.ya?ml$#', $file),
         ));
         $issues = [];
 
@@ -114,27 +112,4 @@ final readonly class PackageTranslationNamespaceValidator
         return false;
     }
 
-    /**
-     * @return non-empty-list<string>
-     */
-    private function fallbackLocaleCandidates(string $locale): array
-    {
-        $normalized = str_replace('-', '_', trim($locale));
-        if (!LocaleToken::isValid($normalized)) {
-            $normalized = 'en';
-        }
-
-        $candidates = [$normalized];
-        $hyphenated = str_replace('_', '-', $normalized);
-        if ($hyphenated !== $normalized) {
-            $candidates[] = $hyphenated;
-        }
-
-        $primary = preg_replace('/[_-].*$/', '', $normalized) ?: $normalized;
-        if ($primary !== $normalized) {
-            $candidates[] = $primary;
-        }
-
-        return array_values(array_unique($candidates));
-    }
 }

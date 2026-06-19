@@ -60,7 +60,7 @@ Validation rules:
 | `package.asset.contribution_type_invalid` | Package asset contribution declares an unsupported contribution type. | `package`, `type` |
 | `package.asset.contribution_path_invalid` | Package asset contribution path is empty, absolute, or contains null bytes. | `path` |
 | `package.asset.contribution_path_traversal` | Package asset contribution path traverses parent directories. | `path` |
-| `package.translation_fallback_missing` | Package translation sources exist but no configured fallback source catalogue is present. | `source`, `package`, `file`, `path`, `fallback_locale`, `fallback_locale_candidates` |
+| `package.translation_fallback_missing` | Package translation sources exist but no English source catalogue is present. | `source`, `package`, `file`, `path`, `fallback_locale`, `fallback_locale_candidates` |
 | `package.translation_namespace_invalid` | Package translation source is outside the package-owned `pkg.<slug>` namespace. | `source`, `package`, `file`, `path`, `expected_prefix` |
 | `translation.aggregate_completed` | Core and active package translation sources were aggregated into runtime catalogues. | `packages`, `locales`, `files`, `targets` |
 | `translation.aggregate_failed` | Translation aggregation could not write runtime catalogues. | `exception`, `message`, `target_pattern` |

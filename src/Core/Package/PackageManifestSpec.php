@@ -11,21 +11,6 @@ final class PackageManifestSpec
     public static function create(): ManifestSpec
     {
         return ManifestSpec::create()
-            ->allowOnly(
-                'PACKAGE_AUTHOR',
-                'PACKAGE_SLUG',
-                'PACKAGE_NAME',
-                'PACKAGE_VERSION',
-                'PACKAGE_SCOPE',
-                'PACKAGE_DEPENDENCIES',
-                'PACKAGE_SOURCE',
-                'PACKAGE_CHANNEL',
-                'PACKAGE_IMAGE',
-                'PACKAGE_NAMESPACE',
-                'PACKAGE_DESCRIPTION',
-                'PACKAGE_LICENSE',
-                'PACKAGE_HOMEPAGE',
-            )
             ->require('PACKAGE_AUTHOR')
             ->require('PACKAGE_SLUG')
             ->require('PACKAGE_NAME')

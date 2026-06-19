@@ -31,6 +31,9 @@ final readonly class PackageInspection
         private array $cssFiles,
         private array $javaScriptFiles,
         private array $staticAssetFiles,
+        private bool $hasComposerDependencies = false,
+        private bool $hasNodeDependencies = false,
+        private bool $hasEnglishTranslations = false,
     ) {
     }
 
@@ -170,5 +173,20 @@ final readonly class PackageInspection
     public function hasStaticAssetFiles(): bool
     {
         return [] !== $this->staticAssetFiles;
+    }
+
+    public function hasComposerDependencies(): bool
+    {
+        return $this->hasComposerDependencies;
+    }
+
+    public function hasNodeDependencies(): bool
+    {
+        return $this->hasNodeDependencies;
+    }
+
+    public function hasEnglishTranslations(): bool
+    {
+        return $this->hasEnglishTranslations;
     }
 }

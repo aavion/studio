@@ -167,9 +167,9 @@ services:
 
     App\Content\Api\ContentApiPath: ~
 
-    App\Core\Package\PackageTranslationNamespaceValidator:
+    App\Core\Package\PackageDependencyManifestValidator:
         arguments:
-            $fallbackLocale: '%kernel.default_locale%'
+            $projectDir: '%kernel.project_dir%'
 
     App\Setup\SetupRunner:
         arguments:

@@ -25,6 +25,7 @@ final class PackageValidator
         private readonly PackageCssNamespaceValidator $cssNamespaceValidator = new PackageCssNamespaceValidator(),
         private readonly PackageSourceNamespaceValidator $sourceNamespaceValidator = new PackageSourceNamespaceValidator(),
         private readonly PackageTranslationNamespaceValidator $translationNamespaceValidator = new PackageTranslationNamespaceValidator(),
+        private readonly PackageDependencyManifestValidator $dependencyManifestValidator = new PackageDependencyManifestValidator(),
         private readonly PackageSchedulerCronValidator $schedulerCronValidator = new PackageSchedulerCronValidator(),
         private readonly PackageDependencyParser $dependencyParser = new PackageDependencyParser(),
     ) {
@@ -37,6 +38,7 @@ final class PackageValidator
     {
         $issues = [
             ...$this->validatePackageSlug($candidate),
+            ...$this->validatePackageManifestKeyPrefix($candidate),
             ...$this->validateDependencySyntax($candidate),
         ];
 
@@ -51,6 +53,7 @@ final class PackageValidator
         array_push($issues, ...$this->phpCapabilityPolicy->validate($candidate, $inspection));
         array_push($issues, ...$this->schedulerCronValidator->validate($candidate, $inspection->phpFiles()));
         array_push($issues, ...$this->fileSyntaxValidator->validate($candidate, $inspection, $spec));
+        array_push($issues, ...$this->dependencyManifestValidator->validate($candidate, $inspection));
         array_push($issues, ...$this->cssNamespaceValidator->validate($candidate, $inspection->cssFiles()));
         array_push($issues, ...$this->sourceNamespaceValidator->validate($candidate, $inspection->sourcePhpFiles()));
         array_push($issues, ...$this->translationNamespaceValidator->validate($candidate, $inspection->yamlFiles()));
@@ -134,6 +137,39 @@ final class PackageValidator
         }
 
         return [];
+    }
+
+    /**
+     * @return list<Message>
+     */
+    private function validatePackageManifestKeyPrefix(PackageCandidate $candidate): array
+    {
+        if ('package' !== $candidate->source()->name()) {
+            return [];
+        }
+
+        $issues = [];
+
+        foreach ($candidate->manifest()->keys() as $key) {
+            if (str_starts_with($key, 'PACKAGE_')) {
+                continue;
+            }
+
+            $issues[] = Message::create(
+                ManifestMessageCode::MANIFEST_INVALID_KEY,
+                ManifestMessageKey::MANIFEST_INVALID_KEY,
+                ['%key%' => $key],
+                [
+                    'source' => $candidate->source()->name(),
+                    'path' => $candidate->manifestPath(),
+                    'key' => $key,
+                    'expected_prefix' => 'PACKAGE_',
+                ],
+                MessageLevel::Error,
+            );
+        }
+
+        return $issues;
     }
 
     /**
