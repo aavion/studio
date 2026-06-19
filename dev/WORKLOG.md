@@ -1,7 +1,7 @@
 # Developer Worklog
 
 > **Status**: Active  
-> **Updated**: 2026-06-18  
+> **Updated**: 2026-06-19  
 > **Owner**: Core  
 > **Purpose:** Keeps track of changes and upcoming tasks. 
 
@@ -80,7 +80,10 @@
 - [ ] Evaluate whether the documented minimum memory requirement should become 256M after PHPUnit 13.2/full-suite runs needed a higher CLI memory limit; do not fix this requirement until setup/init/lint/runtime memory behavior has been reviewed across target hosting platforms.
 
 ## Branch Logs
-**Usage:** Keep concise session notes in the active worklog and include the current branch in headings, using the form `### YYYY-MM-DD branch-name`. Place new entries chronologically under the matching branch/date heading so reviewers can follow the PR context without reading full verification transcripts. Record meaningful committed or completed changes, decisions, blockers, and follow-ups; keep detailed verification in PR notes unless a result materially affects the worklog context. When switching to a different branch or after a PR is merged, compact the completed branch entry into [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), then create the new branch entry at the top.
+**Usage:** Keep concise session notes in the active worklog and include the current branch in headings, using the form `### YYYY-MM-DD branch-name`. Place the newest branch/date heading directly below `## Branch Logs`; within a matching branch/date heading, add new notes at the top so the newest context stays first. Record meaningful committed or completed changes, decisions, blockers, and follow-ups; keep detailed verification in PR notes unless a result materially affects the worklog context. When switching to a different branch or after a PR is merged, compact the completed branch entry into [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), then create the new branch entry at the top.
+
+### 2026-06-19 feat-security-captcha-contract
+- Added early Git submodule synchronization to `bin/init` so clean checkouts initialize package submodules before Composer installs dependencies.
 
 ### 2026-06-18 feat-security-captcha-contract
 - Started the captcha contract branch after `feat-security-auto-ban` merged and compacted the completed auto-ban branch notes into `dev/WORKLOG_HISTORY.md`.

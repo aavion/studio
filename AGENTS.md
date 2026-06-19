@@ -117,7 +117,7 @@
 - PR notes must summarize the readiness audit outcome, including verification commands, skipped checks or proof gaps, documentation/worklog/classmap status, translation status, security/privacy considerations, and remaining follow-ups.
 
 ## Build and Verification Commands
-- `bin/init` initializes the repository, refreshes dependencies and assets, locks referenced Symfony UX icons locally when possible, and is the preferred recovery path for broken or incomplete `vendor/` packages because it removes an existing `vendor/` tree before Composer runs.
+- `bin/init` initializes the repository, synchronizes configured Git submodules, refreshes dependencies and assets, locks referenced Symfony UX icons locally when possible, and is the preferred recovery path for broken or incomplete `vendor/` packages because it removes an existing `vendor/` tree before Composer runs.
 - `composer install` installs PHP dependencies and verifies required extensions.
 - `bin/lint` runs the full project lint suite, including Markdown parse checks, local Symfony UX icon reference checks, and a Git whitespace check that excludes Markdown hard line breaks; pass one or more files or directories to run focused type-based checks, or use `bin/lint --diff`, `bin/lint --staged`, `bin/lint --diff=<target..source>`, or `bin/lint --changed=<target..source>` to lint supported Git changes when Git and a work tree are available.
 - `php -l <path>` checks PHP syntax for a changed file.

@@ -16,6 +16,7 @@
 - run without vendor dependencies already installed;
 - verify PHP version and required extensions;
 - resolve Composer through system Composer or `bin/composer`;
+- synchronize configured Git submodules before Composer runs so package submodules are present in clean checkouts;
 - remove an existing `vendor/` tree before Composer install so corrupt vendor packages cannot poison dependency resolution;
 - install production dependencies first;
 - generate core-only runtime translation catalogues from `translations/languages/{locale}` before Symfony console consumers run;
@@ -63,7 +64,7 @@ Interactive CLI setup asks for the admin password twice. Non-interactive setup u
 
 Automation workflows should call `bin/init` before reviews or tests when a fresh checkout may not have dependencies or built assets.
 
-When Composer packages look incomplete, corrupted, or inconsistent, run `bin/init` as the first recovery path. It removes the existing `vendor/` tree before Composer runs, then restores production dependencies for bootstrap and development dependencies for local `dev` or `test` workflows.
+When Composer packages look incomplete, corrupted, or inconsistent, run `bin/init` as the first recovery path. It synchronizes configured Git submodules, removes the existing `vendor/` tree before Composer runs, then restores production dependencies for bootstrap and development dependencies for local `dev` or `test` workflows.
 
 `bin/init` should not mutate application data or ask interactive setup questions.
 
