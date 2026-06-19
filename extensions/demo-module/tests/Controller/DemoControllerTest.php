@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Controller;
+namespace DemoModule\Tests\Controller;
 
 use App\Core\Extension\ExtensionAssetSyncTarget;
 use App\Core\Extension\ExtensionScope;
@@ -55,6 +55,7 @@ final class DemoControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Frontend shell demo');
+        self::assertSelectorTextContains('#demo-module-contract-title', 'What this demo contributes');
     }
 
     public function testItRendersBackendDemoShellFromDemoModule(): void
@@ -151,7 +152,7 @@ final class DemoControllerTest extends WebTestCase
 
     private function aggregateDemoTranslations(): void
     {
-        $projectDir = dirname(__DIR__, 2);
+        $projectDir = dirname(__DIR__, 4);
         foreach (['translations/runtime/test/messages.en.yaml', 'translations/runtime/test/messages.de.yaml'] as $relativePath) {
             $path = $projectDir.'/'.$relativePath;
             $this->catalogueBackups[$path] = is_file($path) ? (string) file_get_contents($path) : null;
@@ -185,6 +186,6 @@ final class DemoControllerTest extends WebTestCase
 
     private static function demoModulePath(): string
     {
-        return dirname(__DIR__, 2).'/extensions/demo-module';
+        return dirname(__DIR__, 2);
     }
 }

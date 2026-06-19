@@ -5,8 +5,10 @@
 {% block frontend_body %}
     {% set demo_base = extension_setting('demo-module', 'demo.route', 'demo')|default('demo')|trim('/') %}
     {% set demo_base = demo_base == '' ? 'demo' : demo_base %}
+    {% set display_mode = extension_setting('demo-module', 'display.mode', 'expanded')|default('expanded') %}
+    {% set display_mode = display_mode in ['compact', 'expanded'] ? display_mode : 'expanded' %}
 
-    <section class="system-frontend-content-page demo-module-frontend-demo">
+    <section class="system-frontend-content-page demo-module-frontend-demo demo-module-frontend-demo-{{ display_mode }}">
         {% include '@frontend/partials/typography/_page-header.html.twig' with {
             kicker: 'ext.demo-module.demo.kicker'|trans,
             title: 'ext.demo-module.demo.frontend.title'|trans,
@@ -19,6 +21,35 @@
                 {label: 'ext.demo-module.navigation.typography'|trans, href: path('content_show', {path: demo_base ~ '/typography'}), variant: 'secondary'},
             ],
         } only %}
+
+        <section class="demo-module-frontend-contract" aria-labelledby="demo-module-contract-title">
+            <header>
+                <div>
+                    <p class="system-kicker">{{ 'ext.demo-module.demo.contract.kicker'|trans }}</p>
+                    <h2 id="demo-module-contract-title">{{ 'ext.demo-module.demo.contract.title'|trans }}</h2>
+                </div>
+                <span class="system-badge system-badge-info">{{ ('ext.demo-module.settings.display_mode.options.' ~ display_mode)|trans }}</span>
+            </header>
+
+            <p class="system-muted">{{ 'ext.demo-module.demo.contract.text'|trans({'%route%': '/' ~ demo_base}) }}</p>
+
+            <div class="demo-module-contract-grid">
+                {% for item in [
+                    {title: 'ext.demo-module.demo.contract.items.routes.title', text: 'ext.demo-module.demo.contract.items.routes.text', badge: 'module'},
+                    {title: 'ext.demo-module.demo.contract.items.dynamic.title', text: 'ext.demo-module.demo.contract.items.dynamic.text', badge: 'slot'},
+                    {title: 'ext.demo-module.demo.contract.items.settings.title', text: 'ext.demo-module.demo.contract.items.settings.text', badge: 'settings'},
+                    {title: 'ext.demo-module.demo.contract.items.assets.title', text: 'ext.demo-module.demo.contract.items.assets.text', badge: 'assets'}
+                ] %}
+                    <article class="demo-module-contract-card">
+                        <span class="system-badge system-badge-neutral">{{ item.badge }}</span>
+                        <h3>{{ item.title|trans }}</h3>
+                        {% if display_mode == 'expanded' %}
+                            <p>{{ item.text|trans }}</p>
+                        {% endif %}
+                    </article>
+                {% endfor %}
+            </div>
+        </section>
 
         <div class="demo-module-grid">
             <section class="system-panel">

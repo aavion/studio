@@ -54,7 +54,7 @@ return [
         'demo-module',
         'display.mode',
         'ext.demo-module.settings.display_mode.label',
-        'compact',
+        'expanded',
         description: 'ext.demo-module.settings.display_mode.help',
         options: [
             'compact' => 'ext.demo-module.settings.display_mode.options.compact',

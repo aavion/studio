@@ -14,6 +14,50 @@
     gap: 1.5rem;
 }
 
+.demo-module-frontend-contract {
+    display: grid;
+    gap: 1rem;
+}
+
+.demo-module-frontend-contract > header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.demo-module-frontend-contract h2,
+.demo-module-contract-card h3 {
+    margin: 0;
+}
+
+.demo-module-contract-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+    gap: 1rem;
+}
+
+.demo-module-contract-card {
+    display: grid;
+    align-content: start;
+    gap: 0.625rem;
+    min-height: 9rem;
+    border: 1px solid var(--color-line);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    background: var(--color-paper);
+}
+
+.demo-module-frontend-demo-compact .demo-module-contract-card {
+    min-height: 6.25rem;
+}
+
+.demo-module-contract-card p {
+    margin: 0;
+    color: var(--color-muted);
+}
+
 .demo-module-frontend-typography-guide {
     @apply grid gap-6;
 }

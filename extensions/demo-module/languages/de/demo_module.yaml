@@ -28,6 +28,23 @@ ext:
         content_title: 'Content-Vorschau'
         content_text: 'Diese Karte nutzt dieselben Fallback-Komponenten, die oeffentliches Content-Rendering wiederverwenden kann.'
         rich_text: 'Lesbare Texte, fokussierte Aktionen und zurueckhaltende Kontraste sollen ueber Themes hinweg stabil bleiben.'
+      contract:
+        kicker: 'Extension Contract'
+        title: 'Was diese Demo beitraegt'
+        text: 'Diese Route wird vom Demo-Modul bereitgestellt und aktuell unter %route% eingehaengt. Aendere Route oder Anzeigemodus in den Extension-Settings, um konfigurierbare Contributions zu pruefen.'
+        items:
+          routes:
+            title: 'Konfigurierbare Routen'
+            text: 'Oeffentliche Demo, Backend-Shell und Typografie-Guide teilen sich einen setting-basierten Route-Parent.'
+          dynamic:
+            title: 'Dynamischer Slot'
+            text: 'Eine kleine After-Content-Injektion zeigt, wie Extensions Ausgaben an bestehenden Content anhaengen koennen.'
+          settings:
+            title: 'Settings'
+            text: 'Route-Parent und Anzeigemodus sind extension-eigene Settings mit uebersetzten Labels und Validierung.'
+          assets:
+            title: 'Assets'
+            text: 'Scoped CSS und JavaScript werden ueber die Extension-Asset-Pipeline gespiegelt.'
       typography:
         title: 'Typografie-Guide'
         subtitle: 'Eine renderer-gestuetzte Markdown-Vorschau zum Feinjustieren von lesbarem Content, Schema-Feldausgaben und trusted Design-Bloecken.'

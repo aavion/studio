@@ -21,6 +21,7 @@
     <testsuites>
         <testsuite name="Project Test Suite">
             <directory suffix="Test.php">tests</directory>
+            <directory suffix="Test.php">extensions/*/tests</directory>
         </testsuite>
     </testsuites>
 

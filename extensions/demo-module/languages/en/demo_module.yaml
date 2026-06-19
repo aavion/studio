@@ -28,6 +28,23 @@ ext:
         content_title: 'Content preview'
         content_text: 'This card uses the same fallback components that public content rendering can reuse.'
         rich_text: 'Readable copy, focused actions, and restrained contrast should remain stable across themes.'
+      contract:
+        kicker: 'Extension contract'
+        title: 'What this demo contributes'
+        text: 'This route is provided by the demo module and currently mounted below %route%. Change the route or display mode in the extension settings to verify configurable contributions.'
+        items:
+          routes:
+            title: 'Configurable routes'
+            text: 'The public demo, backend shell, and typography guide share one setting-backed route parent.'
+          dynamic:
+            title: 'Dynamic slot'
+            text: 'A small after-content injection demonstrates how extensions can attach output to existing content.'
+          settings:
+            title: 'Settings'
+            text: 'The route parent and display mode are extension-owned settings with translated labels and validation.'
+          assets:
+            title: 'Assets'
+            text: 'Scoped CSS and JavaScript are mirrored through the extension asset pipeline.'
       typography:
         title: 'Typography guide'
         subtitle: 'A renderer-backed Markdown preview for tuning readable content, schema field output, and trusted design blocks.'
