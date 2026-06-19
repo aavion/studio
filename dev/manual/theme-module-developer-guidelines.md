@@ -27,7 +27,7 @@ Use this guide as a working reference when building the native system extensions
 
 ## Extension scopes
 
-Extensions live under `extensions/<extension-slug>/` and use `EXTENSION_*` manifest keys. `EXTENSION_SCOPE` is a DotEnv-style list such as `[frontend-theme, module]`, or a single value such as `module`.
+Extensions live under `extensions/<extension-slug>/` and use `EXTENSION_*` manifest keys. `EXTENSION_SCOPE` is a DotEnv-style list such as `[frontend-theme, module]`, or a single value such as `module`. Capability scopes such as `api`, `database`, and `content-schema` gate matching extension contributions.
 
 Expected extension shape:
 
@@ -55,6 +55,8 @@ EXTENSION_DEPENDENCIES=[]
 
 Optional source metadata stays split: `EXTENSION_SOURCE` points to the repository or release source root, and `EXTENSION_CHANNEL` identifies the branch or channel. The admin UI may turn those two values into a branch-specific link, but update tooling must still be able to reconstruct clone/fetch targets from the raw manifest values.
 
+Additional `EXTENSION_*` manifest keys become typed immutable metadata and can be read by extension-owned code through `ExtensionSettings::get('{extension-slug}', 'manifest.{key_without_extension_prefix}')`. For example, `EXTENSION_SOMEKEY=hallo welt` in `icon-captcha` is exposed as `ExtensionSettings::get('icon-captcha', 'manifest.somekey')`; a later `ExtensionSettings::set()` for the same key stores an override in the DB and leaves the manifest unchanged.
+
 Current constraints:
 
 - Allowed scopes start as `frontend-theme`, `backend-theme`, `system-template`, `module`, `captcha-provider`, `editor-provider`, `database`, and `content-schema`.
@@ -72,7 +74,7 @@ Current constraints:
 
 `extension.php` is optional. It must never be included during discovery and should only be loaded after an extension is valid and active. Extensions are trusted code; only administrators may install them. An extension should use an extension-owned root namespace derived from or declared for the extension slug.
 
-When `EXTENSION_NAMESPACE` is declared, PHP files below `src/` must use that namespace or one of its child namespaces. The active runtime loader includes only `extension.php`; that file may return simple contribution DTOs/providers or a callable that returns them, but it must not directly include files, read or write files, spawn processes, open network sockets, read raw environment/request globals, or bypass extension points. For multiple contributions, prefer `App\Core\Extension\ExtensionContributions::create()` so the extension entry point remains readable and each contribution type is named. Supported direct contributions currently include static view injections, configurable static route sets, dynamic view injections, extension setting definitions, scheduler task definitions, declarative database tables, and content schema presets. Loader failures are caught by the lifecycle layer, recorded as structured diagnostics, and mark the extension `faulty` so a broken active extension does not keep breaking requests. Contribution iterables are staged before registry mutation, so one unsupported item rejects the full extension contribution for the current request.
+When `EXTENSION_NAMESPACE` is declared, PHP files below `src/` must use that namespace or one of its child namespaces. The active runtime loader includes only `extension.php`; that file may return simple contribution DTOs/providers or a callable that returns them, but it must not directly include files, read or write files, spawn processes, open network sockets, read raw environment/request globals, or bypass extension points. For multiple contributions, prefer `App\Core\Extension\ExtensionContributions::create()` so the extension entry point remains readable and each contribution type is named. Supported direct contributions currently include static view injections, configurable static route sets, dynamic view injections, extension setting definitions, scheduler task definitions, API endpoints and handlers, declarative database tables, and content schema presets. API contributions require `api` scope, database contributions require `database` scope, and content schema contributions require `content-schema` scope. Loader failures are caught by the lifecycle layer, recorded as structured diagnostics, and mark the extension `faulty` so a broken active extension does not keep breaking requests. Contribution iterables are staged before registry mutation, so one unsupported item rejects the full extension contribution for the current request.
 
 Extension assets must be self-contained. Extensions should vendor their external dependencies inside their own extension directory instead of requiring the project importmap to manage third-party dependency lifecycles across extensions. Active extension CSS and JavaScript are aggregated through the generated extension asset registries; extensions should not expect templates to add arbitrary direct `<link>` or `<script>` tags for extension-level assets. Static assets such as images, fonts, videos, and SVGs should be referenced from extension CSS, JavaScript, or templates after the lifecycle mirrors them into the AssetMapper-visible extension path. Assets that must not be mirrored, such as server-side challenge images or provider-private indexes, belong under `private-assets/`.
 
