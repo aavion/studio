@@ -51,6 +51,7 @@ message:
       contribution_invalid: 'Extension-Content-Schema-Contribution ist ungültig (%reason%).'
       sync_completed: 'Content-Schema-Sync für Extension "%extension%" hat %count% Schema/Schemata erstellt oder versioniert.'
       purge_completed: 'Content-Schema-Purge für Extension "%extension%" hat %count% Schema/Schemata gelöscht.'
+      purge_retained: 'Content-Schema-Purge für Extension "%extension%" hat %count% referenzierte Schema/Schemata behalten.'
       content_archived: '%count% Content-Element(e) mit deaktivierten Extension-Schemata wurden archiviert.'
     discovery_queued: 'Extension-Discovery wurde durch "%trigger%" eingereiht.'
     discovery_queue_failed: 'Extension-Discovery konnte durch "%trigger%" nicht eingereiht werden.'

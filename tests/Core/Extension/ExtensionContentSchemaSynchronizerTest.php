@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Tests\Core\Extension;
 
+use App\Content\ContentStatus;
 use App\Core\Extension\Content\ExtensionContentSchemaDefinition;
 use App\Core\Extension\Content\ExtensionContentSchemaSynchronizer;
 use App\Core\Extension\ExtensionScope;
 use App\Core\Extension\ExtensionStatus;
+use App\Entity\ContentItem;
+use App\Entity\ContentRevision;
 use App\Entity\ContentSchema;
 use App\Entity\Extension;
 use Doctrine\DBAL\Connection;
@@ -74,6 +77,34 @@ final class ExtensionContentSchemaSynchronizerTest extends KernelTestCase
         $this->entityManager->clear();
         $schema = $this->entityManager->getRepository(ContentSchema::class)->findOneBy(['identifier' => 'demo_module_article']);
         self::assertNull($schema);
+    }
+
+    public function testItArchivesContentAndRetainsReferencedSchemasOnPurge(): void
+    {
+        $synchronizer = new ExtensionContentSchemaSynchronizer($this->entityManager);
+        $extension = $this->extension();
+        self::assertTrue($synchronizer->apply($extension, [$this->schema('body')])->isSuccess());
+        $schema = $this->entityManager->getRepository(ContentSchema::class)->findOneBy(['identifier' => 'demo_module_article']);
+        self::assertInstanceOf(ContentSchema::class, $schema);
+        self::assertNotNull($schema->activeVersion());
+        $content = new ContentItem('c3000000-0000-7000-8000-000000000001', 'extension-content');
+        $content->activateRevision(new ContentRevision('c3000000-0000-7000-8000-000000000101', $content, 1, $schema->activeVersion()));
+        $content->publish();
+        $this->entityManager->persist($content);
+        $this->entityManager->flush();
+
+        $result = $synchronizer->purge($extension);
+
+        self::assertTrue($result->isSuccess());
+        self::assertSame([], $result->value()['deleted']);
+        self::assertSame('demo_module_article', $result->value()['retained'][0]['schema']);
+        self::assertSame(1, $result->value()['archived_content']);
+        self::assertSame(ContentStatus::Archived, $content->status());
+
+        $this->entityManager->clear();
+        $schema = $this->entityManager->getRepository(ContentSchema::class)->findOneBy(['identifier' => 'demo_module_article']);
+        self::assertInstanceOf(ContentSchema::class, $schema);
+        self::assertNull($schema->activeVersion());
     }
 
     private function schema(string $customField): ExtensionContentSchemaDefinition

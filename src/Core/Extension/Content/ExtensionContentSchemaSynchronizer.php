@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Extension\Content;
 
+use App\Content\ContentStatus;
 use App\Content\Schema\ContentSchemaSource;
 use App\Core\Id\UuidFactory;
 use App\Core\Message\Message;
@@ -86,28 +87,25 @@ final readonly class ExtensionContentSchemaSynchronizer
     }
 
     /**
-     * @return WorkflowResult<array{deleted: list<string>}>
+     * @return WorkflowResult<array{deleted: list<string>, retained: list<array{schema: string, content_items: int, content_revisions: int}>, archived_content: int}>
      */
     public function purge(Extension $extension): WorkflowResult
     {
         $deleted = [];
+        $retained = [];
+        $archivedContent = 0;
 
         foreach ($this->entityManager->getRepository(ContentSchema::class)->findBy(['source' => ContentSchemaSource::Module]) as $schema) {
             if (!$schema instanceof ContentSchema || !$this->ownedBy($schema, $extension)) {
                 continue;
             }
 
+            $archivedContent += $this->forceArchiveContent($schema);
             $references = $this->referenceCounts($schema);
             if ($references['content_items'] > 0 || $references['content_revisions'] > 0) {
-                return WorkflowResult::failed([
-                    Message::create(
-                        ExtensionMessageCode::EXTENSION_CONTENT_SCHEMA_CONTRIBUTION_INVALID,
-                        ExtensionMessageKey::EXTENSION_CONTENT_SCHEMA_CONTRIBUTION_INVALID,
-                        ['%reason%' => 'schema_still_referenced'],
-                        ['extension' => $extension->extensionName(), 'schema' => $schema->identifier(), ...$references],
-                        MessageLevel::Error,
-                    ),
-                ]);
+                $schema->disable();
+                $retained[] = ['schema' => $schema->identifier(), ...$references];
+                continue;
             }
 
             $schema->disable();
@@ -119,9 +117,13 @@ final readonly class ExtensionContentSchemaSynchronizer
 
         return WorkflowResult::success([
             'deleted' => $deleted,
+            'retained' => $retained,
+            'archived_content' => $archivedContent,
         ], [
             'extension' => $extension->extensionName(),
             'deleted' => $deleted,
+            'retained' => $retained,
+            'archived_content' => $archivedContent,
         ], [
             Message::debug(
                 ExtensionMessageCode::EXTENSION_CONTENT_SCHEMA_PURGE_COMPLETED,
@@ -129,6 +131,14 @@ final readonly class ExtensionContentSchemaSynchronizer
                 ['%extension%' => $extension->extensionName(), '%count%' => count($deleted)],
                 ['extension' => $extension->extensionName(), 'deleted' => $deleted],
             ),
+            ...([] === $retained ? [] : [
+                Message::warning(
+                    ExtensionMessageCode::EXTENSION_CONTENT_SCHEMA_PURGE_RETAINED,
+                    ExtensionMessageKey::EXTENSION_CONTENT_SCHEMA_PURGE_RETAINED,
+                    ['%extension%' => $extension->extensionName(), '%count%' => count($retained)],
+                    ['extension' => $extension->extensionName(), 'retained' => $retained, 'archived_content' => $archivedContent],
+                ),
+            ]),
         ]);
     }
 
@@ -212,6 +222,22 @@ final readonly class ExtensionContentSchemaSynchronizer
         $prefix = str_replace('-', '_', $extension->extensionName()).'_';
 
         return str_starts_with($schema->identifier(), $prefix);
+    }
+
+    private function forceArchiveContent(ContentSchema $schema): int
+    {
+        $archived = 0;
+
+        foreach ($this->entityManager->getRepository(ContentItem::class)->findBy(['schema' => $schema]) as $item) {
+            if (!$item instanceof ContentItem || in_array($item->status(), [ContentStatus::Archived, ContentStatus::Deleted], true)) {
+                continue;
+            }
+
+            $item->archive();
+            ++$archived;
+        }
+
+        return $archived;
     }
 
     /**

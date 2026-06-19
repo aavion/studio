@@ -51,6 +51,7 @@ message:
       contribution_invalid: 'Extension content schema contribution is invalid (%reason%).'
       sync_completed: 'Extension "%extension%" content schema sync created or versioned %count% schema(s).'
       purge_completed: 'Extension "%extension%" content schema purge deleted %count% schema(s).'
+      purge_retained: 'Extension "%extension%" content schema purge retained %count% referenced schema(s).'
       content_archived: '%count% content item(s) using deactivated extension schemas were archived.'
     discovery_queued: 'Extension discovery was queued by "%trigger%".'
     discovery_queue_failed: 'Extension discovery could not be queued by "%trigger%".'
