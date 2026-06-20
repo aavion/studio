@@ -15,11 +15,16 @@ Do not use this skill for narrow review-finding fixes, focused checks of a few f
 - Report real behavioral, security, lifecycle, data integrity, runtime, compatibility, or contract risks. Avoid speculative style findings.
 - Trace each suspected issue from source to sink before reporting it.
 - Inspect adjacent and analogous code paths that share the same policy, lifecycle, resolver, subscriber, validator, storage boundary, route family, process helper, or contribution path.
+- When a changed shared helper, guard, wrapper, route pattern, template pattern, parser, filesystem helper, query builder, or contribution registry affects sibling call sites, inspect the affected sibling instances before reporting or closing the pattern.
+- Keep independently reachable instances addressable. Do not hide separate routes, sinks, operations, protected actions, or concrete implementations behind one vague bucket unless they truly share one root cause and one minimal fix.
 - Prefer the smallest precise finding over broad rewrite advice.
 - Do not stop after the first few findings. Complete the planned passes unless blocked by missing context or tool failure.
 - If a finding overlaps a known explicit product decision, mark it as such instead of reporting it as a bug.
 - If a suspected issue is invalid after tracing, discard it silently or mention it only under "Reviewed But Not Reported" when useful.
+- Identify the strongest repository counterevidence for a suspected finding before reporting it, especially evidence that the path is not reachable, already guarded, intentionally out of scope, or only a low-impact correctness concern.
+- Calibrate severity from realistic reachability, affected product surface, preconditions, and impact. Do not inflate ordinary correctness bugs into security findings without a concrete attack or abuse path.
 - Use absolute file paths and line references in findings.
+- Do not import the full Codex Security scan artifact, ledger, or app-orchestration workflow into this skill unless concrete findings justify it.
 
 ## Scope Setup
 
@@ -33,6 +38,7 @@ Do not use this skill for narrow review-finding fixes, focused checks of a few f
    - `git log --oneline <base>..HEAD`
    - `git status --short`
 4. Identify generated, vendored, asset snapshot, lockfile, and pure rename files. Skim them for obvious hazards, but spend review depth on behavior-bearing code and contract documentation.
+5. For large diffs or context-unstable runs, keep a temporary review worklist or notes file outside production code. Every source-like changed file should end as reviewed, generated/vendor/rename-only, not applicable, deferred with reason, or intentionally skipped with an honest coverage gap.
 
 ## Review Passes
 
@@ -115,8 +121,9 @@ Before reporting a finding:
 2. Show the exact path where the invariant can be broken.
 3. Confirm the issue is reachable from a public, admin, operation, CLI, extension, setup, or runtime path.
 4. Check whether adjacent paths already solve the same issue differently.
-5. Estimate impact and priority.
-6. Prefer one finding for the shared root cause instead of many duplicates.
+5. Identify source, closest control or broken control, sink or state transition, impact, preconditions, and strongest counterevidence.
+6. Estimate impact and priority from actual reachability and product impact, not from the name of the bug class.
+7. Prefer one finding for the shared root cause instead of many duplicates, while preserving independently reachable affected locations.
 
 ## Output Format
 
@@ -140,6 +147,7 @@ Suggested minimal fix: The smallest safe fix or contract clarification.
 ## Coverage
 - Base reviewed: `<base>...HEAD`
 - Passes completed: entry points/lifecycle, persistence, boundaries, security/privacy, runtime, tests/docs
+- Worklist closure: changed source-like files reviewed, classified, deferred, or explicitly skipped
 - Commands or inspections used: concise list
 - Not verified: honest gaps, tool failures, or skipped generated/vendor surfaces
 ```
