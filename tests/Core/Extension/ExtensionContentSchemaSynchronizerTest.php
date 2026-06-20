@@ -79,8 +79,11 @@ final class ExtensionContentSchemaSynchronizerTest extends KernelTestCase
 
     public function testItRejectsCombinedExtensionSchemaIdentifiersThatExceedStorageLength(): void
     {
+        $schemaName = 'schema_'.str_repeat('name_', 19).'x';
+        self::assertSame(103, strlen($schemaName));
+
         $result = (new ExtensionContentSchemaSynchronizer($this->entityManager))->apply($this->extension(), [
-            ExtensionContentSchemaDefinition::create(str_repeat('schema_name_', 11), ['en' => 'Oversized'], [
+            ExtensionContentSchemaDefinition::create($schemaName, ['en' => 'Oversized'], [
                 'fields' => [
                     ['identifier' => 'title', 'type' => 'string'],
                     ['identifier' => 'subtitle', 'type' => 'string'],
