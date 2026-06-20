@@ -218,6 +218,106 @@ final readonly class ExtensionSettings
     }
 
     /**
+     * @return WorkflowResult<list<array<string, mixed>>>
+     */
+    public function cleanupSnapshot(string $extensionName): WorkflowResult
+    {
+        if (!ExtensionIdentity::isExtensionName($extensionName)) {
+            return WorkflowResult::invalid([
+                Message::warning(
+                    ExtensionMessageCode::EXTENSION_IDENTIFIER_INVALID,
+                    ExtensionMessageKey::EXTENSION_IDENTIFIER_INVALID,
+                    ['%identifier%' => $extensionName],
+                    ['operation' => 'extension_settings.cleanup_snapshot', 'extension' => $extensionName],
+                ),
+            ]);
+        }
+
+        try {
+            $rows = $this->connection->fetchAllAssociative(
+                'SELECT extension_name, setting_key, value, value_type, metadata, modified_at, modified_by FROM extension_setting_entry WHERE extension_name = ? ORDER BY setting_key',
+                [$extensionName],
+            );
+        } catch (Throwable $error) {
+            return WorkflowResult::failed([
+                Message::exception(
+                    ExtensionMessageCode::EXTENSION_SETTING_READ_FAILED,
+                    ExtensionMessageKey::EXTENSION_SETTING_READ_FAILED,
+                    ['%extension%' => $extensionName, '%key%' => '*'],
+                    $this->errorContext($error, 'extension_settings.cleanup_snapshot', $extensionName, null),
+                ),
+            ], [
+                'extension' => $extensionName,
+                'operation' => 'extension_settings.cleanup_snapshot',
+            ]);
+        }
+
+        return WorkflowResult::success($rows, [
+            'extension' => $extensionName,
+            'count' => count($rows),
+        ]);
+    }
+
+    /**
+     * @param list<array<string, mixed>> $rows
+     *
+     * @return WorkflowResult<int>
+     */
+    public function restoreCleanupSnapshot(string $extensionName, array $rows): WorkflowResult
+    {
+        if (!ExtensionIdentity::isExtensionName($extensionName)) {
+            return WorkflowResult::invalid([
+                Message::warning(
+                    ExtensionMessageCode::EXTENSION_IDENTIFIER_INVALID,
+                    ExtensionMessageKey::EXTENSION_IDENTIFIER_INVALID,
+                    ['%identifier%' => $extensionName],
+                    ['operation' => 'extension_settings.restore_cleanup_snapshot', 'extension' => $extensionName],
+                ),
+            ]);
+        }
+
+        try {
+            $this->connection->beginTransaction();
+            $this->connection->delete('extension_setting_entry', ['extension_name' => $extensionName]);
+
+            foreach ($rows as $row) {
+                $this->connection->insert('extension_setting_entry', [
+                    'extension_name' => $extensionName,
+                    'setting_key' => (string) ($row['setting_key'] ?? ''),
+                    'value' => (string) ($row['value'] ?? 'null'),
+                    'value_type' => (string) ($row['value_type'] ?? ConfigValueType::Json->value),
+                    'metadata' => (string) ($row['metadata'] ?? '[]'),
+                    'modified_at' => $row['modified_at'] ?? null,
+                    'modified_by' => $row['modified_by'] ?? null,
+                ]);
+            }
+
+            $this->connection->commit();
+        } catch (Throwable $error) {
+            if ($this->connection->isTransactionActive()) {
+                $this->connection->rollBack();
+            }
+
+            return WorkflowResult::failed([
+                Message::exception(
+                    ExtensionMessageCode::EXTENSION_SETTING_WRITE_FAILED,
+                    ExtensionMessageKey::EXTENSION_SETTING_WRITE_FAILED,
+                    ['%extension%' => $extensionName, '%key%' => '*'],
+                    $this->errorContext($error, 'extension_settings.restore_cleanup_snapshot', $extensionName, null),
+                ),
+            ], [
+                'extension' => $extensionName,
+                'operation' => 'extension_settings.restore_cleanup_snapshot',
+            ]);
+        }
+
+        return WorkflowResult::success(count($rows), [
+            'extension' => $extensionName,
+            'restored' => count($rows),
+        ]);
+    }
+
+    /**
      * @return list<array<string, mixed>>
      */
     public function viewRows(string $extensionName, ExtensionSettingRegistry $registry): array

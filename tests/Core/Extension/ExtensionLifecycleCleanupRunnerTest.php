@@ -50,11 +50,11 @@ final class ExtensionLifecycleCleanupRunnerTest extends KernelTestCase
         self::assertTrue($result->isSuccess());
         self::assertSame([
             [
-                'action' => 'delete_extension_acl_override',
+                'action' => 'delete_extension_settings',
                 'count' => 1,
             ],
             [
-                'action' => 'delete_extension_settings',
+                'action' => 'delete_extension_acl_override',
                 'count' => 1,
             ],
         ], $result->value()['actions']);
@@ -124,6 +124,12 @@ final class ExtensionLifecycleCleanupRunnerTest extends KernelTestCase
         $runner = new ExtensionLifecycleCleanupRunner($settings, $overrides, $registry);
 
         $settings->set('cleanup-module', 'display.mode', 'compact', ConfigValueType::String);
+        $overrides->save([
+            'admin.settings.extensions.cleanup-module' => [
+                'state' => AdminPermissionState::Mutable->value,
+                'groups' => [],
+            ],
+        ], 'test');
         $connection->executeStatement(<<<'SQL'
             CREATE TRIGGER fail_extension_settings_cleanup
             BEFORE DELETE ON extension_setting_entry
@@ -148,6 +154,7 @@ final class ExtensionLifecycleCleanupRunnerTest extends KernelTestCase
         self::assertFalse($result->isSuccess());
         self::assertSame('extension.setting.delete_failed', $result->firstIssue()?->code());
         self::assertSame('compact', $settings->get('cleanup-module', 'display.mode', 'fallback'));
+        self::assertArrayHasKey('admin.settings.extensions.cleanup-module', $overrides->overrides());
 
         $settings->removeExtension('cleanup-module');
         $overrides->save([], 'test');

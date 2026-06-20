@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Core\Extension;
 
+use App\Api\Endpoint\ApiEndpointDefinition;
 use App\Core\Extension\Content\ExtensionContentSchemaDefinition;
 use App\Core\Extension\Database\ExtensionDatabaseColumn;
 use App\Core\Extension\Database\ExtensionDatabaseTable;
@@ -11,8 +12,13 @@ use App\Core\Extension\ExtensionRuntimeContributionRegistry;
 use App\Core\Extension\ExtensionScope;
 use App\Core\Extension\ExtensionStatus;
 use App\Core\Extension\Settings\ExtensionSettingDefinition;
-use App\Api\Endpoint\ApiEndpointDefinition;
+use App\Core\Operation\ActionQueue;
 use App\Entity\Extension;
+use App\Scheduler\SchedulerActionQueueProviderInterface;
+use App\Scheduler\SchedulerCallableProviderInterface;
+use App\Scheduler\SchedulerTaskDefinition;
+use App\Scheduler\SchedulerTaskExecution;
+use App\Scheduler\SchedulerTaskType;
 use PHPUnit\Framework\TestCase;
 
 final class ExtensionRuntimeContributionRegistryContractTest extends TestCase
@@ -87,6 +93,63 @@ final class ExtensionRuntimeContributionRegistryContractTest extends TestCase
             $this->extension([ExtensionScope::Module]),
             new ExtensionSettingDefinition('other-module', 'display.mode', 'Display mode', 'compact'),
         );
+    }
+
+    public function testItRejectsSchedulerTaskIdentifiersOutsideExtensionNamespace(): void
+    {
+        $this->expectExceptionMessage('message.extension.runtime.contribution_unsupported');
+
+        (new ExtensionRuntimeContributionRegistry())->add(
+            $this->extension([ExtensionScope::Module]),
+            new SchedulerTaskDefinition(
+                'other-module.cleanup',
+                'extension.demo_module.cleanup.label',
+                'extension.demo_module.cleanup.description',
+                'demo-module',
+                SchedulerTaskType::Callable,
+                'demo-module.cleanup',
+                '*/15 * * * *',
+            ),
+        );
+    }
+
+    public function testItRejectsSchedulerTaskTargetsOutsideExtensionNamespace(): void
+    {
+        $this->expectExceptionMessage('message.extension.runtime.contribution_unsupported');
+
+        (new ExtensionRuntimeContributionRegistry())->add(
+            $this->extension([ExtensionScope::Module]),
+            new SchedulerTaskDefinition(
+                'demo-module.cleanup',
+                'extension.demo_module.cleanup.label',
+                'extension.demo_module.cleanup.description',
+                'demo-module',
+                SchedulerTaskType::Callable,
+                'other-module.cleanup',
+                '*/15 * * * *',
+            ),
+        );
+    }
+
+    public function testItScopesSchedulerRuntimeProvidersToExtensionTargets(): void
+    {
+        $registry = new ExtensionRuntimeContributionRegistry();
+        $registry->add($this->extension([ExtensionScope::Module]), new class implements SchedulerCallableProviderInterface, SchedulerActionQueueProviderInterface {
+            public function schedulerCallable(string $target): ?callable
+            {
+                return static fn (): SchedulerTaskExecution => SchedulerTaskExecution::success(['target' => $target]);
+            }
+
+            public function schedulerActionQueue(string $target): ?ActionQueue
+            {
+                return ActionQueue::create($target);
+            }
+        });
+
+        self::assertNotNull($registry->schedulerCallable('demo-module.cleanup'));
+        self::assertNull($registry->schedulerCallable('other-module.cleanup'));
+        self::assertSame('demo-module.queue', $registry->schedulerActionQueue('demo-module.queue')?->name());
+        self::assertNull($registry->schedulerActionQueue('other-module.queue'));
     }
 
     /**

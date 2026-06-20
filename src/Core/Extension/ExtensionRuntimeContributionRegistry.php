@@ -164,12 +164,12 @@ final class ExtensionRuntimeContributionRegistry implements StaticViewInjectionP
         $schedulerProviderHandled = false;
 
         if ($contribution instanceof SchedulerCallableProviderInterface) {
-            $this->schedulerContributions->addCallableProvider($contribution);
+            $this->schedulerContributions->addCallableProvider($extension, $contribution);
             $schedulerProviderHandled = true;
         }
 
         if ($contribution instanceof SchedulerActionQueueProviderInterface) {
-            $this->schedulerContributions->addActionQueueProvider($contribution);
+            $this->schedulerContributions->addActionQueueProvider($extension, $contribution);
             $schedulerProviderHandled = true;
         }
 

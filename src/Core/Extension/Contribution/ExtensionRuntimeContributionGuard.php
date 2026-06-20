@@ -23,6 +23,7 @@ use App\Live\LiveEndpointHandlerInterface;
 use App\Privacy\Cookie\CookieConsentDefinition;
 use App\Privacy\Cookie\CookieConsentManager;
 use App\Scheduler\SchedulerTaskDefinition;
+use App\Scheduler\SchedulerTaskType;
 use Symfony\Component\HttpFoundation\Cookie;
 
 final readonly class ExtensionRuntimeContributionGuard
@@ -47,6 +48,33 @@ final readonly class ExtensionRuntimeContributionGuard
             throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_SCHEDULER_TRUSTED_BLOCKED, [
                 '%task%' => $definition->identifier(),
                 '%extension%' => $extension->extensionName(),
+            ]);
+        }
+
+        $prefix = $extension->extensionName().'.';
+        if (!str_starts_with($definition->identifier(), $prefix)) {
+            throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_RUNTIME_CONTRIBUTION_UNSUPPORTED, [
+                '%extension%' => $extension->extensionName(),
+                '%type%' => SchedulerTaskDefinition::class.'('.$definition->identifier().') foreign_identifier',
+            ], [
+                'extension' => $extension->extensionName(),
+                'identifier' => $definition->identifier(),
+                'expected_prefix' => $prefix,
+            ]);
+        }
+
+        if (
+            in_array($definition->type(), [SchedulerTaskType::Callable, SchedulerTaskType::ActionQueue], true)
+            && !str_starts_with($definition->target(), $prefix)
+        ) {
+            throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_RUNTIME_CONTRIBUTION_UNSUPPORTED, [
+                '%extension%' => $extension->extensionName(),
+                '%type%' => SchedulerTaskDefinition::class.'('.$definition->identifier().') foreign_target',
+            ], [
+                'extension' => $extension->extensionName(),
+                'identifier' => $definition->identifier(),
+                'target' => $definition->target(),
+                'expected_prefix' => $prefix,
             ]);
         }
     }
