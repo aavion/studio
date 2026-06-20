@@ -6,6 +6,8 @@ namespace App\Core\Extension;
 
 use App\Core\AdminAcl\AdminFeatureOverrideStore;
 use App\Core\AdminAcl\AdminFeatureRegistry;
+use App\Core\Config\ConfigMessageCode;
+use App\Core\Config\ConfigMessageKey;
 use App\Core\Message\Message;
 use App\Core\Message\MessageLevel;
 use App\Core\Extension\ExtensionMessageCode;
@@ -66,7 +68,17 @@ final readonly class ExtensionLifecycleCleanupRunner implements ExtensionLifecyc
             ];
         }
 
-        $actions = [...$actions, ...$this->cleanupSettingsAndAcl($extension->extensionName())];
+        $settingsAndAcl = $this->cleanupSettingsAndAcl($extension->extensionName());
+        if (!$settingsAndAcl->isSuccess()) {
+            return WorkflowResult::failed($settingsAndAcl->issues(), [
+                'extension' => $extension->extensionName(),
+                'actions' => $actions,
+                'settings_acl_context' => $settingsAndAcl->context(),
+            ], [...$messages, ...$settingsAndAcl->messages()]);
+        }
+
+        $actions = [...$actions, ...$settingsAndAcl->value()];
+        $messages = [...$messages, ...$settingsAndAcl->messages()];
 
         $this->adminFeatureRegistry?->resetCache();
 
@@ -89,11 +101,40 @@ final readonly class ExtensionLifecycleCleanupRunner implements ExtensionLifecyc
     }
 
     /**
-     * @return list<array{action: string, count: int}>
+     * @return WorkflowResult<list<array{action: string, count: int}>>
      */
-    private function cleanupSettingsAndAcl(string $extensionName): array
+    private function cleanupSettingsAndAcl(string $extensionName): WorkflowResult
     {
         $actions = [];
+        $removedAclOverride = $this->removeExtensionAclOverride($extensionName);
+
+        if (false === $removedAclOverride) {
+            return WorkflowResult::failed([
+                Message::error(
+                    ConfigMessageCode::CONFIG_WRITE_FAILED,
+                    ConfigMessageKey::CONFIG_WRITE_FAILED,
+                    ['%key%' => AdminFeatureOverrideStore::CONFIG_KEY],
+                    [
+                        'extension' => $extensionName,
+                        'feature' => $this->extensionAdminFeature($extensionName),
+                        'config_key' => AdminFeatureOverrideStore::CONFIG_KEY,
+                        'operation' => 'extension_lifecycle_cleanup',
+                    ],
+                ),
+            ], [
+                'extension' => $extensionName,
+                'actions' => $actions,
+                'config_key' => AdminFeatureOverrideStore::CONFIG_KEY,
+            ]);
+        }
+
+        if (true === $removedAclOverride) {
+            $actions[] = [
+                'action' => 'delete_extension_acl_override',
+                'count' => 1,
+            ];
+        }
+
         $deletedSettings = $this->extensionSettings->removeExtension($extensionName);
 
         if ($deletedSettings > 0) {
@@ -103,27 +144,28 @@ final readonly class ExtensionLifecycleCleanupRunner implements ExtensionLifecyc
             ];
         }
 
-        if ($this->removeExtensionAclOverride($extensionName)) {
-            $actions[] = [
-                'action' => 'delete_extension_acl_override',
-                'count' => 1,
-            ];
-        }
-
-        return $actions;
+        return WorkflowResult::success($actions, [
+            'extension' => $extensionName,
+            'actions' => $actions,
+        ]);
     }
 
-    private function removeExtensionAclOverride(string $extensionName): bool
+    private function removeExtensionAclOverride(string $extensionName): ?bool
     {
-        $feature = 'admin.settings.extensions.'.$extensionName;
+        $feature = $this->extensionAdminFeature($extensionName);
         $overrides = $this->adminFeatureOverrideStore->overrides();
 
         if (!isset($overrides[$feature])) {
-            return false;
+            return null;
         }
 
         unset($overrides[$feature]);
 
         return $this->adminFeatureOverrideStore->save($overrides, 'extension_lifecycle_cleanup');
+    }
+
+    private function extensionAdminFeature(string $extensionName): string
+    {
+        return 'admin.settings.extensions.'.$extensionName;
     }
 }
