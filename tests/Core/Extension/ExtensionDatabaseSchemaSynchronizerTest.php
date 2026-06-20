@@ -220,13 +220,9 @@ final class ExtensionDatabaseSchemaSynchronizerTest extends KernelTestCase
     private function dropTestTables(): void
     {
         foreach ($this->connection->createSchemaManager()->listTableNames() as $tableName) {
-            if (str_starts_with($tableName, 'ext')) {
+            if (1 === preg_match('#^ext\d+_#', $tableName)) {
                 $this->dropTableIfExists($tableName);
             }
-        }
-
-        foreach (['ext11_demo_module_post', 'ext11_demo_module_author', 'ext11_demo_module_entry', 'ext4_demo_module_entry'] as $tableName) {
-            $this->dropTableIfExists($tableName);
         }
     }
 
