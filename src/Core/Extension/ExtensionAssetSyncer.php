@@ -236,7 +236,7 @@ final readonly class ExtensionAssetSyncer
 
     private function globalScope(ExtensionAssetSyncTarget $extension): ?ExtensionScope
     {
-        foreach ([ExtensionScope::Module, ExtensionScope::SystemTemplate, ExtensionScope::CaptchaProvider, ExtensionScope::EditorProvider] as $scope) {
+        foreach ([ExtensionScope::Module, ExtensionScope::SystemTemplate, ExtensionScope::CaptchaProvider, ExtensionScope::EditorProvider, ExtensionScope::Api] as $scope) {
             if ($extension->hasScope($scope)) {
                 return $scope;
             }
@@ -247,7 +247,7 @@ final readonly class ExtensionAssetSyncer
 
     private function primaryScope(ExtensionAssetSyncTarget $extension): ExtensionScope
     {
-        foreach ([ExtensionScope::Module, ExtensionScope::SystemTemplate, ExtensionScope::CaptchaProvider, ExtensionScope::EditorProvider, ExtensionScope::FrontendTheme, ExtensionScope::BackendTheme] as $scope) {
+        foreach ([ExtensionScope::Module, ExtensionScope::SystemTemplate, ExtensionScope::CaptchaProvider, ExtensionScope::EditorProvider, ExtensionScope::Api, ExtensionScope::FrontendTheme, ExtensionScope::BackendTheme] as $scope) {
             if ($extension->hasScope($scope)) {
                 return $scope;
             }

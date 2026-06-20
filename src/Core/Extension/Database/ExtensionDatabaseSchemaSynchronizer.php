@@ -80,6 +80,8 @@ final class ExtensionDatabaseSchemaSynchronizer
             try {
                 $this->createTable($extension, $physicalName, $table);
             } catch (Throwable $error) {
+                $cleanup = $this->dropTables($extension, $created);
+
                 return WorkflowResult::failed([
                     Message::create(
                         ExtensionMessageCode::EXTENSION_DATABASE_CONTRIBUTION_INVALID,
@@ -88,7 +90,13 @@ final class ExtensionDatabaseSchemaSynchronizer
                         ['extension' => $extension->extensionName(), 'table' => $physicalName, 'exception' => $error::class, 'message' => $error->getMessage()],
                         MessageLevel::Exception,
                     ),
-                ]);
+                    ...$cleanup->issues(),
+                ], [
+                    'extension' => $extension->extensionName(),
+                    'table' => $physicalName,
+                    'created_before_failure' => $created,
+                    'cleanup_context' => $cleanup->context(),
+                ], $cleanup->messages());
             }
 
             $created[] = $physicalName;
@@ -117,8 +125,6 @@ final class ExtensionDatabaseSchemaSynchronizer
      */
     public function purge(Extension $extension): WorkflowResult
     {
-        $dropped = [];
-        $platform = $this->connection->getDatabasePlatform();
         $schemaManager = $this->connection->createSchemaManager();
 
         $ownedTables = [];
@@ -131,13 +137,12 @@ final class ExtensionDatabaseSchemaSynchronizer
             $ownedTables[] = $tableName;
         }
 
-        foreach ($this->tableOrderer->existingTablesForDrop($ownedTables) as $tableName) {
-            foreach ((array) $platform->getDropTableSQL($tableName) as $sql) {
-                $this->connection->executeStatement($sql);
-            }
-
-            $dropped[] = $tableName;
+        $drop = $this->dropTables($extension, $ownedTables);
+        if (!$drop->isSuccess()) {
+            return $drop;
         }
+
+        $dropped = $drop->value()['dropped'];
 
         return WorkflowResult::success([
             'dropped' => $dropped,
@@ -151,6 +156,60 @@ final class ExtensionDatabaseSchemaSynchronizer
                 ['%extension%' => $extension->extensionName(), '%count%' => count($dropped)],
                 ['extension' => $extension->extensionName(), 'dropped' => $dropped],
             ),
+        ]);
+    }
+
+    /**
+     * @param list<string> $tableNames
+     *
+     * @return WorkflowResult<array{dropped: list<string>}>
+     */
+    public function dropTables(Extension $extension, array $tableNames): WorkflowResult
+    {
+        $schemaManager = $this->connection->createSchemaManager();
+        $knownTables = array_fill_keys(array_map('strtolower', $schemaManager->listTableNames()), true);
+        $existingOwnedTables = [];
+
+        foreach (array_values(array_unique($tableNames)) as $tableName) {
+            if (!$this->names->isOwnedTableName($extension, $tableName)) {
+                return $this->invalid($extension, 'table_name_not_owned', ['table' => $tableName]);
+            }
+
+            if (isset($knownTables[strtolower($tableName)])) {
+                $existingOwnedTables[] = $tableName;
+            }
+        }
+
+        $dropped = [];
+        $platform = $this->connection->getDatabasePlatform();
+
+        foreach ($this->tableOrderer->existingTablesForDrop($existingOwnedTables) as $tableName) {
+            try {
+                foreach ((array) $platform->getDropTableSQL($tableName) as $sql) {
+                    $this->connection->executeStatement($sql);
+                }
+            } catch (Throwable $error) {
+                return WorkflowResult::failed([
+                    Message::create(
+                        ExtensionMessageCode::EXTENSION_DATABASE_CONTRIBUTION_INVALID,
+                        ExtensionMessageKey::EXTENSION_DATABASE_CONTRIBUTION_INVALID,
+                        ['%reason%' => 'drop_table_failed'],
+                        ['extension' => $extension->extensionName(), 'table' => $tableName, 'exception' => $error::class, 'message' => $error->getMessage()],
+                        MessageLevel::Exception,
+                    ),
+                ], [
+                    'extension' => $extension->extensionName(),
+                    'table' => $tableName,
+                    'dropped_before_failure' => $dropped,
+                ]);
+            }
+
+            $dropped[] = $tableName;
+        }
+
+        return WorkflowResult::success(['dropped' => $dropped], [
+            'extension' => $extension->extensionName(),
+            'dropped' => $dropped,
         ]);
     }
 

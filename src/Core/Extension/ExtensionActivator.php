@@ -11,6 +11,8 @@ use App\Core\Extension\Content\ExtensionContentSchemaImpact;
 use App\Core\Extension\ExtensionMessageCode;
 use App\Core\Extension\ExtensionMessageKey;
 use App\Core\Workflow\WorkflowResult;
+use App\Content\ContentStatus;
+use App\Entity\ContentItem;
 use App\Entity\Extension;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -69,6 +71,8 @@ final readonly class ExtensionActivator
         $snapshots = $this->store->statusSnapshots([...$extensions, ...$conflicts]);
         $changes = [];
         $messages = $plan->messages();
+        $activatedExtensions = [];
+        $archivedContentSnapshots = [];
 
         foreach ($conflicts as $conflict) {
             if ($conflict->deactivate()) {
@@ -79,6 +83,7 @@ final readonly class ExtensionActivator
 
         foreach ($extensions as $extension) {
             if ($extension->activate()) {
+                $activatedExtensions[] = $extension;
                 $changes[] = $this->change($extension, 'activated');
                 $messages[] = Message::create(
                     ExtensionMessageCode::EXTENSION_LIFECYCLE_ACTIVATED,
@@ -90,14 +95,18 @@ final readonly class ExtensionActivator
             }
         }
 
-        $messages = [...$messages, ...$this->archiveContentForDeactivatedExtensions($conflicts)];
+        $messages = [...$messages, ...$this->archiveContentForDeactivatedExtensions($conflicts, $archivedContentSnapshots)];
 
         $finalized = $this->finalizer->finalize($snapshots, $changes, $messages, $environment, $rebuildAssets);
         if (!$finalized->isSuccess() || null === $this->activationContributionApplier) {
+            if (!$finalized->isSuccess()) {
+                $this->restoreArchivedContent($archivedContentSnapshots);
+            }
+
             return $this->report($finalized, 'extension.activate', ['extension' => $extensionName, 'environment' => $environment]);
         }
 
-        $contributions = $this->activationContributionApplier->applyActivatedExtensions($extensions);
+        $contributions = $this->activationContributionApplier->applyActivatedExtensions($activatedExtensions);
         if ($contributions->isSuccess()) {
             return $this->report(WorkflowResult::success([
                 ...$finalized->value(),
@@ -112,7 +121,7 @@ final readonly class ExtensionActivator
         }
 
         return $this->report(
-            $this->rollbackContributionFailure($extensionName, $environment, $snapshots, $changes, $rebuildAssets, $finalized, $contributions),
+            $this->rollbackContributionFailure($extensionName, $environment, $snapshots, $changes, $rebuildAssets, $finalized, $contributions, $archivedContentSnapshots),
             'extension.activate',
             ['extension' => $extensionName, 'environment' => $environment],
         );
@@ -133,6 +142,7 @@ final readonly class ExtensionActivator
         $snapshots = $this->store->statusSnapshots($extensions);
         $changes = [];
         $messages = [];
+        $archivedContentSnapshots = [];
 
         foreach ($extensions as $extension) {
             if (ExtensionStatus::Active === $extension->status() && $extension->deactivate()) {
@@ -141,10 +151,15 @@ final readonly class ExtensionActivator
             }
         }
 
-        $messages = [...$messages, ...$this->archiveContentForDeactivatedExtensions($extensions)];
+        $messages = [...$messages, ...$this->archiveContentForDeactivatedExtensions($extensions, $archivedContentSnapshots)];
+
+        $finalized = $this->finalizer->finalize($snapshots, $changes, $messages, $environment, $rebuildAssets);
+        if (!$finalized->isSuccess()) {
+            $this->restoreArchivedContent($archivedContentSnapshots);
+        }
 
         return $this->report(
-            $this->finalizer->finalize($snapshots, $changes, $messages, $environment, $rebuildAssets),
+            $finalized,
             'extension.deactivate',
             ['extension' => $extensionName, 'environment' => $environment],
         );
@@ -178,13 +193,40 @@ final readonly class ExtensionActivator
      *
      * @return list<Message>
      */
-    private function archiveContentForDeactivatedExtensions(array $extensions): array
+    private function archiveContentForDeactivatedExtensions(array $extensions, array &$contentSnapshots): array
     {
         if (null === $this->contentSchemaImpact || [] === $extensions) {
             return [];
         }
 
-        return $this->contentSchemaImpact->archivePublicContentForExtensions($extensions)->messages();
+        $result = $this->contentSchemaImpact->archivePublicContentForExtensions($extensions);
+        foreach ($result->value()['archived'] ?? [] as $item) {
+            if (is_array($item) && is_string($item['uid'] ?? null) && is_string($item['status'] ?? null)) {
+                $status = ContentStatus::tryFrom($item['status']);
+                if (null !== $status) {
+                    $contentSnapshots[$item['uid']] = $status;
+                }
+            }
+        }
+
+        return $result->messages();
+    }
+
+    /**
+     * @param array<string, ContentStatus> $contentSnapshots
+     */
+    private function restoreArchivedContent(array $contentSnapshots): void
+    {
+        foreach ($contentSnapshots as $uid => $status) {
+            $item = $this->entityManager->find(ContentItem::class, $uid);
+            if ($item instanceof ContentItem) {
+                $item->restoreStatus($status);
+            }
+        }
+
+        if ([] !== $contentSnapshots) {
+            $this->entityManager->flush();
+        }
     }
 
     /**
@@ -199,8 +241,10 @@ final readonly class ExtensionActivator
         bool $rebuildAssets,
         WorkflowResult $finalized,
         WorkflowResult $contributions,
+        array $archivedContentSnapshots,
     ): WorkflowResult {
         $this->store->restoreStatuses($snapshots);
+        $this->restoreArchivedContent($archivedContentSnapshots);
         $this->entityManager->flush();
 
         $messages = [

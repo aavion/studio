@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Core\Extension\Database;
 
 use App\Database\TablePrefix;
+use App\Core\Extension\ExtensionOwnerName;
 use App\Entity\Extension;
 use Doctrine\DBAL\Connection;
 
@@ -21,14 +22,12 @@ final readonly class ExtensionDatabaseTableNameResolver
 
     public function referencedTableName(Extension $extension, ExtensionDatabaseForeignKey $foreignKey): string
     {
-        return $this->databasePrefix().str_replace('-', '_', $extension->extensionName()).'_'.$foreignKey->referencedTable();
+        return $this->databasePrefix().$this->extensionPrefix($extension).$foreignKey->referencedTable();
     }
 
     public function isOwnedTableName(Extension $extension, string $tableName): bool
     {
-        $ownedPrefix = $this->databasePrefix().str_replace('-', '_', $extension->extensionName()).'_';
-
-        return str_starts_with($tableName, $ownedPrefix);
+        return str_starts_with($tableName, $this->databasePrefix().$this->extensionPrefix($extension));
     }
 
     public function shortName(string $name): string
@@ -42,5 +41,10 @@ final readonly class ExtensionDatabaseTableNameResolver
         $prefix = $params['system_database_prefix'] ?? null;
 
         return is_string($prefix) ? TablePrefix::normalize($prefix) : TablePrefix::fromEnvironment();
+    }
+
+    private function extensionPrefix(Extension $extension): string
+    {
+        return ExtensionOwnerName::prefix($extension->extensionName());
     }
 }

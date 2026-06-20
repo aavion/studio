@@ -46,19 +46,19 @@ final class ExtensionContentSchemaSynchronizerTest extends KernelTestCase
 
         $created = $synchronizer->apply($extension, [$this->schema('body')]);
         self::assertTrue($created->isSuccess());
-        self::assertSame(['demo_module_article'], $created->value()['created']);
+        self::assertSame(['ext11_demo_module_article'], $created->value()['created']);
 
-        $schema = $this->entityManager->getRepository(ContentSchema::class)->findOneBy(['identifier' => 'demo_module_article']);
+        $schema = $this->entityManager->getRepository(ContentSchema::class)->findOneBy(['identifier' => 'ext11_demo_module_article']);
         self::assertInstanceOf(ContentSchema::class, $schema);
         self::assertTrue($schema->locked());
         self::assertSame(1, $schema->activeVersion()?->version());
 
         $versioned = $synchronizer->apply($extension, [$this->schema('summary')]);
         self::assertTrue($versioned->isSuccess());
-        self::assertSame(['demo_module_article'], $versioned->value()['versioned']);
+        self::assertSame(['ext11_demo_module_article'], $versioned->value()['versioned']);
 
         $this->entityManager->clear();
-        $schema = $this->entityManager->getRepository(ContentSchema::class)->findOneBy(['identifier' => 'demo_module_article']);
+        $schema = $this->entityManager->getRepository(ContentSchema::class)->findOneBy(['identifier' => 'ext11_demo_module_article']);
         self::assertInstanceOf(ContentSchema::class, $schema);
         self::assertSame(2, $schema->activeVersion()?->version());
     }
@@ -72,10 +72,10 @@ final class ExtensionContentSchemaSynchronizerTest extends KernelTestCase
         $versioned = $synchronizer->apply($extension, [$this->schema('body', customTwig: '{{ fields.title }}')]);
 
         self::assertTrue($versioned->isSuccess());
-        self::assertSame(['demo_module_article'], $versioned->value()['versioned']);
+        self::assertSame(['ext11_demo_module_article'], $versioned->value()['versioned']);
 
         $this->entityManager->clear();
-        $schema = $this->entityManager->getRepository(ContentSchema::class)->findOneBy(['identifier' => 'demo_module_article']);
+        $schema = $this->entityManager->getRepository(ContentSchema::class)->findOneBy(['identifier' => 'ext11_demo_module_article']);
         self::assertInstanceOf(ContentSchema::class, $schema);
         self::assertSame(2, $schema->activeVersion()?->version());
         self::assertSame('{{ fields.title }}', $schema->activeVersion()?->customTwig());
@@ -90,11 +90,48 @@ final class ExtensionContentSchemaSynchronizerTest extends KernelTestCase
         $result = $synchronizer->purge($extension);
 
         self::assertTrue($result->isSuccess());
-        self::assertSame(['demo_module_article'], $result->value()['deleted']);
+        self::assertSame(['ext11_demo_module_article'], $result->value()['deleted']);
 
         $this->entityManager->clear();
-        $schema = $this->entityManager->getRepository(ContentSchema::class)->findOneBy(['identifier' => 'demo_module_article']);
+        $schema = $this->entityManager->getRepository(ContentSchema::class)->findOneBy(['identifier' => 'ext11_demo_module_article']);
         self::assertNull($schema);
+    }
+
+    public function testItKeepsOverlappingExtensionSchemaIdentifiersSeparate(): void
+    {
+        $synchronizer = new ExtensionContentSchemaSynchronizer($this->entityManager);
+
+        self::assertTrue($synchronizer->apply($this->extension(), [$this->schema('body')])->isSuccess());
+        $overlap = $synchronizer->apply(new Extension(
+            '10000000-0000-7000-8000-000000000704',
+            [ExtensionScope::ContentSchema],
+            'demo',
+            'extensions/demo',
+            ExtensionStatus::Active,
+        ), [
+            ExtensionContentSchemaDefinition::create('module_article', ['en' => 'Module Article'], [
+                'fields' => [
+                    ['identifier' => 'title', 'type' => 'string'],
+                    ['identifier' => 'subtitle', 'type' => 'string'],
+                    ['identifier' => 'body', 'type' => 'text'],
+                ],
+            ]),
+        ]);
+        self::assertTrue($overlap->isSuccess());
+
+        $result = $synchronizer->purge(new Extension(
+            '10000000-0000-7000-8000-000000000704',
+            [ExtensionScope::ContentSchema],
+            'demo',
+            'extensions/demo',
+            ExtensionStatus::Active,
+        ));
+
+        self::assertTrue($result->isSuccess());
+        self::assertSame(['ext4_demo_module_article'], $result->value()['deleted']);
+
+        self::assertInstanceOf(ContentSchema::class, $this->entityManager->getRepository(ContentSchema::class)->findOneBy(['identifier' => 'ext11_demo_module_article']));
+        self::assertNull($this->entityManager->getRepository(ContentSchema::class)->findOneBy(['identifier' => 'ext4_demo_module_article']));
     }
 
     public function testItArchivesContentAndRetainsReferencedSchemasOnPurge(): void
@@ -102,7 +139,7 @@ final class ExtensionContentSchemaSynchronizerTest extends KernelTestCase
         $synchronizer = new ExtensionContentSchemaSynchronizer($this->entityManager);
         $extension = $this->extension();
         self::assertTrue($synchronizer->apply($extension, [$this->schema('body')])->isSuccess());
-        $schema = $this->entityManager->getRepository(ContentSchema::class)->findOneBy(['identifier' => 'demo_module_article']);
+        $schema = $this->entityManager->getRepository(ContentSchema::class)->findOneBy(['identifier' => 'ext11_demo_module_article']);
         self::assertInstanceOf(ContentSchema::class, $schema);
         self::assertNotNull($schema->activeVersion());
         $content = new ContentItem('c3000000-0000-7000-8000-000000000001', 'extension-content');
@@ -115,12 +152,12 @@ final class ExtensionContentSchemaSynchronizerTest extends KernelTestCase
 
         self::assertTrue($result->isSuccess());
         self::assertSame([], $result->value()['deleted']);
-        self::assertSame('demo_module_article', $result->value()['retained'][0]['schema']);
+        self::assertSame('ext11_demo_module_article', $result->value()['retained'][0]['schema']);
         self::assertSame(1, $result->value()['archived_content']);
         self::assertSame(ContentStatus::Archived, $content->status());
 
         $this->entityManager->clear();
-        $schema = $this->entityManager->getRepository(ContentSchema::class)->findOneBy(['identifier' => 'demo_module_article']);
+        $schema = $this->entityManager->getRepository(ContentSchema::class)->findOneBy(['identifier' => 'ext11_demo_module_article']);
         self::assertInstanceOf(ContentSchema::class, $schema);
         self::assertNull($schema->activeVersion());
     }

@@ -224,9 +224,7 @@ final readonly class ExtensionContentSchemaSynchronizer
 
     private function ownedBy(ContentSchema $schema, Extension $extension): bool
     {
-        $prefix = str_replace('-', '_', $extension->extensionName()).'_';
-
-        return str_starts_with($schema->identifier(), $prefix);
+        return ExtensionContentSchemaIdentifier::ownedBy($schema, $extension);
     }
 
     private function forceArchiveContent(ContentSchema $schema): int

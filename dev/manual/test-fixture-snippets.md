@@ -79,6 +79,27 @@ Keep lifecycle setup visible because it is the right home for shared test setup 
 
 Prefer per-test temporary directories through `FilesystemTestHelper` for filesystem state. Do not put hidden test requirements into `TestSuiteLifecycle` without documenting them here and covering them with operations tests.
 
+## Optional MySQL/MariaDB Integration Database
+
+Most tests use the SQLite database initialized by `TestSuiteLifecycle`. A small number of platform-specific database integration tests may also probe local MySQL/MariaDB behavior such as implicit DDL commits, identifier limits, and foreign-key drop order. These tests must auto-skip when the optional database is unavailable, and they must clean the dedicated database before and after each test.
+
+The default local fixture is:
+
+```text
+MYSQL_TEST_DSN=mysql://test:test@127.0.0.1:3306/studio_test?charset=utf8mb4
+```
+
+Create it locally with an admin-capable MySQL/MariaDB account:
+
+```sql
+CREATE DATABASE IF NOT EXISTS studio_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER IF NOT EXISTS 'test'@'localhost' IDENTIFIED BY 'test';
+GRANT ALL PRIVILEGES ON studio_test.* TO 'test'@'localhost';
+FLUSH PRIVILEGES;
+```
+
+Developers may override the DSN through the shell or `.env.test.local` using `MYSQL_TEST_DSN`. The database must stay dedicated to tests because optional integration tests are allowed to drop every table in it during cleanup.
+
 ## References
 
 - [Core architecture snippets](core-architecture-snippets.md)

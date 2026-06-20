@@ -45,8 +45,8 @@ final class ExtensionDatabaseSchemaSynchronizerTest extends KernelTestCase
         ]);
 
         self::assertTrue($result->isSuccess());
-        self::assertContains('demo_module_entry', $this->connection->createSchemaManager()->listTableNames());
-        self::assertSame(['demo_module_entry'], $result->value()['created']);
+        self::assertContains('ext11_demo_module_entry', $this->connection->createSchemaManager()->listTableNames());
+        self::assertSame(['ext11_demo_module_entry'], $result->value()['created']);
     }
 
     public function testItCreatesExtensionTablesWithForeignKeysAfterReferencedTables(): void
@@ -70,13 +70,13 @@ final class ExtensionDatabaseSchemaSynchronizerTest extends KernelTestCase
         ]);
 
         self::assertTrue($result->isSuccess());
-        self::assertSame(['demo_module_author', 'demo_module_post'], $result->value()['created']);
+        self::assertSame(['ext11_demo_module_author', 'ext11_demo_module_post'], $result->value()['created']);
 
-        $post = $this->connection->createSchemaManager()->introspectTable('demo_module_post');
+        $post = $this->connection->createSchemaManager()->introspectTable('ext11_demo_module_post');
         $foreignKeys = $post->getForeignKeys();
 
         self::assertCount(1, $foreignKeys);
-        self::assertSame('demo_module_author', array_values($foreignKeys)[0]->getForeignTableName());
+        self::assertSame('ext11_demo_module_author', array_values($foreignKeys)[0]->getForeignTableName());
     }
 
     public function testItRejectsForeignKeysToMissingExtensionTables(): void
@@ -92,7 +92,7 @@ final class ExtensionDatabaseSchemaSynchronizerTest extends KernelTestCase
 
         self::assertFalse($result->isSuccess());
         self::assertSame('extension.database.contribution_invalid', $result->firstIssue()?->code());
-        self::assertNotContains('demo_module_post', $this->connection->createSchemaManager()->listTableNames());
+        self::assertNotContains('ext11_demo_module_post', $this->connection->createSchemaManager()->listTableNames());
     }
 
     public function testItRejectsForeignKeysToNonUniqueColumns(): void
@@ -112,8 +112,8 @@ final class ExtensionDatabaseSchemaSynchronizerTest extends KernelTestCase
 
         self::assertFalse($result->isSuccess());
         self::assertSame('extension.database.contribution_invalid', $result->firstIssue()?->code());
-        self::assertNotContains('demo_module_author', $this->connection->createSchemaManager()->listTableNames());
-        self::assertNotContains('demo_module_post', $this->connection->createSchemaManager()->listTableNames());
+        self::assertNotContains('ext11_demo_module_author', $this->connection->createSchemaManager()->listTableNames());
+        self::assertNotContains('ext11_demo_module_post', $this->connection->createSchemaManager()->listTableNames());
     }
 
     public function testItDropsOnlyTablesOwnedByTheExtensionOnPurge(): void
@@ -128,8 +128,30 @@ final class ExtensionDatabaseSchemaSynchronizerTest extends KernelTestCase
         $result = $synchronizer->purge($this->extension());
 
         self::assertTrue($result->isSuccess());
-        self::assertSame(['demo_module_entry'], $result->value()['dropped']);
-        self::assertNotContains('demo_module_entry', $this->connection->createSchemaManager()->listTableNames());
+        self::assertSame(['ext11_demo_module_entry'], $result->value()['dropped']);
+        self::assertNotContains('ext11_demo_module_entry', $this->connection->createSchemaManager()->listTableNames());
+    }
+
+    public function testItDoesNotTreatNormalizedSlugPrefixesAsOwnedTables(): void
+    {
+        $synchronizer = new ExtensionDatabaseSchemaSynchronizer($this->connection);
+        self::assertTrue($synchronizer->apply($this->extension(), [
+            ExtensionDatabaseTable::create('entry', [
+                ExtensionDatabaseColumn::string('uid', 36),
+            ], ['uid']),
+        ])->isSuccess());
+
+        $result = $synchronizer->purge(new Extension(
+            '10000000-0000-7000-8000-000000000704',
+            [ExtensionScope::Database],
+            'demo',
+            'extensions/demo',
+            ExtensionStatus::Active,
+        ));
+
+        self::assertTrue($result->isSuccess());
+        self::assertSame([], $result->value()['dropped']);
+        self::assertContains('ext11_demo_module_entry', $this->connection->createSchemaManager()->listTableNames());
     }
 
     public function testItDropsExtensionTablesWithForeignKeysInDependencyOrder(): void
@@ -150,9 +172,9 @@ final class ExtensionDatabaseSchemaSynchronizerTest extends KernelTestCase
         $result = $synchronizer->purge($this->extension());
 
         self::assertTrue($result->isSuccess());
-        self::assertSame(['demo_module_post', 'demo_module_author'], $result->value()['dropped']);
-        self::assertNotContains('demo_module_post', $this->connection->createSchemaManager()->listTableNames());
-        self::assertNotContains('demo_module_author', $this->connection->createSchemaManager()->listTableNames());
+        self::assertSame(['ext11_demo_module_post', 'ext11_demo_module_author'], $result->value()['dropped']);
+        self::assertNotContains('ext11_demo_module_post', $this->connection->createSchemaManager()->listTableNames());
+        self::assertNotContains('ext11_demo_module_author', $this->connection->createSchemaManager()->listTableNames());
     }
 
     private function extension(): Extension
@@ -168,7 +190,7 @@ final class ExtensionDatabaseSchemaSynchronizerTest extends KernelTestCase
 
     private function dropTestTables(): void
     {
-        foreach (['demo_module_post', 'demo_module_author', 'demo_module_entry'] as $tableName) {
+        foreach (['ext11_demo_module_post', 'ext11_demo_module_author', 'ext11_demo_module_entry', 'ext4_demo_module_entry'] as $tableName) {
             $this->dropTableIfExists($tableName);
         }
     }

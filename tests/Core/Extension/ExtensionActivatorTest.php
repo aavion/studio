@@ -63,7 +63,7 @@ final class ExtensionActivatorTest extends KernelTestCase
 
     protected function tearDown(): void
     {
-        $this->dropTableIfExists('demo_module_entry');
+        $this->dropTableIfExists('ext11_demo_module_entry');
 
         if ($this->connection->isTransactionActive()) {
             $this->connection->rollBack();
@@ -113,7 +113,30 @@ PHP);
         $result = $this->activatorWithContributionApplier()->activate('demo-module', 'test', rebuildAssets: false);
 
         self::assertTrue($result->isSuccess());
-        self::assertContains('demo_module_entry', $this->connection->createSchemaManager()->listTableNames());
+        self::assertContains('ext11_demo_module_entry', $this->connection->createSchemaManager()->listTableNames());
+    }
+
+    public function testItDoesNotReloadAlreadyActiveDependenciesWhenApplyingActivationContributions(): void
+    {
+        $this->temporaryProjectDir = $this->createTemporaryDirectory('system-extension-active-dependency');
+        $this->insertExtension('active-tools', ['module'], 'active');
+        $this->insertExtension('demo-module', ['module'], 'inactive', "[['active-tools', '1.0.0']]");
+        $this->writeTestFile($this->temporaryProjectDir, 'extensions/active-tools/extension.php', <<<'PHP'
+<?php
+
+throw new RuntimeException('active dependency was loaded twice');
+PHP);
+        $this->writeTestFile($this->temporaryProjectDir, 'extensions/demo-module/extension.php', <<<'PHP'
+<?php
+
+return [];
+PHP);
+
+        $result = $this->activatorWithContributionApplier()->activate('demo-module', 'test', rebuildAssets: false);
+
+        self::assertTrue($result->isSuccess());
+        self::assertSame('active', $this->extensionStatus('active-tools'));
+        self::assertSame('active', $this->extensionStatus('demo-module'));
     }
 
     public function testItDoesNotApplyDatabaseContributionsWhenAssetRebuildFails(): void
@@ -145,7 +168,7 @@ PHP);
 
         self::assertFalse($result->isSuccess());
         self::assertSame('inactive', $this->extensionStatus('demo-module'));
-        self::assertNotContains('demo_module_entry', $this->connection->createSchemaManager()->listTableNames());
+        self::assertNotContains('ext11_demo_module_entry', $this->connection->createSchemaManager()->listTableNames());
     }
 
     public function testItRollsBackActivationWhenDatabaseContributionIsNotAllowed(): void
@@ -270,6 +293,32 @@ PHP);
 
         self::assertTrue($result->isSuccess());
         self::assertSame(ContentStatus::Archived, $content->status());
+    }
+
+    public function testItRestoresArchivedContentWhenDeactivationRollsBack(): void
+    {
+        $this->insertExtension('demo-module', ['module', 'content-schema'], 'active');
+        $extension = $this->entityManager->getRepository(Extension::class)->findOneBy(['extensionName' => 'demo-module']);
+        self::assertInstanceOf(Extension::class, $extension);
+        $schema = $this->extensionSchema($extension);
+        $content = $this->contentUsingSchema('c2000000-0000-7000-8000-000000000002', 'rollback-content', $schema);
+        $content->publish();
+        $this->entityManager->persist($content);
+        $this->entityManager->flush();
+        $this->assetRebuilder->result = WorkflowResult::failed([
+            Message::create(
+                ExtensionMessageCode::EXTENSION_ASSET_SYNC_FAILED,
+                ExtensionMessageKey::EXTENSION_ASSET_SYNC_FAILED,
+                ['%message%' => 'rebuild failed'],
+                level: MessageLevel::Error,
+            ),
+        ]);
+
+        $result = $this->activatorWithContentImpact()->deactivate('demo-module', 'test');
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('active', $this->extensionStatus('demo-module'));
+        self::assertSame(ContentStatus::Published, $content->status());
     }
 
     public function testItDeactivatesDependentsOfConflictingSingleActiveScopes(): void
@@ -561,7 +610,7 @@ PHP);
         ]);
         $result = (new ExtensionContentSchemaSynchronizer($this->entityManager))->apply($extension, [$definition]);
         self::assertTrue($result->isSuccess());
-        $schema = $this->entityManager->getRepository(ContentSchema::class)->findOneBy(['identifier' => 'demo_module_article']);
+        $schema = $this->entityManager->getRepository(ContentSchema::class)->findOneBy(['identifier' => 'ext11_demo_module_article']);
         self::assertInstanceOf(ContentSchema::class, $schema);
         self::assertNotNull($schema->activeVersion());
 

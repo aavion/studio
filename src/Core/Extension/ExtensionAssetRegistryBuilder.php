@@ -57,6 +57,7 @@ final class ExtensionAssetRegistryBuilder
             ExtensionScope::Module,
             ExtensionScope::CaptchaProvider,
             ExtensionScope::EditorProvider,
+            ExtensionScope::Api,
             ExtensionScope::Database,
             ExtensionScope::ContentSchema => self::BUCKET_EXTENSION,
         };

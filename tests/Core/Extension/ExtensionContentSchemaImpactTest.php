@@ -71,6 +71,26 @@ final class ExtensionContentSchemaImpactTest extends KernelTestCase
         self::assertSame(ContentStatus::Draft, $draft->status());
     }
 
+    public function testItDoesNotReportOverlappingExtensionSchemaPrefixesAsImpact(): void
+    {
+        $extension = $this->extension();
+        $schema = $this->moduleSchema($extension);
+        $published = $this->content('c1000000-0000-7000-8000-000000000004', 'published-module', $schema, ContentStatus::Published, '00000000-0000-7000-8000-000000000000');
+        $this->entityManager->persist($published);
+        $this->entityManager->flush();
+
+        $impact = new ExtensionContentSchemaImpact($this->entityManager);
+        $review = $impact->impactForExtensions([new Extension(
+            'c1000000-0000-7000-8000-000000000704',
+            [ExtensionScope::ContentSchema],
+            'demo',
+            'extensions/demo',
+            ExtensionStatus::Active,
+        )]);
+
+        self::assertSame(0, $review['count']);
+    }
+
     private function moduleSchema(Extension $extension): ContentSchema
     {
         $definition = ExtensionContentSchemaDefinition::create('article', ['en' => 'Article'], [
@@ -81,7 +101,7 @@ final class ExtensionContentSchemaImpactTest extends KernelTestCase
         ]);
         $result = (new ExtensionContentSchemaSynchronizer($this->entityManager))->apply($extension, [$definition]);
         self::assertTrue($result->isSuccess());
-        $schema = $this->entityManager->getRepository(ContentSchema::class)->findOneBy(['identifier' => 'demo_module_article']);
+        $schema = $this->entityManager->getRepository(ContentSchema::class)->findOneBy(['identifier' => 'ext11_demo_module_article']);
         self::assertInstanceOf(ContentSchema::class, $schema);
         self::assertNotNull($schema->activeVersion());
 

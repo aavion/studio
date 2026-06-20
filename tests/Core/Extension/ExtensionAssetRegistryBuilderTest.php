@@ -81,4 +81,14 @@ final class ExtensionAssetRegistryBuilderTest extends TestCase
             $contribution,
         ], ExtensionAssetRegistryBuilder::BUCKET_EXTENSION));
     }
+
+    public function testItBucketsApiScopedAssetsWithRegularExtensions(): void
+    {
+        $builder = new ExtensionAssetRegistryBuilder();
+
+        self::assertSame(ExtensionAssetRegistryBuilder::BUCKET_EXTENSION, $builder->bucketForScope(ExtensionScope::Api));
+        self::assertStringContainsString('@import "../../extensions/api-module/module.css";', $builder->buildCssRegistry([
+            ExtensionAssetContribution::css('api-module', ExtensionScope::Api, 'assets/extensions/api-module/module.css'),
+        ], ExtensionAssetRegistryBuilder::BUCKET_EXTENSION));
+    }
 }

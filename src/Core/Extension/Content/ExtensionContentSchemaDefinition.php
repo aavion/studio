@@ -37,7 +37,7 @@ final readonly class ExtensionContentSchemaDefinition
 
     public function identifier(string $extensionName): string
     {
-        return str_replace('-', '_', $extensionName).'_'.$this->name;
+        return ExtensionContentSchemaIdentifier::create($extensionName, $this->name);
     }
 
     public function name(): string

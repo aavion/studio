@@ -8,6 +8,7 @@ use App\Core\Message\Message;
 use App\Core\Message\MessageException;
 use App\Core\Message\MessageLevel;
 use App\Core\Workflow\WorkflowResult;
+use App\Entity\Extension;
 use Doctrine\DBAL\Connection;
 use Throwable;
 
@@ -25,6 +26,7 @@ final readonly class ExtensionActivationContributionApplier implements Extension
     {
         $messages = [];
         $actions = [];
+        $createdDatabaseTables = [];
         $this->connection->beginTransaction();
 
         try {
@@ -33,22 +35,29 @@ final readonly class ExtensionActivationContributionApplier implements Extension
 
                 $database = $this->databaseSynchronizer->apply($extension, $registry->extensionDatabaseTables());
                 if (!$database->isSuccess()) {
-                    $this->connection->rollBack();
+                    $this->rollBackIfActive();
+                    $cleanupMessages = $this->cleanupCreatedDatabaseTables($createdDatabaseTables);
 
                     return WorkflowResult::failed($database->issues(), [
                         'extension' => $extension->extensionName(),
                         'database_context' => $database->context(),
-                    ], [...$messages, ...$database->messages()]);
+                    ], [...$messages, ...$database->messages(), ...$cleanupMessages]);
                 }
+
+                $createdDatabaseTables[] = [
+                    'extension' => $extension,
+                    'tables' => $database->value()['created'] ?? [],
+                ];
 
                 $schemas = $this->contentSchemaSynchronizer->apply($extension, $registry->extensionContentSchemas());
                 if (!$schemas->isSuccess()) {
-                    $this->connection->rollBack();
+                    $this->rollBackIfActive();
+                    $cleanupMessages = $this->cleanupCreatedDatabaseTables($createdDatabaseTables);
 
                     return WorkflowResult::failed($schemas->issues(), [
                         'extension' => $extension->extensionName(),
                         'content_schema_context' => $schemas->context(),
-                    ], [...$messages, ...$database->messages(), ...$schemas->messages()]);
+                    ], [...$messages, ...$database->messages(), ...$schemas->messages(), ...$cleanupMessages]);
                 }
 
                 $messages = [...$messages, ...$database->messages(), ...$schemas->messages()];
@@ -61,15 +70,13 @@ final readonly class ExtensionActivationContributionApplier implements Extension
 
             $this->connection->commit();
         } catch (MessageException $error) {
-            if ($this->connection->isTransactionActive()) {
-                $this->connection->rollBack();
-            }
+            $this->rollBackIfActive();
+            $messages = [...$messages, ...$this->cleanupCreatedDatabaseTables($createdDatabaseTables)];
 
             return WorkflowResult::failed([$error->message()], ['exception' => $error::class, ...$error->context()], $messages);
         } catch (Throwable $error) {
-            if ($this->connection->isTransactionActive()) {
-                $this->connection->rollBack();
-            }
+            $this->rollBackIfActive();
+            $messages = [...$messages, ...$this->cleanupCreatedDatabaseTables($createdDatabaseTables)];
 
             return WorkflowResult::failed([
                 Message::create(
@@ -83,5 +90,33 @@ final readonly class ExtensionActivationContributionApplier implements Extension
         }
 
         return WorkflowResult::success(['actions' => $actions], ['actions' => $actions], $messages);
+    }
+
+    private function rollBackIfActive(): void
+    {
+        if ($this->connection->isTransactionActive()) {
+            $this->connection->rollBack();
+        }
+    }
+
+    /**
+     * @param list<array{extension: Extension, tables: list<string>}> $createdDatabaseTables
+     *
+     * @return list<Message>
+     */
+    private function cleanupCreatedDatabaseTables(array $createdDatabaseTables): array
+    {
+        $messages = [];
+
+        foreach (array_reverse($createdDatabaseTables) as $entry) {
+            if (!$entry['extension'] instanceof Extension || [] === $entry['tables']) {
+                continue;
+            }
+
+            $cleanup = $this->databaseSynchronizer->dropTables($entry['extension'], $entry['tables']);
+            $messages = [...$messages, ...$cleanup->messages(), ...$cleanup->issues()];
+        }
+
+        return $messages;
     }
 }

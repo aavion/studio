@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Extension\Database;
 
+use App\Core\Extension\ExtensionOwnerName;
 use App\Core\Message\MessageException;
 use App\Core\Extension\ExtensionMessageKey;
 
@@ -85,9 +86,7 @@ final readonly class ExtensionDatabaseTable
 
     public function physicalName(string $extensionName, string $databasePrefix = ''): string
     {
-        $extensionPrefix = str_replace('-', '_', $extensionName).'_';
-
-        return $databasePrefix.$extensionPrefix.$this->name;
+        return $databasePrefix.ExtensionOwnerName::prefix($extensionName).$this->name;
     }
 
     /**
