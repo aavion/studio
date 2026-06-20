@@ -29,41 +29,8 @@ final readonly class ExtensionLifecycleCleanupRunner implements ExtensionLifecyc
      */
     public function cleanup(Extension $extension): WorkflowResult
     {
-        $deletedSettings = $this->extensionSettings->removeExtension($extension->extensionName());
         $actions = [];
-
-        if ($deletedSettings > 0) {
-            $actions[] = [
-                'action' => 'delete_extension_settings',
-                'count' => $deletedSettings,
-            ];
-        }
-
-        if ($this->removeExtensionAclOverride($extension->extensionName())) {
-            $actions[] = [
-                'action' => 'delete_extension_acl_override',
-                'count' => 1,
-            ];
-        }
-
         $messages = [];
-
-        if (null !== $this->databaseSynchronizer) {
-            $database = $this->databaseSynchronizer->purge($extension);
-            if (!$database->isSuccess()) {
-                return WorkflowResult::failed($database->issues(), [
-                    'extension' => $extension->extensionName(),
-                    'actions' => $actions,
-                    'database_context' => $database->context(),
-                ], $database->messages());
-            }
-
-            $messages = [...$messages, ...$database->messages()];
-            $actions[] = [
-                'action' => 'drop_extension_database_tables',
-                'count' => count($database->value()['dropped'] ?? []),
-            ];
-        }
 
         if (null !== $this->contentSchemaSynchronizer) {
             $schemas = $this->contentSchemaSynchronizer->purge($extension);
@@ -81,6 +48,25 @@ final readonly class ExtensionLifecycleCleanupRunner implements ExtensionLifecyc
                 'count' => count($schemas->value()['deleted'] ?? []),
             ];
         }
+
+        if (null !== $this->databaseSynchronizer) {
+            $database = $this->databaseSynchronizer->purge($extension);
+            if (!$database->isSuccess()) {
+                return WorkflowResult::failed($database->issues(), [
+                    'extension' => $extension->extensionName(),
+                    'actions' => $actions,
+                    'database_context' => $database->context(),
+                ], [...$messages, ...$database->messages()]);
+            }
+
+            $messages = [...$messages, ...$database->messages()];
+            $actions[] = [
+                'action' => 'drop_extension_database_tables',
+                'count' => count($database->value()['dropped'] ?? []),
+            ];
+        }
+
+        $actions = [...$actions, ...$this->cleanupSettingsAndAcl($extension->extensionName())];
 
         $this->adminFeatureRegistry?->resetCache();
 
@@ -100,6 +86,31 @@ final readonly class ExtensionLifecycleCleanupRunner implements ExtensionLifecyc
                 MessageLevel::Success,
             ),
         ]);
+    }
+
+    /**
+     * @return list<array{action: string, count: int}>
+     */
+    private function cleanupSettingsAndAcl(string $extensionName): array
+    {
+        $actions = [];
+        $deletedSettings = $this->extensionSettings->removeExtension($extensionName);
+
+        if ($deletedSettings > 0) {
+            $actions[] = [
+                'action' => 'delete_extension_settings',
+                'count' => $deletedSettings,
+            ];
+        }
+
+        if ($this->removeExtensionAclOverride($extensionName)) {
+            $actions[] = [
+                'action' => 'delete_extension_acl_override',
+                'count' => 1,
+            ];
+        }
+
+        return $actions;
     }
 
     private function removeExtensionAclOverride(string $extensionName): bool
