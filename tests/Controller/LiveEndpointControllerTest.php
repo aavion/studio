@@ -81,6 +81,25 @@ final class LiveEndpointControllerTest extends TestCase
         self::assertSame(Response::HTTP_NOT_FOUND, $response->getStatusCode());
     }
 
+    public function testItRejectsDigitPrefixedLiveExtensionSlugs(): void
+    {
+        $endpoint = new LiveEndpointDefinition(
+            'extension',
+            Request::METHOD_GET,
+            '/api/live/3d-pack/admin-action',
+            'api_live_extension_dispatch',
+            'runAdminAction',
+            'Run an admin live action.',
+            'extensions.3d-pack.live.admin_action',
+            pathPattern: '#^/api/live/3d-pack/admin-action$#',
+        );
+        $controller = $this->controller($endpoint, null, expectsUser: false);
+
+        $response = $controller->dispatch(Request::create('/api/live/3d-pack/admin-action', Request::METHOD_GET));
+
+        self::assertSame(Response::HTTP_NOT_FOUND, $response->getStatusCode());
+    }
+
     private function controller(LiveEndpointDefinition $endpoint, ?UserAccount $user, bool $expectsUser = true): LiveEndpointController
     {
         $handler = new class implements LiveEndpointHandlerInterface {

@@ -53,7 +53,7 @@ EXTENSION_SCOPE=[frontend-theme, module]
 EXTENSION_DEPENDENCIES=[]
 ```
 
-`EXTENSION_SLUG` must be storage-safe: it starts with a lowercase letter, uses only lowercase letters, digits, and single hyphen-separated segments, stays at 120 characters or less, and matches the extension folder name exactly.
+`EXTENSION_SLUG` must be an owner slug: it starts with a lowercase letter, uses only lowercase letters, digits, and single hyphen-separated segments, stays at 60 characters or less, and matches the extension folder name exactly.
 
 Optional source metadata stays split: `EXTENSION_SOURCE` points to the repository or release source root, and `EXTENSION_CHANNEL` identifies the branch or channel. The admin UI may turn those two values into a branch-specific link, but update tooling must still be able to reconstruct clone/fetch targets from the raw manifest values.
 

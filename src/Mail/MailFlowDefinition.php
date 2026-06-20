@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Mail;
 
+use App\Core\Validation\IdentifierSpec;
 use BackedEnum;
 use InvalidArgumentException;
 
@@ -81,14 +82,14 @@ final readonly class MailFlowDefinition
 
     private static function assertParameter(string $parameter): void
     {
-        if (1 !== preg_match('/^[a-z][a-z0-9_]*$/', $parameter)) {
+        if (!IdentifierSpec::isSnakeIdentifier($parameter)) {
             throw new InvalidArgumentException(sprintf('Invalid mail parameter key "%s".', $parameter));
         }
     }
 
     private static function assertTranslationKey(string $key, string $label): void
     {
-        if (1 !== preg_match('/^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)+$/', $key)) {
+        if (!IdentifierSpec::isDotPathIdentifier($key)) {
             throw new InvalidArgumentException(sprintf('%s "%s" must be a valid translation key.', $label, $key));
         }
     }

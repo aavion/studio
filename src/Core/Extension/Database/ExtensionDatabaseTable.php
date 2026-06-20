@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace App\Core\Extension\Database;
 
+use App\Core\Extension\ExtensionMessageKey;
 use App\Core\Extension\ExtensionOwnerName;
 use App\Core\Message\MessageException;
-use App\Core\Extension\ExtensionMessageKey;
+use App\Core\Validation\IdentifierSpec;
 
 final readonly class ExtensionDatabaseTable
 {
@@ -123,7 +124,7 @@ final readonly class ExtensionDatabaseTable
 
     private function assertIdentifier(string $value, string $label): void
     {
-        if (1 !== preg_match('/^[a-z][a-z0-9_]*$/', $value)) {
+        if (!IdentifierSpec::isSnakeIdentifier($value)) {
             throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_DATABASE_CONTRIBUTION_INVALID, [
                 '%reason%' => $label.'_identifier_invalid',
             ], [$label => $value]);

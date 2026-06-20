@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Database;
 
+use App\Core\Validation\IdentifierSpec;
+
 final readonly class TablePrefix
 {
     public const MIGRATION_TABLE = 'doctrine_migration_versions';
@@ -54,7 +56,7 @@ final readonly class TablePrefix
             return '';
         }
 
-        return 1 === preg_match('/^[a-z][a-z0-9_]*_$/', $prefix) ? $prefix : '';
+        return IdentifierSpec::isDatabaseTablePrefix($prefix) ? $prefix : '';
     }
 
     public static function apply(string $name, ?string $prefix = null): string

@@ -7,6 +7,7 @@ namespace App\Entity;
 use App\Content\ContentMessageKey;
 use App\Content\Routing\ContentSlug;
 use App\Core\Message\MessageException;
+use App\Core\Validation\IdentifierSpec;
 use App\Core\Validation\Uid;
 use App\Localization\LocaleToken;
 use App\Repository\ContentFieldValueRepository;
@@ -137,7 +138,7 @@ class ContentFieldValue
 
     private static function assertFieldIdentifier(string $fieldIdentifier): string
     {
-        if (1 !== preg_match('/^[a-z][a-z0-9_]*$/', $fieldIdentifier)) {
+        if (!IdentifierSpec::isSnakeIdentifier($fieldIdentifier)) {
             throw MessageException::invalidArgument(ContentMessageKey::CONTENT_FIELD_IDENTIFIER_INVALID, [
                 '%field_identifier%' => $fieldIdentifier,
             ]);

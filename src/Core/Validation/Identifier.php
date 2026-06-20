@@ -11,7 +11,7 @@ final class Identifier
 {
     public static function assertSnakeCase(string $identifier, string $messageKey, string $parameterName = '%identifier%'): string
     {
-        if (1 !== preg_match('/^[a-z][a-z0-9_]*$/', $identifier)) {
+        if (!IdentifierSpec::isSnakeIdentifier($identifier)) {
             throw MessageException::invalidArgument($messageKey, [
                 $parameterName => $identifier,
             ]);
@@ -22,7 +22,7 @@ final class Identifier
 
     public static function assertAclGroupIdentifier(string $identifier, string $parameterName = '%identifier%'): string
     {
-        if (1 !== preg_match('/^[a-z][a-z0-9_]{2,79}$/', $identifier)) {
+        if (!IdentifierSpec::isAclGroupIdentifier($identifier)) {
             throw MessageException::invalidArgument(AccessMessageKey::ACCESS_GROUP_IDENTIFIER_INVALID, [
                 $parameterName => $identifier,
             ]);
@@ -33,7 +33,7 @@ final class Identifier
 
     public static function assertConfigKey(string $key, string $messageKey): string
     {
-        if (1 !== preg_match('/^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)+$/', $key)) {
+        if (!IdentifierSpec::isDotPathIdentifier($key)) {
             throw MessageException::invalidArgument($messageKey, [
                 '%key%' => $key,
             ]);

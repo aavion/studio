@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Core\Extension;
 
+use App\Core\Validation\IdentifierSpec;
 use App\Core\Message\MessageException;
 
 final readonly class ExtensionIdentity
 {
-    public const MAX_EXTENSION_NAME_LENGTH = 120;
+    public const MAX_EXTENSION_NAME_LENGTH = IdentifierSpec::MAX_SLUG_LENGTH;
+    public const EXTENSION_NAME_PATTERN = IdentifierSpec::OWNER_SLUG_PATTERN;
 
     public static function assertExtensionName(string $extensionName): string
     {
@@ -23,8 +25,7 @@ final readonly class ExtensionIdentity
 
     public static function isExtensionName(string $extensionName): bool
     {
-        return strlen($extensionName) <= self::MAX_EXTENSION_NAME_LENGTH
-            && 1 === preg_match('/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/', $extensionName);
+        return IdentifierSpec::isOwnerSlug($extensionName);
     }
 
     /**

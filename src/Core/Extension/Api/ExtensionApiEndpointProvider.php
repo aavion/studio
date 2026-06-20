@@ -6,13 +6,14 @@ namespace App\Core\Extension\Api;
 
 use App\Api\Endpoint\ApiEndpointDefinition;
 use App\Api\Endpoint\ApiEndpointProviderInterface;
+use App\Core\Extension\ExtensionIdentity;
 use Symfony\Component\HttpFoundation\Request;
 
 final readonly class ExtensionApiEndpointProvider implements ApiEndpointProviderInterface
 {
     public const HANDLER_EXTENSIONS_INDEX = 'extensions.index';
     public const HANDLER_EXTENSIONS_NAVIGATION = 'extensions.navigation';
-    private const EXTENSION_SEGMENT_PATTERN = '[a-z0-9]+(?:-[a-z0-9]+)*';
+    private const EXTENSION_SEGMENT_PATTERN = ExtensionIdentity::EXTENSION_NAME_PATTERN;
 
     public function apiEndpoints(): array
     {
@@ -118,7 +119,7 @@ final readonly class ExtensionApiEndpointProvider implements ApiEndpointProvider
     private function extensionParameters(): array
     {
         return [
-            ['name' => 'extension_slug', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'string']],
+            ['name' => 'extension_slug', 'in' => 'path', 'required' => true, 'schema' => ['type' => 'string', 'pattern' => '^'.self::EXTENSION_SEGMENT_PATTERN.'$', 'maxLength' => ExtensionIdentity::MAX_EXTENSION_NAME_LENGTH]],
         ];
     }
 

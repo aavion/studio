@@ -143,10 +143,10 @@ final class ExtensionValidatorTest extends TestCase
         self::assertSame('EXTENSION_SLUG', $result->firstIssue()?->context()['key']);
     }
 
-    public function testItRejectsExtensionSlugsLongerThanStorageAllows(): void
+    public function testItRejectsExtensionSlugsLongerThanIdentifierSpecAllows(): void
     {
         $result = (new ExtensionValidator())->validate(
-            $this->candidateWithManifest(['EXTENSION_SLUG' => str_repeat('a', 121)]),
+            $this->candidateWithManifest(['EXTENSION_SLUG' => str_repeat('a', 61)]),
             ExtensionSpec::create(),
         );
 

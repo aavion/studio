@@ -6,6 +6,7 @@ namespace App\Setup;
 
 use App\Core\Message\MessageException;
 use App\Core\Validation\EmailAddress;
+use App\Core\Validation\IdentifierSpec;
 use App\Entity\UserAccount;
 use App\Security\PasswordPolicy;
 
@@ -70,7 +71,7 @@ final readonly class SetupInputValidator
             $errors['database_url'][] = 'setup.form.errors.database_url';
         }
 
-        if ('' !== trim((string) $values['database_prefix']) && 1 !== preg_match('/^[a-z][a-z0-9_]*$/', (string) $values['database_prefix'])) {
+        if ('' !== trim((string) $values['database_prefix']) && !IdentifierSpec::isDatabasePrefix((string) $values['database_prefix'])) {
             $errors['database_prefix'][] = 'setup.form.errors.database_prefix';
         }
 

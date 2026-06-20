@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace App\Core\Extension\Content;
 
-use App\Core\Message\MessageException;
 use App\Core\Extension\ExtensionMessageKey;
+use App\Core\Message\MessageException;
+use App\Core\Validation\IdentifierSpec;
 
 final readonly class ExtensionContentSchemaDefinition
 {
@@ -23,7 +24,7 @@ final readonly class ExtensionContentSchemaDefinition
         private ?string $customTwig = null,
         private array $metadata = [],
     ) {
-        if (1 !== preg_match('/^[a-z][a-z0-9_]*$/', $name)) {
+        if (!IdentifierSpec::isSnakeIdentifier($name)) {
             throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_CONTENT_SCHEMA_CONTRIBUTION_INVALID, [
                 '%reason%' => 'schema_identifier_invalid',
             ], ['schema' => $name]);

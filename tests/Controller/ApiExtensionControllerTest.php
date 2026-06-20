@@ -201,6 +201,8 @@ final class ApiExtensionControllerTest extends WebTestCase
         self::assertSame('listExtensions', $payload['paths']['/admin/extensions']['get']['operationId']);
         self::assertSame(['backend-admin', 'backend-admin-extensions'], $payload['paths']['/admin/extensions']['get']['tags']);
         self::assertSame('getExtension', $payload['paths']['/admin/extensions/{extension_slug}']['get']['operationId']);
+        self::assertSame('^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$', $payload['paths']['/admin/extensions/{extension_slug}']['get']['parameters'][0]['schema']['pattern']);
+        self::assertSame(60, $payload['paths']['/admin/extensions/{extension_slug}']['get']['parameters'][0]['schema']['maxLength']);
         self::assertSame('extensionActivate', $payload['paths']['/admin/extensions/{extension_slug}/activate']['post']['operationId']);
         self::assertContains([
             'name' => 'backend-admin-extensions',
