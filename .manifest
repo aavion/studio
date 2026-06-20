@@ -4,7 +4,7 @@
 
 ##> aavion/studio manifest ###
 APP_VERSION=0.2.6
-APP_DATE=2026-06-19
+APP_DATE=2026-06-20
 APP_NAME=Studio
 APP_AUTHOR=aavion Media
 APP_DESCRIPTION=Symfony 8.1 based content-management system for structured project websites.
