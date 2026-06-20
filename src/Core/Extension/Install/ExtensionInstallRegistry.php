@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Core\Extension\Install;
 
+use App\Content\ContentStatus;
 use App\Core\Message\Message;
 use App\Core\Operation\OperationMessageCode;
 use App\Core\Operation\OperationMessageKey;
 use App\Core\Extension\ExtensionStatus;
+use App\Entity\ContentItem;
 use App\Entity\Extension;
 use Doctrine\ORM\EntityManagerInterface;
 use Throwable;
@@ -78,6 +80,41 @@ final readonly class ExtensionInstallRegistry
                         'exception' => $error::class,
                         'message' => $error->getMessage(),
                         'rollback' => true,
+                    ],
+                ),
+            ];
+        }
+
+        return [];
+    }
+
+    /**
+     * @param array<string, ContentStatus> $snapshots
+     *
+     * @return list<Message>
+     */
+    public function restoreContentStatuses(array $snapshots): array
+    {
+        try {
+            foreach ($snapshots as $contentUid => $status) {
+                $content = $this->entityManager->find(ContentItem::class, $contentUid);
+
+                if ($content instanceof ContentItem) {
+                    $content->restoreStatus($status);
+                }
+            }
+
+            $this->entityManager->flush();
+        } catch (Throwable $error) {
+            return [
+                Message::exception(
+                    OperationMessageCode::OPERATION_EXCEPTION,
+                    OperationMessageKey::OPERATION_EXCEPTION,
+                    context: [
+                        'exception' => $error::class,
+                        'message' => $error->getMessage(),
+                        'rollback' => true,
+                        'content_status_restore' => true,
                     ],
                 ),
             ];

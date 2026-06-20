@@ -4,11 +4,17 @@ declare(strict_types=1);
 
 namespace App\Tests\Core\Extension;
 
+use App\Content\ContentStatus;
+use App\Core\Extension\Content\ExtensionContentSchemaDefinition;
+use App\Core\Extension\Content\ExtensionContentSchemaSynchronizer;
 use App\Core\Operation\Live\LiveOperationQueueFactory;
 use App\Core\Extension\ExtensionStatus;
 use App\Core\Extension\Install\ExtensionZipInstaller;
 use App\Core\Extension\ExtensionScope;
 use App\Core\Workflow\WorkflowStatus;
+use App\Entity\ContentItem;
+use App\Entity\ContentRevision;
+use App\Entity\ContentSchema;
 use App\Entity\Extension;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -26,6 +32,7 @@ final class ExtensionZipInstallerTest extends KernelTestCase
         'zip-install-symlink',
         'zip-install-deep-policy',
         'zip-install-skip',
+        'zip-install-content',
     ];
 
     private const TEST_EXTENSION_DATABASE_SLUGS = [
@@ -46,6 +53,7 @@ final class ExtensionZipInstallerTest extends KernelTestCase
         '888888888888888888888888',
         '999999999999999999999999',
         '121212121212121212121212',
+        '131313131313131313131313',
     ];
 
     private string $projectDir;
@@ -60,6 +68,8 @@ final class ExtensionZipInstallerTest extends KernelTestCase
         foreach (self::TEST_EXTENSION_SLUGS as $slug) {
             $this->removePath($this->projectDir.'/extensions/'.$slug);
         }
+
+        $this->deleteContentFixture();
 
         foreach (self::TEST_EXTENSION_DATABASE_SLUGS as $slug) {
             $this->deleteExtensionRow($slug);
@@ -79,6 +89,8 @@ final class ExtensionZipInstallerTest extends KernelTestCase
         foreach (self::TEST_INSTALL_IDS as $installId) {
             $this->removePath($this->installRoot($installId));
         }
+
+        $this->deleteContentFixture();
 
         parent::tearDown();
     }
@@ -430,7 +442,7 @@ final class ExtensionZipInstallerTest extends KernelTestCase
             'dependent extension',
             sprintf('[["%s", "1.0"]]', $slug),
         );
-        $this->persistExtension($slug, ExtensionStatus::Active);
+        $this->persistExtension($slug, ExtensionStatus::Active, scopes: [ExtensionScope::Module, ExtensionScope::ContentSchema]);
         $this->persistExtension(
             $dependentSlug,
             ExtensionStatus::Active,
@@ -458,6 +470,44 @@ final class ExtensionZipInstallerTest extends KernelTestCase
         $this->removePath($this->installRoot($installId));
         $this->deleteExtensionRow($slug);
         $this->deleteExtensionRow($dependentSlug);
+    }
+
+    public function testItRestoresArchivedContentAfterSuccessfulActiveOverwrite(): void
+    {
+        if (!class_exists(ZipArchive::class)) {
+            self::markTestSkipped('ZipArchive is required for extension ZIP installer tests.');
+        }
+
+        $installId = '131313131313131313131313';
+        $slug = 'zip-install-content';
+        $target = $this->projectDir.'/extensions/'.$slug;
+        $this->removePath($target);
+        $this->deleteContentFixture();
+        $this->deleteExtensionRow($slug);
+        $this->writeExtensionDirectory($target, $slug, '1.0.0', 'old extension');
+        $this->persistExtension($slug, ExtensionStatus::Active);
+        $extension = $this->entityManager->getRepository(Extension::class)->findOneBy(['extensionName' => $slug]);
+        self::assertInstanceOf(Extension::class, $extension);
+        $this->createPublishedExtensionContent($extension);
+        $this->writeUploadZip($installId, $slug, version: '1.1.0', readme: "new extension\n");
+
+        $verify = $this->installer()->verify(['install_id' => $installId]);
+        self::assertSame(WorkflowStatus::RequiresReview, $verify->status());
+
+        $apply = $this->installer()->apply([
+            'install_id' => $installId,
+            'extension' => $slug,
+            'was_active' => true,
+        ]);
+
+        self::assertTrue($apply->isSuccess(), json_encode($apply->toArray(), JSON_THROW_ON_ERROR));
+        self::assertSame(ExtensionStatus::Active, $this->extensionStatus($slug));
+        self::assertSame(ContentStatus::Published, $this->contentStatus('c5000000-0000-7000-8000-000000000001'));
+
+        $this->removePath($target);
+        $this->removePath($this->installRoot($installId));
+        $this->deleteContentFixture();
+        $this->deleteExtensionRow($slug);
     }
 
     private function installer(): ExtensionZipInstaller
@@ -528,11 +578,12 @@ final class ExtensionZipInstallerTest extends KernelTestCase
         ExtensionStatus $status,
         string $dependencies = '[]',
         string $version = '1.0.0',
+        array $scopes = [ExtensionScope::Module],
     ): void
     {
         $this->entityManager->persist(new Extension(
             $this->uuid(),
-            [ExtensionScope::Module],
+            $scopes,
             $slug,
             'extensions/'.$slug,
             $status,
@@ -569,6 +620,58 @@ final class ExtensionZipInstallerTest extends KernelTestCase
         self::assertInstanceOf(Extension::class, $extension);
 
         return $extension->installedVersion();
+    }
+
+    private function createPublishedExtensionContent(Extension $extension): void
+    {
+        $schemaSync = new ExtensionContentSchemaSynchronizer($this->entityManager);
+        $schemaApply = $schemaSync->apply($extension, [
+            ExtensionContentSchemaDefinition::create('article', ['en' => 'Article'], [
+                'fields' => [
+                    ['identifier' => 'title', 'type' => 'string'],
+                    ['identifier' => 'subtitle', 'type' => 'string'],
+                    ['identifier' => 'body', 'type' => 'text'],
+                ],
+            ]),
+        ]);
+        self::assertTrue($schemaApply->isSuccess(), json_encode($schemaApply->toArray(), JSON_THROW_ON_ERROR));
+
+        $schema = $this->entityManager->getRepository(ContentSchema::class)->findOneBy([
+            'identifier' => 'ext19_zip_install_content_article',
+        ]);
+        self::assertInstanceOf(ContentSchema::class, $schema);
+        self::assertNotNull($schema->activeVersion());
+
+        $content = new ContentItem('c5000000-0000-7000-8000-000000000001', 'zip-install-content-item');
+        $content->activateRevision(new ContentRevision('c5000000-0000-7000-8000-000000000101', $content, 1, $schema->activeVersion()));
+        $content->publish();
+        $this->entityManager->persist($content);
+        $this->entityManager->flush();
+        $this->entityManager->clear();
+    }
+
+    private function contentStatus(string $uid): ContentStatus
+    {
+        $content = $this->entityManager->find(ContentItem::class, $uid);
+        self::assertInstanceOf(ContentItem::class, $content);
+
+        return $content->status();
+    }
+
+    private function deleteContentFixture(): void
+    {
+        $connection = $this->entityManager->getConnection();
+        $connection->executeStatement("DELETE FROM content_revision WHERE content_uid = 'c5000000-0000-7000-8000-000000000001'");
+        $connection->executeStatement("DELETE FROM content_item WHERE uid = 'c5000000-0000-7000-8000-000000000001'");
+
+        $schemaUid = $connection->fetchOne("SELECT uid FROM content_schema WHERE identifier = 'ext19_zip_install_content_article'");
+        if (is_string($schemaUid)) {
+            $connection->executeStatement('UPDATE content_schema SET active_version_uid = NULL WHERE uid = :schema', ['schema' => $schemaUid]);
+            $connection->executeStatement('DELETE FROM content_schema_version WHERE schema_uid = :schema', ['schema' => $schemaUid]);
+            $connection->executeStatement('DELETE FROM content_schema WHERE uid = :schema', ['schema' => $schemaUid]);
+        }
+
+        $this->entityManager->clear();
     }
 
     private function deleteExtensionRow(string $slug): void

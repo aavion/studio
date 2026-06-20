@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Extension\Install;
 
+use App\Content\ContentStatus;
 use App\Core\Manifest\Manifest;
 use App\Core\Message\Message;
 use App\Core\Operation\OperationMessageCode;
@@ -88,6 +89,7 @@ final readonly class ExtensionInstallApplier
         $backup = $root.DIRECTORY_SEPARATOR.'backup'.DIRECTORY_SEPARATOR.$slug;
         $deactivationTargets = [];
         $previousStatuses = $previousStatus instanceof ExtensionStatus ? [$slug => $previousStatus] : [];
+        $contentStatusSnapshots = [];
 
         $manifest = $this->stageReader->readManifest($extensionRoot);
         if (!$manifest->isSuccess()) {
@@ -146,13 +148,18 @@ final readonly class ExtensionInstallApplier
                     'deactivation_context' => $deactivation->context(),
                 ], $messages);
             }
+
+            $contentStatusSnapshots = $this->contentStatusSnapshots($deactivation->context()['content_status_snapshots'] ?? []);
         }
 
         try {
             $this->filesystem->prepareReplacement($extensionRoot, $prepared);
             $this->filesystem->swapPreparedExtension($prepared, $target, $backup);
         } catch (Throwable $error) {
-            $rollbackMessages = $this->registry->restoreStatuses($previousStatuses);
+            $rollbackMessages = [
+                ...$this->registry->restoreStatuses($previousStatuses),
+                ...$this->registry->restoreContentStatuses($contentStatusSnapshots),
+            ];
 
             return WorkflowResult::failed([
                 Message::exception(
@@ -177,7 +184,7 @@ final readonly class ExtensionInstallApplier
         $messages = [...$messages, ...$discovery->messages()];
 
         if (!$discovery->isSuccess()) {
-            $rollbackMessages = $this->rollbacker->previousExtension($slug, $target, $backup, $previousStatuses);
+            $rollbackMessages = $this->rollbacker->previousExtension($slug, $target, $backup, $previousStatuses, $contentStatusSnapshots);
 
             return WorkflowResult::failed($discovery->issues(), [
                 'install_id' => $installId,
@@ -195,7 +202,7 @@ final readonly class ExtensionInstallApplier
 
         $installed = $this->registry->extension($slug);
         if (!$this->isInstalledInactiveExtension($installed, $manifestValue)) {
-            $rollbackMessages = $this->rollbacker->previousExtension($slug, $target, $backup, $previousStatuses);
+            $rollbackMessages = $this->rollbacker->previousExtension($slug, $target, $backup, $previousStatuses, $contentStatusSnapshots);
             $status = $installed?->status()->value;
 
             return WorkflowResult::failed([
@@ -224,7 +231,7 @@ final readonly class ExtensionInstallApplier
             $messages = [...$messages, ...$activation->messages()];
 
             if (!$activation->isSuccess()) {
-                $rollbackMessages = $this->rollbacker->previousExtension($slug, $target, $backup, $previousStatuses);
+                $rollbackMessages = $this->rollbacker->previousExtension($slug, $target, $backup, $previousStatuses, $contentStatusSnapshots);
 
                 return WorkflowResult::failed($activation->issues(), [
                     'install_id' => $installId,
@@ -240,7 +247,7 @@ final readonly class ExtensionInstallApplier
                 $messages = [...$messages, ...$reactivation->messages()];
 
                 if (!$reactivation->isSuccess()) {
-                    $rollbackMessages = $this->rollbacker->previousExtension($slug, $target, $backup, $previousStatuses);
+                    $rollbackMessages = $this->rollbacker->previousExtension($slug, $target, $backup, $previousStatuses, $contentStatusSnapshots);
 
                     return WorkflowResult::failed($reactivation->issues(), [
                         'install_id' => $installId,
@@ -251,6 +258,9 @@ final readonly class ExtensionInstallApplier
                     ], [...$messages, ...$rollbackMessages]);
                 }
             }
+
+            $contentStatusMessages = $this->registry->restoreContentStatuses($contentStatusSnapshots);
+            $messages = [...$messages, ...$contentStatusMessages];
         }
 
         $this->filesystem->removePath($root);
@@ -280,5 +290,30 @@ final readonly class ExtensionInstallApplier
         $expectedVersion = trim((string) $manifest->get('EXTENSION_VERSION', ''));
 
         return '' === $expectedVersion || $extension->manifestVersion() === $expectedVersion;
+    }
+
+    /**
+     * @return array<string, ContentStatus>
+     */
+    private function contentStatusSnapshots(mixed $value): array
+    {
+        if (!is_array($value)) {
+            return [];
+        }
+
+        $snapshots = [];
+
+        foreach ($value as $contentUid => $status) {
+            if (!is_string($contentUid) || !is_string($status)) {
+                continue;
+            }
+
+            $contentStatus = ContentStatus::tryFrom($status);
+            if ($contentStatus instanceof ContentStatus) {
+                $snapshots[$contentUid] = $contentStatus;
+            }
+        }
+
+        return $snapshots;
     }
 }

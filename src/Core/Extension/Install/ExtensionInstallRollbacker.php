@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace App\Core\Extension\Install;
 
+use App\Content\ContentStatus;
+use App\Core\Extension\ExtensionStatus;
+use App\Core\Extension\ExtensionDiscoveryRunner;
 use App\Core\Message\Message;
 use App\Core\Operation\OperationMessageCode;
 use App\Core\Operation\OperationMessageKey;
-use App\Core\Extension\ExtensionStatus;
-use App\Core\Extension\ExtensionDiscoveryRunner;
 use Throwable;
 
 final readonly class ExtensionInstallRollbacker
@@ -22,6 +23,7 @@ final readonly class ExtensionInstallRollbacker
 
     /**
      * @param array<string, ExtensionStatus> $previousStatuses
+     * @param array<string, ContentStatus> $contentStatusSnapshots
      *
      * @return list<Message>
      */
@@ -30,6 +32,7 @@ final readonly class ExtensionInstallRollbacker
         string $target,
         string $backup,
         array $previousStatuses,
+        array $contentStatusSnapshots = [],
     ): array {
         try {
             $this->filesystem->removePath($target);
@@ -48,8 +51,9 @@ final readonly class ExtensionInstallRollbacker
             }
 
             $statusMessages = $this->registry->restoreStatuses($previousStatuses);
+            $contentStatusMessages = $this->registry->restoreContentStatuses($contentStatusSnapshots);
 
-            return [...$discoveryMessages, ...$statusMessages];
+            return [...$discoveryMessages, ...$statusMessages, ...$contentStatusMessages];
         } catch (Throwable $error) {
             return [
                 Message::exception(
