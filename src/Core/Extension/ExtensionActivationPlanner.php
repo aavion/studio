@@ -46,6 +46,14 @@ final readonly class ExtensionActivationPlanner
         }
 
         $extensions = $dependencies->value()['extensions'];
+        $planConflict = $this->singleActiveConflictInsidePlan($extensions);
+        if ($planConflict instanceof Message) {
+            return WorkflowResult::blocked([$planConflict], [
+                'extension' => $extensionName,
+                'dependencies' => $dependencies->context()['dependencies'] ?? [],
+            ], $dependencies->messages());
+        }
+
         $conflicts = $this->singleActiveConflictsFor($extensions);
         $deactivations = $this->deactivationCascadeFor($conflicts, array_map(
             static fn (Extension $candidate): string => $candidate->extensionName(),
@@ -160,6 +168,45 @@ final readonly class ExtensionActivationPlanner
         }
 
         return array_values($conflicts);
+    }
+
+    /**
+     * @param list<Extension> $extensions
+     */
+    private function singleActiveConflictInsidePlan(array $extensions): ?Message
+    {
+        $ownersByScope = [];
+
+        foreach ($extensions as $extension) {
+            foreach ($extension->scopes() as $scope) {
+                if (!$scope->isSingleActive()) {
+                    continue;
+                }
+
+                $scopeName = $scope->value;
+                $ownersByScope[$scopeName] ??= [];
+                $ownersByScope[$scopeName][$extension->extensionName()] = true;
+            }
+        }
+
+        foreach ($ownersByScope as $scope => $owners) {
+            if (count($owners) < 2) {
+                continue;
+            }
+
+            $extensions = array_keys($owners);
+            sort($extensions);
+
+            return Message::create(
+                ExtensionMessageCode::EXTENSION_LIFECYCLE_SINGLE_ACTIVE_CONFLICT,
+                ExtensionMessageKey::EXTENSION_LIFECYCLE_SINGLE_ACTIVE_CONFLICT,
+                ['%scope%' => $scope, '%extensions%' => implode(', ', $extensions)],
+                ['scope' => $scope, 'extensions' => $extensions],
+                MessageLevel::Error,
+            );
+        }
+
+        return null;
     }
 
     /**

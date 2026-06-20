@@ -390,6 +390,21 @@ PHP);
         self::assertSame(['new-theme', 'theme-tools'], array_column($result->value()['changes'], 'extension'));
     }
 
+    public function testItBlocksActivationPlansWithMultipleSingleActiveExtensionsForTheSameScope(): void
+    {
+        $this->insertExtension('base-theme', ['frontend-theme'], 'inactive');
+        $this->insertExtension('new-theme', ['frontend-theme'], 'inactive', "[['base-theme', '1.0.0']]");
+
+        $result = $this->activator()->planActivation('new-theme');
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('extension.lifecycle.single_active_conflict', $result->firstIssue()?->code());
+        self::assertSame('frontend-theme', $result->firstIssue()?->context()['scope']);
+        self::assertSame(['base-theme', 'new-theme'], $result->firstIssue()?->context()['extensions']);
+        self::assertSame('inactive', $this->extensionStatus('base-theme'));
+        self::assertSame('inactive', $this->extensionStatus('new-theme'));
+    }
+
     public function testItTreatsSystemAsSatisfiedVirtualDependency(): void
     {
         $systemVersion = (new SystemExtensionMetadataProvider(dirname(__DIR__, 3)))->metadata()['version'];

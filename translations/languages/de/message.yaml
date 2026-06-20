@@ -75,6 +75,7 @@ message:
     lifecycle:
       not_found: 'Extension "%extension%" ist nicht registriert.'
       status_blocked: 'Extension "%extension%" kann den Lifecycle-Status nicht wechseln, solange es "%status%" ist.'
+      single_active_conflict: 'Extensions "%extensions%" können nicht gemeinsam aktiviert werden, weil Scope "%scope%" nur eine aktive Extension erlaubt.'
       activated: 'Extension "%extension%" wurde aktiviert.'
       deactivated: 'Extension "%extension%" wurde deaktiviert.'
       dependent_deactivated: 'Extension "%extension%" wurde deaktiviert, weil die Abhängigkeit "%dependency%" nicht mehr verfügbar ist.'

@@ -63,6 +63,7 @@ final class ExtensionMessageCode
     public const EXTENSION_INSTALL_COMPLETED = 'extension.install.completed';
     public const EXTENSION_LIFECYCLE_EXTENSION_NOT_FOUND = 'extension.lifecycle.not_found';
     public const EXTENSION_LIFECYCLE_STATUS_BLOCKED = 'extension.lifecycle.status_blocked';
+    public const EXTENSION_LIFECYCLE_SINGLE_ACTIVE_CONFLICT = 'extension.lifecycle.single_active_conflict';
     public const EXTENSION_LIFECYCLE_ACTIVATED = 'extension.lifecycle.activated';
     public const EXTENSION_LIFECYCLE_DEACTIVATED = 'extension.lifecycle.deactivated';
     public const EXTENSION_LIFECYCLE_DEPENDENT_DEACTIVATED = 'extension.lifecycle.dependent_deactivated';
