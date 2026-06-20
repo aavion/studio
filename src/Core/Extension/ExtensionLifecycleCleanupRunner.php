@@ -135,7 +135,16 @@ final readonly class ExtensionLifecycleCleanupRunner implements ExtensionLifecyc
             ];
         }
 
-        $deletedSettings = $this->extensionSettings->removeExtension($extensionName);
+        $settingsCleanup = $this->extensionSettings->removeExtensionForCleanup($extensionName);
+        if (!$settingsCleanup->isSuccess()) {
+            return WorkflowResult::failed($settingsCleanup->issues(), [
+                'extension' => $extensionName,
+                'actions' => $actions,
+                'settings_context' => $settingsCleanup->context(),
+            ], $settingsCleanup->messages());
+        }
+
+        $deletedSettings = $settingsCleanup->value();
 
         if ($deletedSettings > 0) {
             $actions[] = [

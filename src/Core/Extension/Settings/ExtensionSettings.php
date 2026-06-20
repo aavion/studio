@@ -14,6 +14,7 @@ use App\Core\Extension\ExtensionMessageCode;
 use App\Core\Extension\ExtensionMessageKey;
 use App\Core\Extension\ExtensionIdentity;
 use App\Core\Validation\Identifier;
+use App\Core\Workflow\WorkflowResult;
 use App\Form\FormFieldDefinition;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
@@ -134,6 +135,86 @@ final readonly class ExtensionSettings
 
             return 0;
         }
+    }
+
+    /**
+     * @return WorkflowResult<int>
+     */
+    public function removeExtensionForCleanup(string $extensionName): WorkflowResult
+    {
+        if (!ExtensionIdentity::isExtensionName($extensionName)) {
+            return WorkflowResult::invalid([
+                Message::warning(
+                    ExtensionMessageCode::EXTENSION_IDENTIFIER_INVALID,
+                    ExtensionMessageKey::EXTENSION_IDENTIFIER_INVALID,
+                    ['%identifier%' => $extensionName],
+                    ['operation' => 'extension_settings.remove_extension', 'extension' => $extensionName],
+                ),
+            ]);
+        }
+
+        try {
+            $deleted = $this->connection->delete('extension_setting_entry', ['extension_name' => $extensionName]);
+        } catch (Throwable $error) {
+            return WorkflowResult::failed([
+                Message::exception(
+                    ExtensionMessageCode::EXTENSION_SETTING_DELETE_FAILED,
+                    ExtensionMessageKey::EXTENSION_SETTING_DELETE_FAILED,
+                    ['%extension%' => $extensionName],
+                    $this->errorContext($error, 'extension_settings.remove_extension', $extensionName, null),
+                ),
+            ], [
+                'extension' => $extensionName,
+                'operation' => 'extension_settings.remove_extension',
+            ]);
+        }
+
+        try {
+            $remaining = (int) $this->connection->fetchOne(
+                'SELECT COUNT(*) FROM extension_setting_entry WHERE extension_name = ?',
+                [$extensionName],
+            );
+        } catch (Throwable $error) {
+            return WorkflowResult::failed([
+                Message::exception(
+                    ExtensionMessageCode::EXTENSION_SETTING_DELETE_FAILED,
+                    ExtensionMessageKey::EXTENSION_SETTING_DELETE_FAILED,
+                    ['%extension%' => $extensionName],
+                    $this->errorContext($error, 'extension_settings.remove_extension.verify', $extensionName, null),
+                ),
+            ], [
+                'extension' => $extensionName,
+                'operation' => 'extension_settings.remove_extension.verify',
+                'deleted' => $deleted,
+            ]);
+        }
+
+        if ($remaining > 0) {
+            return WorkflowResult::failed([
+                Message::error(
+                    ExtensionMessageCode::EXTENSION_SETTING_DELETE_FAILED,
+                    ExtensionMessageKey::EXTENSION_SETTING_DELETE_FAILED,
+                    ['%extension%' => $extensionName],
+                    [
+                        'operation' => 'extension_settings.remove_extension.verify',
+                        'extension' => $extensionName,
+                        'deleted' => $deleted,
+                        'remaining' => $remaining,
+                    ],
+                ),
+            ], [
+                'extension' => $extensionName,
+                'operation' => 'extension_settings.remove_extension.verify',
+                'deleted' => $deleted,
+                'remaining' => $remaining,
+            ]);
+        }
+
+        return WorkflowResult::success($deleted, [
+            'extension' => $extensionName,
+            'deleted' => $deleted,
+            'remaining' => $remaining,
+        ]);
     }
 
     /**

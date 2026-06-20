@@ -113,4 +113,43 @@ final class ExtensionLifecycleCleanupRunnerTest extends KernelTestCase
         $settings->removeExtension('cleanup-module');
         $overrides->save([], 'test');
     }
+
+    public function testItFailsCleanupWhenExtensionSettingsCannotBeRemoved(): void
+    {
+        self::bootKernel();
+        $settings = self::getContainer()->get(ExtensionSettings::class);
+        $overrides = self::getContainer()->get(AdminFeatureOverrideStore::class);
+        $registry = self::getContainer()->get(AdminFeatureRegistry::class);
+        $connection = self::getContainer()->get('doctrine.dbal.default_connection');
+        $runner = new ExtensionLifecycleCleanupRunner($settings, $overrides, $registry);
+
+        $settings->set('cleanup-module', 'display.mode', 'compact', ConfigValueType::String);
+        $connection->executeStatement(<<<'SQL'
+            CREATE TRIGGER fail_extension_settings_cleanup
+            BEFORE DELETE ON extension_setting_entry
+            WHEN OLD.extension_name = 'cleanup-module'
+            BEGIN
+                SELECT RAISE(FAIL, 'settings cleanup blocked');
+            END
+            SQL);
+
+        try {
+            $result = $runner->cleanup(new Extension(
+                '10000000-0000-7000-8000-000000000613',
+                [ExtensionScope::Module],
+                'cleanup-module',
+                'extensions/cleanup-module',
+                ExtensionStatus::Removed,
+            ));
+        } finally {
+            $connection->executeStatement('DROP TRIGGER IF EXISTS fail_extension_settings_cleanup');
+        }
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('extension.setting.delete_failed', $result->firstIssue()?->code());
+        self::assertSame('compact', $settings->get('cleanup-module', 'display.mode', 'fallback'));
+
+        $settings->removeExtension('cleanup-module');
+        $overrides->save([], 'test');
+    }
 }
