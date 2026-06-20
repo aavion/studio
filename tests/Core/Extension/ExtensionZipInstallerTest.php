@@ -7,10 +7,23 @@ namespace App\Tests\Core\Extension;
 use App\Content\ContentStatus;
 use App\Core\Extension\Content\ExtensionContentSchemaDefinition;
 use App\Core\Extension\Content\ExtensionContentSchemaSynchronizer;
-use App\Core\Operation\Live\LiveOperationQueueFactory;
-use App\Core\Extension\ExtensionStatus;
-use App\Core\Extension\Install\ExtensionZipInstaller;
+use App\Core\Extension\ExtensionActivator;
+use App\Core\Extension\ExtensionDiscoveryRunner;
+use App\Core\Extension\ExtensionLifecycleAssetRebuilderInterface;
 use App\Core\Extension\ExtensionScope;
+use App\Core\Extension\ExtensionStatus;
+use App\Core\Extension\Install\ExtensionInstallApplier;
+use App\Core\Extension\Install\ExtensionInstallFilesystem;
+use App\Core\Extension\Install\ExtensionInstallPayload;
+use App\Core\Extension\Install\ExtensionInstallRegistry;
+use App\Core\Extension\Install\ExtensionInstallRollbacker;
+use App\Core\Extension\Install\ExtensionInstallStageReader;
+use App\Core\Extension\Install\ExtensionInstallVersionGuard;
+use App\Core\Extension\Install\ExtensionReactivationPlanner;
+use App\Core\Extension\Install\ExtensionReplacementPreflight;
+use App\Core\Extension\Install\ExtensionZipInstaller;
+use App\Core\Operation\Live\LiveOperationQueueFactory;
+use App\Core\Workflow\WorkflowResult;
 use App\Core\Workflow\WorkflowStatus;
 use App\Entity\ContentItem;
 use App\Entity\ContentRevision;
@@ -55,6 +68,7 @@ final class ExtensionZipInstallerTest extends KernelTestCase
         '121212121212121212121212',
         '131313131313131313131313',
         '141414141414141414141414',
+        '151515151515151515151515',
     ];
 
     private string $projectDir;
@@ -563,6 +577,62 @@ final class ExtensionZipInstallerTest extends KernelTestCase
         $this->deleteExtensionRow($slug);
     }
 
+    public function testItRebuildsAssetsAfterActivationRollbackDuringActiveOverwrite(): void
+    {
+        if (!class_exists(ZipArchive::class)) {
+            self::markTestSkipped('ZipArchive is required for extension ZIP installer tests.');
+        }
+
+        $installId = '151515151515151515151515';
+        $slug = 'zip-install-rollback';
+        $target = $this->projectDir.'/extensions/'.$slug;
+        $assetRebuilder = new RecordingInstallAssetRebuilder();
+        $this->removePath($target);
+        $this->deleteExtensionRow($slug);
+        $this->writeExtensionDirectory($target, $slug, '1.0.0', 'old extension');
+        $this->persistExtension($slug, ExtensionStatus::Active);
+        $this->writeUploadZip(
+            $installId,
+            $slug,
+            version: '1.1.0',
+            readme: "new extension\n",
+            extensionPhp: <<<'PHP'
+                <?php
+
+                use App\Core\Extension\Database\ExtensionDatabaseColumn;
+                use App\Core\Extension\Database\ExtensionDatabaseTable;
+
+                return [
+                    ExtensionDatabaseTable::create(
+                        'table_name_segment_table_name_segment_table_name_segment_table_name_segment',
+                        [ExtensionDatabaseColumn::string('uid', 36)],
+                        ['uid'],
+                    ),
+                ];
+                PHP,
+        );
+
+        $verify = $this->installer()->verify(['install_id' => $installId]);
+        self::assertSame(WorkflowStatus::RequiresReview, $verify->status());
+
+        $apply = $this->applier($assetRebuilder)->apply([
+            'install_id' => $installId,
+            'extension' => $slug,
+            'was_active' => true,
+        ]);
+
+        self::assertFalse($apply->isSuccess(), json_encode($apply->toArray(), JSON_THROW_ON_ERROR));
+        self::assertTrue($apply->context()['rollback_asset_rebuild'] ?? false);
+        self::assertTrue($apply->context()['rollback_asset_rebuild_success'] ?? false);
+        self::assertSame(['test'], $assetRebuilder->environments);
+        self::assertStringContainsString('EXTENSION_VERSION=1.0.0', (string) file_get_contents($target.'/.manifest'));
+        self::assertSame(ExtensionStatus::Active, $this->extensionStatus($slug));
+
+        $this->removePath($target);
+        $this->removePath($this->installRoot($installId));
+        $this->deleteExtensionRow($slug);
+    }
+
     private function installer(): ExtensionZipInstaller
     {
         $installer = self::getContainer()->get(ExtensionZipInstaller::class);
@@ -571,12 +641,31 @@ final class ExtensionZipInstallerTest extends KernelTestCase
         return $installer;
     }
 
+    private function applier(ExtensionLifecycleAssetRebuilderInterface $assetRebuilder): ExtensionInstallApplier
+    {
+        return new ExtensionInstallApplier(
+            self::getContainer()->get(ExtensionDiscoveryRunner::class),
+            self::getContainer()->get(ExtensionActivator::class),
+            self::getContainer()->get(ExtensionInstallFilesystem::class),
+            self::getContainer()->get(ExtensionInstallPayload::class),
+            self::getContainer()->get(ExtensionInstallStageReader::class),
+            self::getContainer()->get(ExtensionInstallRegistry::class),
+            self::getContainer()->get(ExtensionInstallVersionGuard::class),
+            self::getContainer()->get(ExtensionReplacementPreflight::class),
+            self::getContainer()->get(ExtensionInstallRollbacker::class),
+            self::getContainer()->get(ExtensionReactivationPlanner::class),
+            $assetRebuilder,
+            'test',
+        );
+    }
+
     private function writeUploadZip(
         string $installId,
         string $slug,
         string $dependencies = '[]',
         string $version = '1.0.0',
         string $readme = "# ZIP Install Test\n",
+        ?string $extensionPhp = null,
     ): void {
         $root = $this->installRoot($installId);
         $source = $root.'/source/'.$slug;
@@ -592,11 +681,17 @@ final class ExtensionZipInstallerTest extends KernelTestCase
             EXTENSION_DEPENDENCIES={$dependencies}
             MANIFEST);
         file_put_contents($source.'/README.md', $readme);
+        if (null !== $extensionPhp) {
+            file_put_contents($source.'/extension.php', $extensionPhp);
+        }
 
         $zip = new ZipArchive();
         self::assertTrue(true === $zip->open($root.'/upload.zip', ZipArchive::CREATE | ZipArchive::OVERWRITE));
         $zip->addFile($source.'/.manifest', $slug.'/.manifest');
         $zip->addFile($source.'/README.md', $slug.'/README.md');
+        if (null !== $extensionPhp) {
+            $zip->addFile($source.'/extension.php', $slug.'/extension.php');
+        }
         $zip->close();
     }
 
@@ -769,5 +864,20 @@ final class ExtensionZipInstallerTest extends KernelTestCase
         }
 
         rmdir($path);
+    }
+}
+
+final class RecordingInstallAssetRebuilder implements ExtensionLifecycleAssetRebuilderInterface
+{
+    /**
+     * @var list<string>
+     */
+    public array $environments = [];
+
+    public function rebuild(string $environment): WorkflowResult
+    {
+        $this->environments[] = $environment;
+
+        return WorkflowResult::success(context: ['environment' => $environment]);
     }
 }

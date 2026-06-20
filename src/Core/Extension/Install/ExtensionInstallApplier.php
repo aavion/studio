@@ -12,6 +12,7 @@ use App\Core\Operation\OperationMessageKey;
 use App\Core\Extension\ExtensionStatus;
 use App\Core\Extension\ExtensionActivator;
 use App\Core\Extension\ExtensionDiscoveryRunner;
+use App\Core\Extension\ExtensionLifecycleAssetRebuilderInterface;
 use App\Core\Extension\ExtensionManifestSpec;
 use App\Core\Extension\ExtensionMessageCode;
 use App\Core\Extension\ExtensionMessageKey;
@@ -33,6 +34,7 @@ final readonly class ExtensionInstallApplier
         private ExtensionReplacementPreflight $replacementPreflight,
         private ExtensionInstallRollbacker $rollbacker,
         private ExtensionReactivationPlanner $reactivationPlanner,
+        private ExtensionLifecycleAssetRebuilderInterface $assetRebuilder,
         private string $environment,
     ) {
     }
@@ -229,40 +231,80 @@ final readonly class ExtensionInstallApplier
 
         if ($wasActive) {
             $reactivationTargets = $this->reactivationPlanner->order($slug, $deactivationTargets, $previousStatuses);
-            $activation = $this->activator->activate($slug, $this->environment, rebuildAssets: [] === $reactivationTargets);
+            $activation = $this->activator->activate($slug, $this->environment, rebuildAssets: false);
             $messages = [...$messages, ...$activation->messages()];
 
             if (!$activation->isSuccess()) {
-                $rollbackMessages = $this->rollbacker->previousExtension($slug, $target, $backup, $previousStatuses, $contentStatusSnapshots);
+                $rollback = $this->rollbackPreviousExtensionAndRebuildAssets(
+                    $slug,
+                    $target,
+                    $backup,
+                    $previousStatuses,
+                    $contentStatusSnapshots,
+                );
 
-                return WorkflowResult::failed($activation->issues(), [
+                return WorkflowResult::failed([...$activation->issues(), ...$rollback['issues']], [
                     'install_id' => $installId,
                     'extension' => $slug,
                     'activation_context' => $activation->context(),
-                    'rolled_back' => [] === $rollbackMessages,
-                ], [...$messages, ...$rollbackMessages]);
+                    'rolled_back' => [] === $rollback['rollback_messages'],
+                    'rollback_asset_rebuild' => true,
+                    'rollback_asset_rebuild_success' => $rollback['asset_rebuild_success'],
+                    'rollback_asset_rebuild_context' => $rollback['asset_rebuild_context'],
+                ], [...$messages, ...$rollback['messages']]);
             }
 
-            $lastReactivationIndex = count($reactivationTargets) - 1;
-            foreach ($reactivationTargets as $index => $extensionName) {
-                $reactivation = $this->activator->activate($extensionName, $this->environment, rebuildAssets: $index === $lastReactivationIndex);
+            foreach ($reactivationTargets as $extensionName) {
+                $reactivation = $this->activator->activate($extensionName, $this->environment, rebuildAssets: false);
                 $messages = [...$messages, ...$reactivation->messages()];
 
                 if (!$reactivation->isSuccess()) {
-                    $rollbackMessages = $this->rollbacker->previousExtension($slug, $target, $backup, $previousStatuses, $contentStatusSnapshots);
+                    $rollback = $this->rollbackPreviousExtensionAndRebuildAssets(
+                        $slug,
+                        $target,
+                        $backup,
+                        $previousStatuses,
+                        $contentStatusSnapshots,
+                    );
 
-                    return WorkflowResult::failed($reactivation->issues(), [
+                    return WorkflowResult::failed([...$reactivation->issues(), ...$rollback['issues']], [
                         'install_id' => $installId,
                         'extension' => $slug,
                         'reactivation_extension' => $extensionName,
                         'reactivation_context' => $reactivation->context(),
-                        'rolled_back' => [] === $rollbackMessages,
-                    ], [...$messages, ...$rollbackMessages]);
+                        'rolled_back' => [] === $rollback['rollback_messages'],
+                        'rollback_asset_rebuild' => true,
+                        'rollback_asset_rebuild_success' => $rollback['asset_rebuild_success'],
+                        'rollback_asset_rebuild_context' => $rollback['asset_rebuild_context'],
+                    ], [...$messages, ...$rollback['messages']]);
                 }
             }
 
             $contentStatusMessages = $this->registry->restoreContentStatuses($contentStatusSnapshots);
             $messages = [...$messages, ...$contentStatusMessages];
+
+            $assetRebuild = $this->assetRebuilder->rebuild($this->environment);
+            $messages = [...$messages, ...$assetRebuild->messages()];
+
+            if (!$assetRebuild->isSuccess()) {
+                $rollback = $this->rollbackPreviousExtensionAndRebuildAssets(
+                    $slug,
+                    $target,
+                    $backup,
+                    $previousStatuses,
+                    $contentStatusSnapshots,
+                );
+
+                return WorkflowResult::failed([...$assetRebuild->issues(), ...$rollback['issues']], [
+                    'install_id' => $installId,
+                    'extension' => $slug,
+                    'asset_rebuild_context' => $assetRebuild->context(),
+                    'rolled_back' => [] === $rollback['rollback_messages'],
+                    'rollback_asset_rebuild' => true,
+                    'rollback_asset_rebuild_success' => $rollback['asset_rebuild_success'],
+                    'rollback_asset_rebuild_context' => $rollback['asset_rebuild_context'],
+                ], [...$messages, ...$rollback['messages']]);
+            }
         }
 
         $this->filesystem->removePath($root);
@@ -292,6 +334,43 @@ final readonly class ExtensionInstallApplier
         $expectedVersion = trim((string) $manifest->get('EXTENSION_VERSION', ''));
 
         return '' === $expectedVersion || $extension->manifestVersion() === $expectedVersion;
+    }
+
+    /**
+     * @param array<string, ExtensionStatus> $previousStatuses
+     * @param array<string, ContentStatus> $contentStatusSnapshots
+     *
+     * @return array{
+     *     rollback_messages: list<Message>,
+     *     messages: list<Message>,
+     *     issues: list<Message>,
+     *     asset_rebuild_success: bool,
+     *     asset_rebuild_context: array<string, mixed>
+     * }
+     */
+    private function rollbackPreviousExtensionAndRebuildAssets(
+        string $slug,
+        string $target,
+        string $backup,
+        array $previousStatuses,
+        array $contentStatusSnapshots,
+    ): array {
+        $rollbackMessages = $this->rollbacker->previousExtension(
+            $slug,
+            $target,
+            $backup,
+            $previousStatuses,
+            $contentStatusSnapshots,
+        );
+        $assetRebuild = $this->assetRebuilder->rebuild($this->environment);
+
+        return [
+            'rollback_messages' => $rollbackMessages,
+            'messages' => [...$rollbackMessages, ...$assetRebuild->messages()],
+            'issues' => $assetRebuild->isSuccess() ? [] : $assetRebuild->issues(),
+            'asset_rebuild_success' => $assetRebuild->isSuccess(),
+            'asset_rebuild_context' => $assetRebuild->context(),
+        ];
     }
 
     /**
