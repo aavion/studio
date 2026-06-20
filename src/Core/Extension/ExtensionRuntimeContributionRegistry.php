@@ -107,6 +107,7 @@ final class ExtensionRuntimeContributionRegistry implements StaticViewInjectionP
         }
 
         if ($contribution instanceof ExtensionSettingDefinition) {
+            $this->guard()->assertSettingDefinition($extension, $contribution);
             $this->extensionSettingDefinitions[] = $contribution;
 
             return;

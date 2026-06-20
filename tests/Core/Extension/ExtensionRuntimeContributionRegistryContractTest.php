@@ -10,6 +10,7 @@ use App\Core\Extension\Database\ExtensionDatabaseTable;
 use App\Core\Extension\ExtensionRuntimeContributionRegistry;
 use App\Core\Extension\ExtensionScope;
 use App\Core\Extension\ExtensionStatus;
+use App\Core\Extension\Settings\ExtensionSettingDefinition;
 use App\Api\Endpoint\ApiEndpointDefinition;
 use App\Entity\Extension;
 use PHPUnit\Framework\TestCase;
@@ -75,6 +76,16 @@ final class ExtensionRuntimeContributionRegistryContractTest extends TestCase
                 'extensions.demo-module.demo',
                 ['extensions-demo-module-demo'],
             ),
+        );
+    }
+
+    public function testItRejectsSettingDefinitionsForForeignOwners(): void
+    {
+        $this->expectExceptionMessage('message.extension.runtime.contribution_unsupported');
+
+        (new ExtensionRuntimeContributionRegistry())->add(
+            $this->extension([ExtensionScope::Module]),
+            new ExtensionSettingDefinition('other-module', 'display.mode', 'Display mode', 'compact'),
         );
     }
 

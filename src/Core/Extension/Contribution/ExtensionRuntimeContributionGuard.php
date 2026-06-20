@@ -14,6 +14,7 @@ use App\Core\Extension\ExtensionLiveContributionGuard;
 use App\Core\Extension\ExtensionMessageCode;
 use App\Core\Extension\ExtensionMessageKey;
 use App\Core\Extension\ExtensionScope;
+use App\Core\Extension\Settings\ExtensionSettingDefinition;
 use App\Core\Message\MessageException;
 use App\Core\Statistics\VisitorIdGenerator;
 use App\Entity\Extension;
@@ -70,6 +71,22 @@ final readonly class ExtensionRuntimeContributionGuard
     public function assertLiveEndpointHandler(Extension $extension, LiveEndpointHandlerInterface $handler): void
     {
         ExtensionLiveContributionGuard::assertHandler($extension, $handler);
+    }
+
+    public function assertSettingDefinition(Extension $extension, ExtensionSettingDefinition $definition): void
+    {
+        if ($definition->extensionName() === $extension->extensionName()) {
+            return;
+        }
+
+        throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_RUNTIME_CONTRIBUTION_UNSUPPORTED, [
+            '%extension%' => $extension->extensionName(),
+            '%type%' => ExtensionSettingDefinition::class.'('.$definition->extensionName().'.'.$definition->key().') foreign_owner',
+        ], [
+            'extension' => $extension->extensionName(),
+            'definition_extension' => $definition->extensionName(),
+            'definition_key' => $definition->key(),
+        ]);
     }
 
     /**
