@@ -125,6 +125,28 @@ final readonly class ExtensionInstallApplier
             ]);
         }
 
+        $manifestVersion = trim((string) $manifestValue->get('EXTENSION_VERSION', ''));
+        if (!ExtensionManifestSpec::isValidVersion($manifestVersion)) {
+            return WorkflowResult::invalid([
+                Message::warning(
+                    ExtensionMessageCode::EXTENSION_IDENTIFIER_INVALID,
+                    ExtensionMessageKey::EXTENSION_IDENTIFIER_INVALID,
+                    ['%identifier%' => $manifestVersion],
+                    [
+                        'install_id' => $installId,
+                        'extension' => $slug,
+                        'key' => 'EXTENSION_VERSION',
+                        'version' => $manifestVersion,
+                        'expected_pattern' => ExtensionManifestSpec::VERSION_PATTERN,
+                    ],
+                ),
+            ], [
+                'install_id' => $installId,
+                'extension' => $slug,
+                'version' => $manifestVersion,
+            ]);
+        }
+
         try {
             $scopes = ExtensionScope::fromManifestValue((string) $manifestValue->get('EXTENSION_SCOPE', ''));
         } catch (\InvalidArgumentException) {

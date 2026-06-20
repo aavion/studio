@@ -119,7 +119,13 @@ final readonly class ExtensionInstallVerifier
             $extensionRoot.DIRECTORY_SEPARATOR.'.manifest',
             $manifestValue,
         );
-        $extensionValidation = $this->extensionValidator->validate($candidate, ExtensionSpec::create()->withInventoryDepth(PHP_INT_MAX)->withLintingChecks());
+        $extensionValidation = $this->extensionValidator->validate(
+            $candidate,
+            ExtensionSpec::create()
+                ->withInventoryDepth(PHP_INT_MAX)
+                ->withLintingChecks()
+                ->withDirectorySlugMatch(false),
+        );
         if (!$extensionValidation->isSuccess()) {
             return WorkflowResult::invalid($extensionValidation->issues(), [
                 'install_id' => $installId,

@@ -195,6 +195,28 @@ CSS);
         self::assertSame('EXTENSION_', $result->firstIssue()?->context()['expected_prefix']);
     }
 
+    public function testItRejectsExtensionManifestVersionsOutsideTheSupportedScheme(): void
+    {
+        $result = (new ExtensionValidator())->validate(
+            $this->candidateWithManifest(['EXTENSION_VERSION' => '10000.2.3']),
+            ExtensionSpec::create(),
+        );
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('extension.identifier.invalid', $result->firstIssue()?->code());
+        self::assertSame('EXTENSION_VERSION', $result->firstIssue()?->context()['key']);
+    }
+
+    public function testItAcceptsShortExtensionManifestVersions(): void
+    {
+        $result = (new ExtensionValidator())->validate(
+            $this->candidateWithManifest(['EXTENSION_VERSION' => '1111.2222']),
+            ExtensionSpec::create(),
+        );
+
+        self::assertTrue($result->isSuccess(), json_encode($result->toArray(), JSON_THROW_ON_ERROR));
+    }
+
     public function testItRejectsSlashSeparatedExtensionSlugs(): void
     {
         $result = (new ExtensionValidator())->validate(
@@ -245,6 +267,18 @@ CSS);
         );
 
         self::assertTrue($result->isSuccess());
+    }
+
+    public function testItRejectsDependencyConstraintVersionsOutsideTheSupportedScheme(): void
+    {
+        $result = (new ExtensionValidator())->validate(
+            $this->candidateWithManifest(['EXTENSION_DEPENDENCIES' => '[["system",">=10000.2"]]']),
+            ExtensionSpec::create(),
+        );
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('extension.dependency.invalid', $result->firstIssue()?->code());
+        self::assertSame('EXTENSION_DEPENDENCIES', $result->firstIssue()?->context()['key']);
     }
 
     public function testItRejectsInvalidSchedulerTaskCronExpressions(): void

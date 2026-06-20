@@ -156,6 +156,25 @@ final class ExtensionRegistryHandlerTest extends KernelTestCase
         self::assertSame('1.1.0', $this->metadata($row)['manifest']['EXTENSION_VERSION']);
     }
 
+    public function testItMarksInvalidManifestVersionsFaultyWithoutPersistingUnsafeVersionColumns(): void
+    {
+        $version = str_repeat('1', 41);
+        $this->writeExtensionManifest('broken-version', $version);
+
+        $result = $this->handler()->synchronize($this->candidates());
+
+        self::assertTrue($result->isSuccess(), json_encode($result->toArray(), JSON_THROW_ON_ERROR));
+        $this->assertChangeRecorded($result->value(), 'broken-version', 'faulty', 'faulty');
+
+        $row = $this->extensionRow('broken-version');
+        $metadata = $this->metadata($row);
+        self::assertNull($row['manifest_version']);
+        self::assertNull($row['installed_version']);
+        self::assertSame($version, $metadata['manifest']['EXTENSION_VERSION']);
+        self::assertSame('extension.identifier.invalid', $metadata['validation']['issues'][0]['code']);
+        self::assertSame('EXTENSION_VERSION', $metadata['validation']['issues'][0]['context']['key']);
+    }
+
     public function testItRunsAssetRebuildWhenActiveExtensionUpdates(): void
     {
         $this->insertExtension('demo-module', 'extensions/demo-module', '1.0.0', 'active', installedVersion: '1.0.0');

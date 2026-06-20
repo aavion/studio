@@ -85,7 +85,7 @@ final readonly class ExtensionRegistryHandler
 
             $seen[$extensionName] = true;
             $isNew = !isset($extensions[$extensionName]);
-            $manifestVersion = $candidate->manifest()->get('EXTENSION_VERSION');
+            $manifestVersion = $this->validatedManifestVersion($candidate);
             $extension = $extensions[$extensionName] ?? new Extension(
                 $this->uuidFactory->generate(),
                 $scopes,
@@ -190,6 +190,13 @@ final readonly class ExtensionRegistryHandler
         }
 
         return $this->syncFinalizer->finalize($changes, $messages, $assetRebuildTriggers);
+    }
+
+    private function validatedManifestVersion(ExtensionCandidate $candidate): ?string
+    {
+        $version = trim((string) $candidate->manifest()->get('EXTENSION_VERSION', ''));
+
+        return ExtensionManifestSpec::isValidVersion($version) ? $version : null;
     }
 
     /**

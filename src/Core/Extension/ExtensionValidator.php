@@ -37,7 +37,8 @@ final class ExtensionValidator
     public function validate(ExtensionCandidate $candidate, ExtensionSpec $spec): WorkflowResult
     {
         $issues = [
-            ...$this->validateExtensionSlug($candidate),
+            ...$this->validateExtensionSlug($candidate, $spec),
+            ...$this->validateExtensionVersion($candidate),
             ...$this->validateExtensionManifestKeyPrefix($candidate),
             ...$this->validateDependencySyntax($candidate),
         ];
@@ -85,7 +86,7 @@ final class ExtensionValidator
     /**
      * @return list<Message>
      */
-    private function validateExtensionSlug(ExtensionCandidate $candidate): array
+    private function validateExtensionSlug(ExtensionCandidate $candidate, ExtensionSpec $spec): array
     {
         if ('extension' !== $candidate->source()->name()) {
             return [];
@@ -118,7 +119,7 @@ final class ExtensionValidator
         }
 
         $directorySlug = basename(str_replace('\\', '/', rtrim($candidate->directory(), '/\\')));
-        if ($directorySlug !== $slug) {
+        if ($spec->directorySlugMatchRequired() && $directorySlug !== $slug) {
             return [
                 Message::create(
                     ExtensionMessageCode::EXTENSION_IDENTIFIER_INVALID,
@@ -137,6 +138,42 @@ final class ExtensionValidator
         }
 
         return [];
+    }
+
+    /**
+     * @return list<Message>
+     */
+    private function validateExtensionVersion(ExtensionCandidate $candidate): array
+    {
+        if ('extension' !== $candidate->source()->name()) {
+            return [];
+        }
+
+        $version = $candidate->manifest()->get('EXTENSION_VERSION');
+        if (null === $version || '' === trim((string) $version)) {
+            return [];
+        }
+
+        $version = trim((string) $version);
+        if (ExtensionManifestSpec::isValidVersion($version)) {
+            return [];
+        }
+
+        return [
+            Message::create(
+                ExtensionMessageCode::EXTENSION_IDENTIFIER_INVALID,
+                ExtensionMessageKey::EXTENSION_IDENTIFIER_INVALID,
+                ['%identifier%' => $version],
+                [
+                    'source' => $candidate->source()->name(),
+                    'path' => $candidate->manifestPath(),
+                    'key' => 'EXTENSION_VERSION',
+                    'version' => $version,
+                    'expected_pattern' => ExtensionManifestSpec::VERSION_PATTERN,
+                ],
+                MessageLevel::Error,
+            ),
+        ];
     }
 
     /**

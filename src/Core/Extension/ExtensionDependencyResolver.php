@@ -299,7 +299,7 @@ final readonly class ExtensionDependencyResolver
      */
     private function pinnedVersionBounds(string $requiredVersion): ?array
     {
-        if (1 !== preg_match('/^\d+(?:\.\d+){0,2}$/', $requiredVersion)) {
+        if (!ExtensionManifestSpec::isValidVersion($requiredVersion)) {
             return null;
         }
 
@@ -330,7 +330,7 @@ final readonly class ExtensionDependencyResolver
      */
     private function bareVersionBounds(string $requiredVersion): ?array
     {
-        if (1 !== preg_match('/^\d+(?:\.\d+){0,2}$/', $requiredVersion)) {
+        if (!ExtensionManifestSpec::isValidVersion($requiredVersion)) {
             return null;
         }
 

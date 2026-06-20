@@ -46,6 +46,7 @@ final class ExtensionZipInstallerTest extends KernelTestCase
         'zip-install-deep-policy',
         'zip-install-skip',
         'zip-install-content',
+        'zip-install-flat',
     ];
 
     private const TEST_EXTENSION_DATABASE_SLUGS = [
@@ -70,6 +71,7 @@ final class ExtensionZipInstallerTest extends KernelTestCase
         '141414141414141414141414',
         '151515151515151515151515',
         '161616161616161616161616',
+        '171717171717171717171717',
     ];
 
     private string $projectDir;
@@ -160,6 +162,39 @@ final class ExtensionZipInstallerTest extends KernelTestCase
         ]));
 
         $this->removePath($this->projectDir.'/extensions/'.$slug);
+        $this->removePath($this->installRoot($installId));
+        $this->deleteExtensionRow($slug);
+    }
+
+    public function testItInstallsFlatRootZipIntoManifestSlugDirectory(): void
+    {
+        if (!class_exists(ZipArchive::class)) {
+            self::markTestSkipped('ZipArchive is required for extension ZIP installer tests.');
+        }
+
+        $installId = '171717171717171717171717';
+        $slug = 'zip-install-flat';
+        $target = $this->projectDir.'/extensions/'.$slug;
+        $this->removePath($target);
+        $this->deleteExtensionRow($slug);
+        $this->writeUploadZip($installId, $slug, flatRoot: true);
+
+        $verify = $this->installer()->verify(['install_id' => $installId]);
+        self::assertSame(WorkflowStatus::RequiresReview, $verify->status(), json_encode($verify->toArray(), JSON_THROW_ON_ERROR));
+        self::assertSame($slug, $verify->value()['extension']);
+
+        $apply = $this->installer()->apply([
+            'install_id' => $installId,
+            'extension' => $slug,
+            'was_active' => false,
+        ]);
+
+        self::assertTrue($apply->isSuccess(), json_encode($apply->toArray(), JSON_THROW_ON_ERROR));
+        self::assertFileExists($target.'/.manifest');
+        self::assertFileExists($target.'/README.md');
+        self::assertSame(ExtensionStatus::Inactive, $this->extensionStatus($slug));
+
+        $this->removePath($target);
         $this->removePath($this->installRoot($installId));
         $this->deleteExtensionRow($slug);
     }
@@ -711,6 +746,7 @@ final class ExtensionZipInstallerTest extends KernelTestCase
         string $version = '1.0.0',
         string $readme = "# ZIP Install Test\n",
         ?string $extensionPhp = null,
+        bool $flatRoot = false,
     ): void {
         $root = $this->installRoot($installId);
         $source = $root.'/source/'.$slug;
@@ -731,11 +767,12 @@ final class ExtensionZipInstallerTest extends KernelTestCase
         }
 
         $zip = new ZipArchive();
+        $prefix = $flatRoot ? '' : $slug.'/';
         self::assertTrue(true === $zip->open($root.'/upload.zip', ZipArchive::CREATE | ZipArchive::OVERWRITE));
-        $zip->addFile($source.'/.manifest', $slug.'/.manifest');
-        $zip->addFile($source.'/README.md', $slug.'/README.md');
+        $zip->addFile($source.'/.manifest', $prefix.'.manifest');
+        $zip->addFile($source.'/README.md', $prefix.'README.md');
         if (null !== $extensionPhp) {
-            $zip->addFile($source.'/extension.php', $slug.'/extension.php');
+            $zip->addFile($source.'/extension.php', $prefix.'extension.php');
         }
         $zip->close();
     }

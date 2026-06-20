@@ -26,6 +26,7 @@ final readonly class ExtensionSpec
         private array $requiredDirectories = [],
         private int $inventoryDepth = 2,
         private array $lintChecks = [],
+        private bool $directorySlugMatchRequired = true,
     ) {
         $this->assertRelativePaths($requiredFiles);
         $this->assertRelativePaths($requiredDirectories);
@@ -47,6 +48,7 @@ final readonly class ExtensionSpec
             $this->requiredDirectories,
             $this->inventoryDepth,
             $this->lintChecks,
+            $this->directorySlugMatchRequired,
         );
     }
 
@@ -57,12 +59,18 @@ final readonly class ExtensionSpec
             $this->appendUnique($this->requiredDirectories, $path),
             $this->inventoryDepth,
             $this->lintChecks,
+            $this->directorySlugMatchRequired,
         );
     }
 
     public function withInventoryDepth(int $depth): self
     {
-        return new self($this->requiredFiles, $this->requiredDirectories, $depth, $this->lintChecks);
+        return new self($this->requiredFiles, $this->requiredDirectories, $depth, $this->lintChecks, $this->directorySlugMatchRequired);
+    }
+
+    public function withDirectorySlugMatch(bool $required = true): self
+    {
+        return new self($this->requiredFiles, $this->requiredDirectories, $this->inventoryDepth, $this->lintChecks, $required);
     }
 
     public function withLintingChecks(bool $enabled = true): self
@@ -157,6 +165,11 @@ final readonly class ExtensionSpec
         return $this->lintChecks[self::LINT_JAVASCRIPT] ?? false;
     }
 
+    public function directorySlugMatchRequired(): bool
+    {
+        return $this->directorySlugMatchRequired;
+    }
+
     /**
      * @param list<string> $paths
      */
@@ -197,6 +210,6 @@ final readonly class ExtensionSpec
         $lintChecks = $this->lintChecks;
         $lintChecks[$check] = $enabled;
 
-        return new self($this->requiredFiles, $this->requiredDirectories, $this->inventoryDepth, $lintChecks);
+        return new self($this->requiredFiles, $this->requiredDirectories, $this->inventoryDepth, $lintChecks, $this->directorySlugMatchRequired);
     }
 }

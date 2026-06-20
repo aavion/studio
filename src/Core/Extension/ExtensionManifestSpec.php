@@ -8,6 +8,8 @@ use App\Core\Manifest\ManifestSpec;
 
 final class ExtensionManifestSpec
 {
+    public const VERSION_PATTERN = '\d{1,4}(?:\.\d{1,4}){0,2}';
+
     public static function create(): ManifestSpec
     {
         return ManifestSpec::create()
@@ -22,5 +24,10 @@ final class ExtensionManifestSpec
     public static function isValidSlug(string $slug): bool
     {
         return ExtensionIdentity::isExtensionName($slug);
+    }
+
+    public static function isValidVersion(string $version): bool
+    {
+        return 1 === preg_match('/^'.self::VERSION_PATTERN.'$/', $version);
     }
 }

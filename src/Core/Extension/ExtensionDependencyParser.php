@@ -8,7 +8,7 @@ final readonly class ExtensionDependencyParser
 {
     private const DEPENDENCY_LIST_PATTERN = '/^\[\s*(?:\[\s*[\'"]([^\'"]+)[\'"]\s*,\s*[\'"]([^\'"]+)[\'"]\s*\]\s*(?:,\s*\[\s*[\'"]([^\'"]+)[\'"]\s*,\s*[\'"]([^\'"]+)[\'"]\s*\]\s*)*)?\]$/';
     private const DEPENDENCY_PAIR_PATTERN = '/\[\s*[\'"]([^\'"]+)[\'"]\s*,\s*[\'"]([^\'"]+)[\'"]\s*\]/';
-    private const VERSION_CONSTRAINT_PATTERN = '/^(?:(>=|=)\s*)?([A-Za-z0-9][A-Za-z0-9._+~:-]*)$/';
+    private const VERSION_CONSTRAINT_PATTERN = '/^(?:(>=|=)\s*)?('.ExtensionManifestSpec::VERSION_PATTERN.')$/';
 
     /**
      * @return list<array{0: string, 1: string, 2: string}>|null
