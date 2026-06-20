@@ -699,6 +699,44 @@ final class ExtensionLifecycleBoundaryTest extends KernelTestCase
         self::assertContains('test', $this->assetRebuilder->environments);
     }
 
+    public function testExtensionPhpLoaderReportsFaultPersistenceFailures(): void
+    {
+        $this->insertExtension('broken-module', ['module'], 'active');
+        $this->writeTestFile($this->projectDir, 'extensions/broken-module/extension.php', <<<'PHP'
+            <?php
+
+            throw new RuntimeException('loader failed');
+            PHP);
+        $this->connection->executeStatement(<<<'SQL'
+            CREATE TRIGGER fail_extension_fault_update
+            BEFORE UPDATE ON extension
+            WHEN NEW.status = 'faulty'
+            BEGIN
+                SELECT RAISE(FAIL, 'fault persistence blocked');
+            END
+            SQL);
+
+        try {
+            $result = (new ExtensionPhpLoader(
+                new ActiveExtensionProvider($this->entityManager),
+                $this->entityManager,
+                $this->projectDir,
+                new NullWorkflowResultMessageReporter(),
+                $this->assetRebuilder,
+            ))->loadActiveExtensions();
+        } finally {
+            $this->connection->executeStatement('DROP TRIGGER IF EXISTS fail_extension_fault_update');
+        }
+
+        self::assertFalse($result->isSuccess());
+        self::assertContains('extension_fault_persist', array_map(
+            static fn (Message $issue): mixed => $issue->context()['stage'] ?? null,
+            $result->issues(),
+        ));
+        self::assertSame('active', $this->extensionStatus('broken-module'));
+        self::assertSame([], $this->assetRebuilder->environments);
+    }
+
     public function testExtensionAssetRebuildMessageHandlerRunsLifecycleRebuild(): void
     {
         $result = (new ExtensionAssetRebuildMessageHandler($this->assetRebuilder))(new ExtensionAssetRebuildMessage('test', 'faulty'));

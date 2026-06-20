@@ -133,9 +133,10 @@ final class ExtensionPhpLoader implements EventSubscriberInterface
                     $issue->context(),
                 );
                 $fault = $this->markFaulty($extension, $loaderPath, $error);
+                array_push($issues, ...$fault['issues']);
                 array_push($messages, ...$fault['messages']);
                 array_push($dependentChanges, ...$fault['dependent_changes']);
-                $assetRebuildNeeded = $assetRebuildNeeded || $fault['changed'] || [] !== $fault['dependent_changes'];
+                $assetRebuildNeeded = $assetRebuildNeeded || ([] === $fault['issues'] && ($fault['changed'] || [] !== $fault['dependent_changes']));
             }
         }
 
@@ -182,7 +183,7 @@ final class ExtensionPhpLoader implements EventSubscriberInterface
     }
 
     /**
-     * @return array{changed: bool, dependent_changes: list<array{extension: string, action: string, status: string, dependency: string, reason: string}>, messages: list<Message>}
+     * @return array{changed: bool, dependent_changes: list<array{extension: string, action: string, status: string, dependency: string, reason: string}>, issues: list<Message>, messages: list<Message>}
      */
     private function markFaulty(Extension $extension, string $loaderPath, Throwable $error): array
     {
@@ -212,10 +213,21 @@ final class ExtensionPhpLoader implements EventSubscriberInterface
 
         try {
             $this->entityManager->flush();
-        } catch (Throwable) {
+        } catch (Throwable $flushError) {
+            return [
+                'changed' => false,
+                'dependent_changes' => $dependentChanges,
+                'issues' => [
+                    $this->exceptionIssue($flushError, [
+                        'stage' => 'extension_fault_persist',
+                        'extension' => $extension->extensionName(),
+                    ]),
+                ],
+                'messages' => $messages,
+            ];
         }
 
-        return ['changed' => $changed, 'dependent_changes' => $dependentChanges, 'messages' => $messages];
+        return ['changed' => $changed, 'dependent_changes' => $dependentChanges, 'issues' => [], 'messages' => $messages];
     }
 
     private function phpLoadIssue(Extension $extension, string $loaderPath, Throwable $error): Message
