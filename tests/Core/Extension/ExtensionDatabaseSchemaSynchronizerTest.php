@@ -11,6 +11,8 @@ use App\Core\Extension\Database\ExtensionDatabaseSchemaSynchronizer;
 use App\Core\Extension\Database\ExtensionDatabaseTable;
 use App\Core\Extension\ExtensionScope;
 use App\Core\Extension\ExtensionStatus;
+use App\Core\Message\MessageException;
+use App\Core\Validation\IdentifierSpec;
 use App\Entity\Extension;
 use Doctrine\DBAL\Connection;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -68,7 +70,7 @@ final class ExtensionDatabaseSchemaSynchronizerTest extends KernelTestCase
     public function testItRejectsCombinedExtensionTableNamesThatExceedPortableIdentifierLength(): void
     {
         $result = (new ExtensionDatabaseSchemaSynchronizer($this->connection))->apply($this->extension(), [
-            ExtensionDatabaseTable::create(str_repeat('table_name_', 6), [
+            ExtensionDatabaseTable::create(str_repeat('table_name_', 5).'entry', [
                 ExtensionDatabaseColumn::string('uid', 36),
             ], ['uid']),
         ]);
@@ -76,6 +78,14 @@ final class ExtensionDatabaseSchemaSynchronizerTest extends KernelTestCase
         self::assertFalse($result->isSuccess());
         self::assertSame('extension.database.contribution_invalid', $result->firstIssue()?->code());
         self::assertSame('table_name_too_long', $result->firstIssue()?->parameters()['%reason%'] ?? null);
+    }
+
+    public function testItRejectsDatabaseColumnIdentifiersThatExceedPortableIdentifierLength(): void
+    {
+        $this->expectException(MessageException::class);
+        $this->expectExceptionMessage('message.extension.database.contribution_invalid');
+
+        ExtensionDatabaseColumn::string(str_repeat('a', IdentifierSpec::MAX_PORTABLE_DATABASE_IDENTIFIER_LENGTH + 1), 36);
     }
 
     public function testItCreatesExtensionTablesWithForeignKeysAfterReferencedTables(): void

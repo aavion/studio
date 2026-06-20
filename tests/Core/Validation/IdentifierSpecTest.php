@@ -36,6 +36,14 @@ final class IdentifierSpecTest extends TestCase
         self::assertFalse(IdentifierSpec::isSnakeIdentifier('ContentSchema'));
     }
 
+    public function testPortableDatabaseIdentifiersUseSnakeShapeAndPortableLength(): void
+    {
+        self::assertTrue(IdentifierSpec::isPortableDatabaseIdentifier('content_schema'));
+        self::assertTrue(IdentifierSpec::isPortableDatabaseIdentifier(str_repeat('a', IdentifierSpec::MAX_PORTABLE_DATABASE_IDENTIFIER_LENGTH)));
+        self::assertFalse(IdentifierSpec::isPortableDatabaseIdentifier(str_repeat('a', IdentifierSpec::MAX_PORTABLE_DATABASE_IDENTIFIER_LENGTH + 1)));
+        self::assertFalse(IdentifierSpec::isPortableDatabaseIdentifier('content-schema'));
+    }
+
     public function testPascalIdentifiersAllowOperationIdStyleNames(): void
     {
         self::assertTrue(IdentifierSpec::isPascalIdentifier('listExtensions'));

@@ -132,7 +132,7 @@ final readonly class ExtensionDatabaseForeignKey
 
     private function assertIdentifier(string $value, string $label): void
     {
-        if (!IdentifierSpec::isSnakeIdentifier($value)) {
+        if (!IdentifierSpec::isPortableDatabaseIdentifier($value)) {
             throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_DATABASE_CONTRIBUTION_INVALID, [
                 '%reason%' => $label.'_identifier_invalid',
             ], [$label => $value]);

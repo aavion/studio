@@ -10,6 +10,7 @@ final readonly class IdentifierSpec
     public const MAX_DOT_PATH_IDENTIFIER_LENGTH = 160;
     public const MAX_SNAKE_IDENTIFIER_LENGTH = 120;
     public const MAX_MACHINE_IDENTIFIER_LENGTH = 160;
+    public const MAX_PORTABLE_DATABASE_IDENTIFIER_LENGTH = 60;
 
     public const CANONICAL_UUID_PATTERN = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
     public const OWNER_SLUG_PATTERN = '[a-z][a-z0-9]*(?:-[a-z0-9]+)*';
@@ -41,6 +42,11 @@ final readonly class IdentifierSpec
     public static function isSnakeIdentifier(string $value, int $maxLength = self::MAX_SNAKE_IDENTIFIER_LENGTH): bool
     {
         return self::matches($value, self::SNAKE_IDENTIFIER_PATTERN, $maxLength);
+    }
+
+    public static function isPortableDatabaseIdentifier(string $value): bool
+    {
+        return self::isSnakeIdentifier($value, self::MAX_PORTABLE_DATABASE_IDENTIFIER_LENGTH);
     }
 
     public static function isPascalIdentifier(string $value): bool
