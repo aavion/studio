@@ -30,7 +30,7 @@ final readonly class ExtensionInventoryInspector
             $this->filesWhere($inspectableFiles, static fn (string $path): bool => str_starts_with($path, 'src/') && str_ends_with($path, '.php')),
             $this->filesWhere($inspectableFiles, static fn (string $path): bool => str_ends_with($path, '.twig')),
             $this->filesWhere($inspectableFiles, static fn (string $path): bool => str_ends_with($path, '.json')),
-            $this->filesWhere($inspectableFiles, static fn (string $path): bool => str_ends_with($path, '.yaml') || str_ends_with($path, '.yml')),
+            $this->filesWhere($inspectableFiles, static fn (string $path): bool => str_ends_with($path, '.yaml')),
             $cssFiles,
             $javaScriptFiles,
             array_values(array_filter($assetFiles, static fn (string $path): bool => !in_array($path, [...$cssFiles, ...$javaScriptFiles], true))),
