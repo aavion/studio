@@ -36,12 +36,13 @@ final readonly class ExtensionActivationContributionApplier implements Extension
                 $database = $this->databaseSynchronizer->apply($extension, $registry->extensionDatabaseTables());
                 if (!$database->isSuccess()) {
                     $this->rollBackIfActive();
-                    $cleanupMessages = $this->cleanupCreatedDatabaseTables($createdDatabaseTables);
+                    $cleanup = $this->cleanupCreatedDatabaseTables($createdDatabaseTables);
 
-                    return WorkflowResult::failed($database->issues(), [
+                    return WorkflowResult::failed([...$database->issues(), ...$cleanup['issues']], [
                         'extension' => $extension->extensionName(),
                         'database_context' => $database->context(),
-                    ], [...$messages, ...$database->messages(), ...$cleanupMessages]);
+                        'cleanup_incomplete' => [] !== $cleanup['issues'],
+                    ], [...$messages, ...$database->messages(), ...$cleanup['messages']]);
                 }
 
                 $createdDatabaseTables[] = [
@@ -52,12 +53,13 @@ final readonly class ExtensionActivationContributionApplier implements Extension
                 $schemas = $this->contentSchemaSynchronizer->apply($extension, $registry->extensionContentSchemas());
                 if (!$schemas->isSuccess()) {
                     $this->rollBackIfActive();
-                    $cleanupMessages = $this->cleanupCreatedDatabaseTables($createdDatabaseTables);
+                    $cleanup = $this->cleanupCreatedDatabaseTables($createdDatabaseTables);
 
-                    return WorkflowResult::failed($schemas->issues(), [
+                    return WorkflowResult::failed([...$schemas->issues(), ...$cleanup['issues']], [
                         'extension' => $extension->extensionName(),
                         'content_schema_context' => $schemas->context(),
-                    ], [...$messages, ...$database->messages(), ...$schemas->messages(), ...$cleanupMessages]);
+                        'cleanup_incomplete' => [] !== $cleanup['issues'],
+                    ], [...$messages, ...$database->messages(), ...$schemas->messages(), ...$cleanup['messages']]);
                 }
 
                 $messages = [...$messages, ...$database->messages(), ...$schemas->messages()];
@@ -71,12 +73,14 @@ final readonly class ExtensionActivationContributionApplier implements Extension
             $this->connection->commit();
         } catch (MessageException $error) {
             $this->rollBackIfActive();
-            $messages = [...$messages, ...$this->cleanupCreatedDatabaseTables($createdDatabaseTables)];
+            $cleanup = $this->cleanupCreatedDatabaseTables($createdDatabaseTables);
+            $messages = [...$messages, ...$cleanup['messages']];
 
-            return WorkflowResult::failed([$error->message()], ['exception' => $error::class, ...$error->context()], $messages);
+            return WorkflowResult::failed([$error->message(), ...$cleanup['issues']], ['exception' => $error::class, 'cleanup_incomplete' => [] !== $cleanup['issues'], ...$error->context()], $messages);
         } catch (Throwable $error) {
             $this->rollBackIfActive();
-            $messages = [...$messages, ...$this->cleanupCreatedDatabaseTables($createdDatabaseTables)];
+            $cleanup = $this->cleanupCreatedDatabaseTables($createdDatabaseTables);
+            $messages = [...$messages, ...$cleanup['messages']];
 
             return WorkflowResult::failed([
                 Message::create(
@@ -86,7 +90,8 @@ final readonly class ExtensionActivationContributionApplier implements Extension
                     ['exception' => $error::class, 'message' => $error->getMessage()],
                     MessageLevel::Exception,
                 ),
-            ], ['exception' => $error::class, 'message' => $error->getMessage()], $messages);
+                ...$cleanup['issues'],
+            ], ['exception' => $error::class, 'message' => $error->getMessage(), 'cleanup_incomplete' => [] !== $cleanup['issues']], $messages);
         }
 
         return WorkflowResult::success(['actions' => $actions], ['actions' => $actions], $messages);
@@ -102,10 +107,11 @@ final readonly class ExtensionActivationContributionApplier implements Extension
     /**
      * @param list<array{extension: Extension, tables: list<string>}> $createdDatabaseTables
      *
-     * @return list<Message>
+     * @return array{issues: list<Message>, messages: list<Message>}
      */
     private function cleanupCreatedDatabaseTables(array $createdDatabaseTables): array
     {
+        $issues = [];
         $messages = [];
 
         foreach (array_reverse($createdDatabaseTables) as $entry) {
@@ -114,9 +120,10 @@ final readonly class ExtensionActivationContributionApplier implements Extension
             }
 
             $cleanup = $this->databaseSynchronizer->dropTables($entry['extension'], $entry['tables']);
-            $messages = [...$messages, ...$cleanup->messages(), ...$cleanup->issues()];
+            $messages = [...$messages, ...$cleanup->messages()];
+            $issues = [...$issues, ...$cleanup->issues()];
         }
 
-        return $messages;
+        return ['issues' => $issues, 'messages' => $messages];
     }
 }
