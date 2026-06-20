@@ -19,6 +19,12 @@ use App\Scheduler\SchedulerCallableProviderInterface;
 use App\Scheduler\SchedulerTaskDefinition;
 use App\Scheduler\SchedulerTaskExecution;
 use App\Scheduler\SchedulerTaskType;
+use App\View\Injection\ConfigurableStaticViewInjectionRoute;
+use App\View\Injection\ConfigurableStaticViewInjectionSet;
+use App\View\Injection\DynamicViewInjection;
+use App\View\Injection\DynamicViewInjectionSlot;
+use App\View\Injection\StaticViewInjection;
+use App\View\Injection\ViewSurface;
 use PHPUnit\Framework\TestCase;
 
 final class ExtensionRuntimeContributionRegistryContractTest extends TestCase
@@ -95,6 +101,114 @@ final class ExtensionRuntimeContributionRegistryContractTest extends TestCase
         );
     }
 
+    public function testItAcceptsViewContributionsInsideExtensionOwnedSurfaceNamespace(): void
+    {
+        $registry = new ExtensionRuntimeContributionRegistry();
+
+        $registry->add($this->extension([ExtensionScope::Module]), [
+            new StaticViewInjection(
+                'ext-demo-module-public',
+                ViewSurface::Public,
+                'demo-module',
+                'ext.demo_module.public.label',
+                '@frontend/demo-module/public.html.twig',
+            ),
+            new StaticViewInjection(
+                'ext-demo-module-admin',
+                ViewSurface::Admin,
+                'demo-module',
+                'ext.demo_module.admin.label',
+                '@backend/demo-module/admin.html.twig',
+            ),
+            new DynamicViewInjection(
+                'ext-demo-module-dynamic',
+                ViewSurface::Public,
+                DynamicViewInjectionSlot::AfterContent,
+                '@frontend/demo-module/after-content.html.twig',
+            ),
+        ]);
+
+        self::assertCount(2, $registry->staticViewInjections());
+        self::assertCount(1, $registry->dynamicViewInjections());
+    }
+
+    public function testItRejectsPublicViewContributionsOutsideFrontendNamespace(): void
+    {
+        $this->expectExceptionMessage('message.extension.runtime.contribution_unsupported');
+
+        (new ExtensionRuntimeContributionRegistry())->add(
+            $this->extension([ExtensionScope::Module]),
+            new StaticViewInjection(
+                'ext-demo-module-public',
+                ViewSurface::Public,
+                'demo-module',
+                'ext.demo_module.public.label',
+                '@backend/demo-module/admin.html.twig',
+            ),
+        );
+    }
+
+    public function testItRejectsDynamicViewContributionsOutsideSurfaceNamespace(): void
+    {
+        $this->expectExceptionMessage('message.extension.runtime.contribution_unsupported');
+
+        (new ExtensionRuntimeContributionRegistry())->add(
+            $this->extension([ExtensionScope::Module]),
+            new DynamicViewInjection(
+                'ext-demo-module-dynamic',
+                ViewSurface::Public,
+                DynamicViewInjectionSlot::AfterContent,
+                '@backend/demo-module/admin.html.twig',
+            ),
+        );
+    }
+
+    public function testItRejectsConfigurableViewContributionsOutsideSurfaceNamespace(): void
+    {
+        $this->expectExceptionMessage('message.extension.runtime.contribution_unsupported');
+
+        (new ExtensionRuntimeContributionRegistry())->add(
+            $this->extension([ExtensionScope::Module]),
+            new ConfigurableStaticViewInjectionSet(
+                'demo-module',
+                'demo.route',
+                ViewSurface::Public,
+                'demo',
+                [
+                    new ConfigurableStaticViewInjectionRoute(
+                        'ext-demo-module-configurable',
+                        '',
+                        'ext.demo_module.public.label',
+                        '@backend/demo-module/admin.html.twig',
+                    ),
+                ],
+            ),
+        );
+    }
+
+    public function testItRejectsConfigurableViewContributionsForForeignOwners(): void
+    {
+        $this->expectExceptionMessage('message.extension.runtime.contribution_unsupported');
+
+        (new ExtensionRuntimeContributionRegistry())->add(
+            $this->extension([ExtensionScope::Module]),
+            new ConfigurableStaticViewInjectionSet(
+                'other-module',
+                'demo.route',
+                ViewSurface::Public,
+                'demo',
+                [
+                    new ConfigurableStaticViewInjectionRoute(
+                        'ext-demo-module-configurable',
+                        '',
+                        'ext.demo_module.public.label',
+                        '@frontend/demo-module/public.html.twig',
+                    ),
+                ],
+            ),
+        );
+    }
+
     public function testItRejectsSchedulerTaskIdentifiersOutsideExtensionNamespace(): void
     {
         $this->expectExceptionMessage('message.extension.runtime.contribution_unsupported');
@@ -111,6 +225,26 @@ final class ExtensionRuntimeContributionRegistryContractTest extends TestCase
                 '*/15 * * * *',
             ),
         );
+    }
+
+    public function testItAcceptsHyphenatedExtensionSchedulerIdentifiers(): void
+    {
+        $registry = new ExtensionRuntimeContributionRegistry();
+
+        $registry->add(
+            $this->extension([ExtensionScope::Module]),
+            new SchedulerTaskDefinition(
+                'demo-module.cleanup',
+                'extension.demo_module.cleanup.label',
+                'extension.demo_module.cleanup.description',
+                'demo-module',
+                SchedulerTaskType::Callable,
+                'demo-module.cleanup',
+                '*/15 * * * *',
+            ),
+        );
+
+        self::assertSame('demo-module.cleanup', $registry->schedulerTasks()[0]->identifier());
     }
 
     public function testItRejectsSchedulerTaskTargetsOutsideExtensionNamespace(): void

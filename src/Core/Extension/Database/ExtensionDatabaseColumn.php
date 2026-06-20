@@ -21,6 +21,12 @@ final readonly class ExtensionDatabaseColumn
         'text',
     ];
 
+    private const ALLOWED_OPTIONS = [
+        'default',
+        'length',
+        'notnull',
+    ];
+
     /**
      * @param array<string, mixed> $options
      */
@@ -36,6 +42,8 @@ final readonly class ExtensionDatabaseColumn
                 '%reason%' => 'unsupported_column_type',
             ], ['type' => $type]);
         }
+
+        $this->assertOptions($options);
     }
 
     public static function string(string $name, int $length = 255, bool $notNull = true): self
@@ -92,6 +100,38 @@ final readonly class ExtensionDatabaseColumn
             throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_DATABASE_CONTRIBUTION_INVALID, [
                 '%reason%' => $label.'_identifier_invalid',
             ], [$label => $value]);
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     */
+    private function assertOptions(array $options): void
+    {
+        foreach ($options as $name => $value) {
+            if (!in_array($name, self::ALLOWED_OPTIONS, true)) {
+                throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_DATABASE_CONTRIBUTION_INVALID, [
+                    '%reason%' => 'unsupported_column_option',
+                ], ['option' => $name]);
+            }
+
+            if ('notnull' === $name && !is_bool($value)) {
+                throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_DATABASE_CONTRIBUTION_INVALID, [
+                    '%reason%' => 'invalid_column_option',
+                ], ['option' => $name]);
+            }
+
+            if ('length' === $name && (!is_int($value) || $value < 1 || $value > 4096)) {
+                throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_DATABASE_CONTRIBUTION_INVALID, [
+                    '%reason%' => 'invalid_column_option',
+                ], ['option' => $name]);
+            }
+
+            if ('default' === $name && null !== $value && !is_string($value) && !is_int($value) && !is_float($value) && !is_bool($value)) {
+                throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_DATABASE_CONTRIBUTION_INVALID, [
+                    '%reason%' => 'invalid_column_option',
+                ], ['option' => $name]);
+            }
         }
     }
 }

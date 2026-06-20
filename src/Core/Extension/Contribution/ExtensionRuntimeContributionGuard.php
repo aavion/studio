@@ -24,6 +24,10 @@ use App\Privacy\Cookie\CookieConsentDefinition;
 use App\Privacy\Cookie\CookieConsentManager;
 use App\Scheduler\SchedulerTaskDefinition;
 use App\Scheduler\SchedulerTaskType;
+use App\View\Injection\ConfigurableStaticViewInjectionSet;
+use App\View\Injection\DynamicViewInjection;
+use App\View\Injection\StaticViewInjection;
+use App\View\Injection\ViewSurface;
 use Symfony\Component\HttpFoundation\Cookie;
 
 final readonly class ExtensionRuntimeContributionGuard
@@ -77,6 +81,33 @@ final readonly class ExtensionRuntimeContributionGuard
                 'expected_prefix' => $prefix,
             ]);
         }
+    }
+
+    public function assertStaticViewInjection(Extension $extension, StaticViewInjection $injection): void
+    {
+        $this->assertViewTemplate($extension, $injection->surface(), $injection->template(), StaticViewInjection::class.'('.$injection->uid().')');
+    }
+
+    public function assertConfigurableStaticViewInjectionSet(Extension $extension, ConfigurableStaticViewInjectionSet $set): void
+    {
+        if ($set->extensionName() !== $extension->extensionName()) {
+            throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_RUNTIME_CONTRIBUTION_UNSUPPORTED, [
+                '%extension%' => $extension->extensionName(),
+                '%type%' => ConfigurableStaticViewInjectionSet::class.'('.$set->extensionName().') foreign_owner',
+            ], [
+                'extension' => $extension->extensionName(),
+                'definition_extension' => $set->extensionName(),
+            ]);
+        }
+
+        foreach ($set->staticViewInjections($set->defaultBaseSlug()) as $injection) {
+            $this->assertStaticViewInjection($extension, $injection);
+        }
+    }
+
+    public function assertDynamicViewInjection(Extension $extension, DynamicViewInjection $injection): void
+    {
+        $this->assertViewTemplate($extension, $injection->surface(), $injection->template(), DynamicViewInjection::class.'('.$injection->uid().')');
     }
 
     public function assertApiEndpoint(Extension $extension, ApiEndpointDefinition $definition): void
@@ -153,6 +184,28 @@ final readonly class ExtensionRuntimeContributionGuard
                 '%reason%' => 'scope_missing',
             ], ['extension' => $extension->extensionName(), 'required_scope' => ExtensionScope::ContentSchema->value]);
         }
+    }
+
+    private function assertViewTemplate(Extension $extension, ViewSurface $surface, string $template, string $type): void
+    {
+        $expectedPrefix = match ($surface) {
+            ViewSurface::Public => '@frontend/'.$extension->extensionName().'/',
+            ViewSurface::Admin, ViewSurface::Editor => '@backend/'.$extension->extensionName().'/',
+        };
+
+        if (str_starts_with($template, $expectedPrefix)) {
+            return;
+        }
+
+        throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_RUNTIME_CONTRIBUTION_UNSUPPORTED, [
+            '%extension%' => $extension->extensionName(),
+            '%type%' => $type.' foreign_template',
+        ], [
+            'extension' => $extension->extensionName(),
+            'surface' => $surface->value,
+            'template' => $template,
+            'expected_prefix' => $expectedPrefix,
+        ]);
     }
 
     private function assertApiScope(Extension $extension): void

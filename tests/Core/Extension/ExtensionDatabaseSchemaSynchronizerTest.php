@@ -88,6 +88,17 @@ final class ExtensionDatabaseSchemaSynchronizerTest extends KernelTestCase
         ExtensionDatabaseColumn::string(str_repeat('a', IdentifierSpec::MAX_PORTABLE_DATABASE_IDENTIFIER_LENGTH + 1), 36);
     }
 
+    public function testItRejectsUnsupportedDatabaseColumnOptionsBeforeDdl(): void
+    {
+        $this->expectException(MessageException::class);
+        $this->expectExceptionMessage('message.extension.database.contribution_invalid');
+
+        new ExtensionDatabaseColumn('uid', 'string', [
+            'length' => 36,
+            'columnDefinition' => 'VARCHAR(36) NOT NULL',
+        ]);
+    }
+
     public function testItCreatesExtensionTablesWithForeignKeysAfterReferencedTables(): void
     {
         $result = (new ExtensionDatabaseSchemaSynchronizer($this->connection))->apply($this->extension(), [

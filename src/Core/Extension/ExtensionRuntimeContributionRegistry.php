@@ -89,18 +89,21 @@ final class ExtensionRuntimeContributionRegistry implements StaticViewInjectionP
     private function addToRegistry(Extension $extension, object $contribution): void
     {
         if ($contribution instanceof StaticViewInjection) {
+            $this->guard()->assertStaticViewInjection($extension, $contribution);
             $this->viewContributions->addStatic($contribution);
 
             return;
         }
 
         if ($contribution instanceof ConfigurableStaticViewInjectionSet) {
+            $this->guard()->assertConfigurableStaticViewInjectionSet($extension, $contribution);
             $this->viewContributions->addConfigurableStaticSet($contribution);
 
             return;
         }
 
         if ($contribution instanceof DynamicViewInjection) {
+            $this->guard()->assertDynamicViewInjection($extension, $contribution);
             $this->viewContributions->addDynamic($contribution);
 
             return;
