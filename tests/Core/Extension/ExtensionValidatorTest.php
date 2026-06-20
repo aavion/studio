@@ -1138,6 +1138,23 @@ TWIG);
         self::assertSame('@backend/admin.html.twig', $result->firstIssue()?->context()['reference']);
     }
 
+    public function testItRejectsTemplateReferencesInsideTwigFunctions(): void
+    {
+        $this->writeFile('templates/frontend/page.html.twig', <<<'TWIG'
+{{ include('@backend/admin.html.twig') }}
+{{ source('@root/partials/brand/_brand.html.twig') }}
+TWIG);
+
+        $result = (new ExtensionValidator())->validate(
+            $this->candidateWithScope('module'),
+            ExtensionSpec::create()->withInventoryDepth(4),
+        );
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('extension.template_reference_invalid', $result->firstIssue()?->code());
+        self::assertSame('@backend/admin.html.twig', $result->firstIssue()?->context()['reference']);
+    }
+
     public function testItReportsStructuredSyntaxErrors(): void
     {
         $this->writeFile('data/broken.json', '{');
@@ -1405,6 +1422,87 @@ TWIG);
             $policyIssues,
         ));
         self::assertSame(['dynamic_callable', 'dynamic_callable', 'dynamic_introspection'], array_map(
+            static fn ($issue): string => $issue->context()['reason'],
+            $policyIssues,
+        ));
+    }
+
+    public function testItBlocksStringLiteralPhpCallableBypassesForInstallableExtensions(): void
+    {
+        $this->writeFile('extension.php', <<<'PHP'
+            <?php
+
+            ('exec')('whoami');
+            "file_get_contents"('/etc/passwd');
+
+            return [];
+            PHP);
+
+        $result = (new ExtensionValidator())->validate(
+            $this->candidate(),
+            ExtensionSpec::create()->withInventoryDepth(4),
+        );
+
+        self::assertFalse($result->isSuccess());
+
+        $policyIssues = array_values(array_filter(
+            $result->issues(),
+            static fn ($issue): bool => 'extension.policy.blocked_php_capability' === $issue->code(),
+        ));
+
+        self::assertSame(['exec()', 'file_get_contents()'], array_map(
+            static fn ($issue): string => $issue->context()['capability'],
+            $policyIssues,
+        ));
+        self::assertSame(['direct_process', 'direct_filesystem'], array_map(
+            static fn ($issue): string => $issue->context()['reason'],
+            $policyIssues,
+        ));
+    }
+
+    public function testItBlocksRawRequestSuperglobalsForInstallableExtensions(): void
+    {
+        $this->writeFile('extension.php', <<<'PHP'
+            <?php
+
+            $payload = [
+                $_GET,
+                $_POST,
+                $_COOKIE,
+                $_REQUEST,
+                $_SESSION,
+                $_FILES,
+                $_SERVER,
+            ];
+
+            return $payload;
+            PHP);
+
+        $result = (new ExtensionValidator())->validate(
+            $this->candidate(),
+            ExtensionSpec::create()->withInventoryDepth(4),
+        );
+
+        self::assertFalse($result->isSuccess());
+
+        $policyIssues = array_values(array_filter(
+            $result->issues(),
+            static fn ($issue): bool => 'extension.policy.blocked_php_capability' === $issue->code(),
+        ));
+
+        self::assertSame([
+            '$_GET',
+            '$_POST',
+            '$_COOKIE',
+            '$_REQUEST',
+            '$_SESSION',
+            '$_FILES',
+            '$_SERVER',
+        ], array_map(
+            static fn ($issue): string => $issue->context()['capability'],
+            $policyIssues,
+        ));
+        self::assertSame(array_fill(0, 7, 'direct_request_context'), array_map(
             static fn ($issue): string => $issue->context()['reason'],
             $policyIssues,
         ));

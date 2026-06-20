@@ -96,6 +96,11 @@ final readonly class ExtensionPhpCapabilityPolicy
     private const BLOCKED_SUPERGLOBALS = [
         '$_ENV' => 'direct_environment',
         '$_FILES' => 'direct_request_context',
+        '$_GET' => 'direct_request_context',
+        '$_POST' => 'direct_request_context',
+        '$_COOKIE' => 'direct_request_context',
+        '$_REQUEST' => 'direct_request_context',
+        '$_SESSION' => 'direct_request_context',
         '$_SERVER' => 'direct_request_context',
     ];
 
@@ -157,6 +162,19 @@ final readonly class ExtensionPhpCapabilityPolicy
                 continue;
             }
 
+            if (T_CONSTANT_ENCAPSED_STRING === $token[0] && $this->isStringLiteralCall($tokens, $index)) {
+                $name = $this->policyName($this->literalStringValue((string) $token[1]));
+
+                $issues[] = $this->issue(
+                    $candidate,
+                    $file,
+                    $path,
+                    $this->literalStringValue((string) $token[1]).'()',
+                    self::BLOCKED_FUNCTIONS[$name] ?? 'dynamic_callable',
+                );
+                continue;
+            }
+
             if (!in_array($token[0], $this->nameTokenIds(), true)) {
                 continue;
             }
@@ -194,6 +212,26 @@ final readonly class ExtensionPhpCapabilityPolicy
     /**
      * @param array<int, mixed> $tokens
      */
+    private function isStringLiteralCall(array $tokens, int $index): bool
+    {
+        if ('(' === $this->nextSignificantToken($tokens, $index)) {
+            return true;
+        }
+
+        if ('(' !== $this->previousSignificantToken($tokens, $index)) {
+            return false;
+        }
+
+        $closeIndex = $this->nextSignificantTokenIndex($tokens, $index);
+
+        return null !== $closeIndex
+            && ')' === $this->significantTokenValue($tokens[$closeIndex])
+            && '(' === $this->nextSignificantToken($tokens, $closeIndex);
+    }
+
+    /**
+     * @param array<int, mixed> $tokens
+     */
     private function isNewClassName(array $tokens, int $index): bool
     {
         return 'new' === $this->previousSignificantToken($tokens, $index);
@@ -220,13 +258,23 @@ final readonly class ExtensionPhpCapabilityPolicy
      */
     private function nextSignificantToken(array $tokens, int $index): ?string
     {
+        $nextIndex = $this->nextSignificantTokenIndex($tokens, $index);
+
+        return null === $nextIndex ? null : $this->significantTokenValue($tokens[$nextIndex]);
+    }
+
+    /**
+     * @param array<int, mixed> $tokens
+     */
+    private function nextSignificantTokenIndex(array $tokens, int $index): ?int
+    {
         $count = count($tokens);
 
         for ($i = $index + 1; $i < $count; ++$i) {
             $value = $this->significantTokenValue($tokens[$i]);
 
             if (null !== $value) {
-                return $value;
+                return $i;
             }
         }
 
@@ -275,6 +323,18 @@ final readonly class ExtensionPhpCapabilityPolicy
         $parts = explode('\\', $name);
 
         return (string) end($parts);
+    }
+
+    private function literalStringValue(string $literal): string
+    {
+        $quote = $literal[0] ?? '';
+        $value = substr($literal, 1, -1);
+
+        if ("'" === $quote) {
+            return str_replace(['\\\\', "\\'"], ['\\', "'"], $value);
+        }
+
+        return stripcslashes($value);
     }
 
     private function issue(ExtensionCandidate $candidate, string $file, string $path, string $capability, string $reason): Message

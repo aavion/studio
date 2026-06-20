@@ -56,13 +56,17 @@ final readonly class ExtensionTemplateReferenceValidator
      */
     private function references(string $contents): array
     {
-        preg_match_all(
-            '/{%\s*(?:extends|include|embed|import|from)\s+[\'"](?P<reference>@(?:root|frontend|backend|provider)\/[^\'"]+)[\'"]/i',
-            $contents,
-            $matches,
-        );
+        $references = [];
 
-        return array_values(array_unique($matches['reference'] ?? []));
+        foreach ([
+            '/{%\s*(?:extends|include|embed|import|from)\s+[\'"](?P<reference>@(?:root|frontend|backend|provider)\/[^\'"]+)[\'"]/i',
+            '/\b(?:include|source)\s*\(\s*[\'"](?P<reference>@(?:root|frontend|backend|provider)\/[^\'"]+)[\'"]/i',
+        ] as $pattern) {
+            preg_match_all($pattern, $contents, $matches);
+            array_push($references, ...($matches['reference'] ?? []));
+        }
+
+        return array_values(array_unique($references));
     }
 
     private function isAllowedReference(string $file, string $reference): bool
