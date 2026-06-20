@@ -1,7 +1,7 @@
 # Repository Agent Guide
 
 > **Status**: Active  
-> **Updated**: 2026-06-13  
+> **Updated**: 2026-06-20  
 > **Owner**: Dominik Letica, OpenAI/Codex  
 > **Purpose:** Provide practical, repository-specific instructions and binding project rules for coding agents working on this Symfony application.  
 
@@ -102,6 +102,7 @@
 - If a requested narrow change exposes unrelated drift, fix it only when it blocks the task; otherwise record the follow-up in `dev/WORKLOG.md`.
 
 ### Review Finding Fixes
+- When available and applicable, prefer the project-local `fix-review-findings` Codex skill for concrete review comments, PR findings, Cloud Review findings, or local review findings.
 - Before applying a fix for a review finding, trace the affected boundary from source to sink and inspect adjacent, related, and analogous code paths that share the same classifier, subscriber, guard, resolver, route family, subject selection, response behavior, storage boundary, or policy decision.
 - Prefer fixing the narrowest central boundary that covers all affected paths. Apply a path-local fix only when evidence shows the issue is truly path-specific.
 - Keep review fixes simple, modular, and minimally invasive. Do not broaden them into unrelated refactors, compatibility shims, or speculative redesigns.
@@ -110,6 +111,7 @@
 - Add or update regression coverage for the reported finding and any adjacent paths changed by the fix. When an analogous path is inspected and intentionally not changed, make that reasoning clear in the worklog, final notes, or PR response where useful.
 
 ### PR Readiness Audits
+- When available and applicable, prefer the project-local `audit-pr-readiness` Codex skill for PR-readiness checks, ready-for-review preparation, and PR template completion.
 - Before marking a branch, pull request, or feature slice ready for review, run the PR-readiness checklist as a real audit pass over the branch diff and the affected runtime surfaces. Do not treat checklist items as passive boxes to tick.
 - The audit must explicitly review security/privacy considerations; public entry points; authentication, authorization, sessions, secrets, browser storage, and response redaction; extension/module boundaries; access levels; route/API/live endpoint scopes; naming and collision risks; setup/init/CI behavior; cross-platform behavior; disabled-feature fallbacks; process and environment handling; default seed coverage for implemented config keys; translations and user-facing copy; project-rule, architecture, naming, documentation, and performance drift; and captured follow-up tasks.
 - Use evidence from code inspection, focused tests, render checks, linting, documentation diffs, class map/worklog updates, and seed/default coverage as appropriate for the changed surface. If a checklist item is not applicable, record why instead of silently skipping it.
@@ -197,6 +199,7 @@
 
 ## Review Mode
 - In code review, lead with findings ordered by severity and include file and line references.
+- For explicit complete local branch, PR, broad pre-PR, exhaustive mini-model, or Cloud-Review-like local reviews, prefer the project-local `local-code-review` Codex skill when available and applicable.
 - Review-fix implementation must follow the Review Finding Fixes rules under Change Expectations before applying code changes.
 - PR-readiness sign-off must follow the PR Readiness Audits rules under Change Expectations instead of only copying checklist items.
 - Verify worklog, documentation, tests, class map, translations, screenshots, security notes, and PR checklist items when they are relevant to the reviewed change.
