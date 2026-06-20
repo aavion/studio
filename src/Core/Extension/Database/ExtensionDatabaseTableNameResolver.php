@@ -11,6 +11,8 @@ use Doctrine\DBAL\Connection;
 
 final readonly class ExtensionDatabaseTableNameResolver
 {
+    public const MAX_IDENTIFIER_LENGTH = 63;
+
     public function __construct(private Connection $connection)
     {
     }
@@ -32,7 +34,12 @@ final readonly class ExtensionDatabaseTableNameResolver
 
     public function shortName(string $name): string
     {
-        return strlen($name) <= 63 ? $name : substr($name, 0, 48).'_'.substr(hash('sha256', $name), 0, 14);
+        return strlen($name) <= self::MAX_IDENTIFIER_LENGTH ? $name : substr($name, 0, 48).'_'.substr(hash('sha256', $name), 0, 14);
+    }
+
+    public function isPortableIdentifier(string $name): bool
+    {
+        return strlen($name) <= self::MAX_IDENTIFIER_LENGTH;
     }
 
     public function databasePrefix(): string

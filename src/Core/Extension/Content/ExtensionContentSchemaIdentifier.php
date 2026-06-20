@@ -10,6 +10,11 @@ use App\Entity\Extension;
 
 final readonly class ExtensionContentSchemaIdentifier
 {
+    public static function isPortableIdentifier(string $identifier): bool
+    {
+        return strlen($identifier) <= ContentSchema::MAX_IDENTIFIER_LENGTH;
+    }
+
     public static function create(string $extensionName, string $schemaName): string
     {
         return ExtensionOwnerName::prefix($extensionName).$schemaName;

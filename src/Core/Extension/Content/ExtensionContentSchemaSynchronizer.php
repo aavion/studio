@@ -48,8 +48,19 @@ final readonly class ExtensionContentSchemaSynchronizer
                 return $this->invalid($extension, 'definition_invalid');
             }
 
+            $identifier = $definition->identifier($extension->extensionName());
+            if (!ExtensionContentSchemaIdentifier::isPortableIdentifier($identifier)) {
+                $this->restoreStagedSchemaState($stagedEntities, $schemaActiveVersionSnapshots);
+
+                return $this->invalid($extension, 'schema_identifier_too_long', [
+                    'schema' => $definition->name(),
+                    'identifier' => $identifier,
+                    'max_length' => ContentSchema::MAX_IDENTIFIER_LENGTH,
+                ]);
+            }
+
             try {
-                $result = $this->upsert($extension, $definition, $stagedEntities, $schemaActiveVersionSnapshots);
+                $result = $this->upsert($extension, $definition, $identifier, $stagedEntities, $schemaActiveVersionSnapshots);
             } catch (Throwable $error) {
                 return $this->failedSync($extension, $error, $stagedEntities, $schemaActiveVersionSnapshots);
             }
@@ -151,11 +162,11 @@ final readonly class ExtensionContentSchemaSynchronizer
     private function upsert(
         Extension $extension,
         ExtensionContentSchemaDefinition $definition,
+        string $identifier,
         array &$stagedEntities,
         array &$schemaActiveVersionSnapshots,
     ): array
     {
-        $identifier = $definition->identifier($extension->extensionName());
         $schema = $this->entityManager->getRepository(ContentSchema::class)->findOneBy(['identifier' => $identifier]);
         $action = 'unchanged';
 
@@ -317,14 +328,14 @@ final readonly class ExtensionContentSchemaSynchronizer
     /**
      * @return WorkflowResult<null>
      */
-    private function invalid(Extension $extension, string $reason): WorkflowResult
+    private function invalid(Extension $extension, string $reason, array $context = []): WorkflowResult
     {
         return WorkflowResult::invalid([
             Message::create(
                 ExtensionMessageCode::EXTENSION_CONTENT_SCHEMA_CONTRIBUTION_INVALID,
                 ExtensionMessageKey::EXTENSION_CONTENT_SCHEMA_CONTRIBUTION_INVALID,
                 ['%reason%' => $reason],
-                ['extension' => $extension->extensionName()],
+                ['extension' => $extension->extensionName(), ...$context],
                 MessageLevel::Error,
             ),
         ]);

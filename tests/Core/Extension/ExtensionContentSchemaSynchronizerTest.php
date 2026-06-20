@@ -63,6 +63,37 @@ final class ExtensionContentSchemaSynchronizerTest extends KernelTestCase
         self::assertSame(2, $schema->activeVersion()?->version());
     }
 
+    public function testItUsesBoundedOwnerPrefixesForLongExtensionSchemaIdentifiers(): void
+    {
+        $synchronizer = new ExtensionContentSchemaSynchronizer($this->entityManager);
+
+        $created = $synchronizer->apply(
+            $this->extension('demo-module-with-a-very-long-extension-slug-for-portability'),
+            [$this->schema('body')],
+        );
+
+        self::assertTrue($created->isSuccess(), json_encode($created->toArray(), JSON_THROW_ON_ERROR));
+        self::assertCount(1, $created->value()['created']);
+        self::assertLessThanOrEqual(ContentSchema::MAX_IDENTIFIER_LENGTH, strlen($created->value()['created'][0]));
+    }
+
+    public function testItRejectsCombinedExtensionSchemaIdentifiersThatExceedStorageLength(): void
+    {
+        $result = (new ExtensionContentSchemaSynchronizer($this->entityManager))->apply($this->extension(), [
+            ExtensionContentSchemaDefinition::create(str_repeat('schema_name_', 11), ['en' => 'Oversized'], [
+                'fields' => [
+                    ['identifier' => 'title', 'type' => 'string'],
+                    ['identifier' => 'subtitle', 'type' => 'string'],
+                    ['identifier' => 'body', 'type' => 'text'],
+                ],
+            ]),
+        ]);
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('extension.content_schema.contribution_invalid', $result->firstIssue()?->code());
+        self::assertSame('schema_identifier_too_long', $result->firstIssue()?->parameters()['%reason%'] ?? null);
+    }
+
     public function testItVersionsExtensionContentSchemasWhenPresentationChanges(): void
     {
         $synchronizer = new ExtensionContentSchemaSynchronizer($this->entityManager);
@@ -197,13 +228,13 @@ final class ExtensionContentSchemaSynchronizerTest extends KernelTestCase
         ], customTwig: $customTwig);
     }
 
-    private function extension(): Extension
+    private function extension(string $extensionName = 'demo-module'): Extension
     {
         return new Extension(
             '10000000-0000-7000-8000-000000000703',
             [ExtensionScope::ContentSchema],
-            'demo-module',
-            'extensions/demo-module',
+            $extensionName,
+            'extensions/'.$extensionName,
             ExtensionStatus::Active,
         );
     }

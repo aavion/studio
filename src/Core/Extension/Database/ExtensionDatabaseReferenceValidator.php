@@ -34,6 +34,15 @@ final readonly class ExtensionDatabaseReferenceValidator
             foreach ($table->foreignKeys() as $foreignKey) {
                 $referencedPhysicalName = $this->names->referencedTableName($extension, $foreignKey);
 
+                if (!$this->names->isPortableIdentifier($referencedPhysicalName)) {
+                    return $this->invalid($extension, 'foreign_key_reference_name_too_long', [
+                        'table' => $physicalName,
+                        'foreign_key' => $foreignKey->name(),
+                        'referenced_table' => $referencedPhysicalName,
+                        'max_length' => ExtensionDatabaseTableNameResolver::MAX_IDENTIFIER_LENGTH,
+                    ]);
+                }
+
                 if (isset($pendingTables[$referencedPhysicalName])) {
                     $validation = $this->validateDefinitionReference($extension, $foreignKey, $pendingTables[$referencedPhysicalName]);
                     if (!$validation->isSuccess()) {

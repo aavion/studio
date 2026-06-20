@@ -49,6 +49,35 @@ final class ExtensionDatabaseSchemaSynchronizerTest extends KernelTestCase
         self::assertSame(['ext11_demo_module_entry'], $result->value()['created']);
     }
 
+    public function testItUsesBoundedOwnerPrefixesForLongExtensionSlugs(): void
+    {
+        $extension = $this->extension('demo-module-with-a-very-long-extension-slug-for-portability');
+
+        $result = (new ExtensionDatabaseSchemaSynchronizer($this->connection))->apply($extension, [
+            ExtensionDatabaseTable::create('entry', [
+                ExtensionDatabaseColumn::string('uid', 36),
+            ], ['uid']),
+        ]);
+
+        self::assertTrue($result->isSuccess(), json_encode($result->toArray(), JSON_THROW_ON_ERROR));
+        self::assertCount(1, $result->value()['created']);
+        self::assertLessThanOrEqual(63, strlen($result->value()['created'][0]));
+        self::assertContains($result->value()['created'][0], $this->connection->createSchemaManager()->listTableNames());
+    }
+
+    public function testItRejectsCombinedExtensionTableNamesThatExceedPortableIdentifierLength(): void
+    {
+        $result = (new ExtensionDatabaseSchemaSynchronizer($this->connection))->apply($this->extension(), [
+            ExtensionDatabaseTable::create(str_repeat('table_name_', 6), [
+                ExtensionDatabaseColumn::string('uid', 36),
+            ], ['uid']),
+        ]);
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('extension.database.contribution_invalid', $result->firstIssue()?->code());
+        self::assertSame('table_name_too_long', $result->firstIssue()?->parameters()['%reason%'] ?? null);
+    }
+
     public function testItCreatesExtensionTablesWithForeignKeysAfterReferencedTables(): void
     {
         $result = (new ExtensionDatabaseSchemaSynchronizer($this->connection))->apply($this->extension(), [
@@ -177,19 +206,25 @@ final class ExtensionDatabaseSchemaSynchronizerTest extends KernelTestCase
         self::assertNotContains('ext11_demo_module_author', $this->connection->createSchemaManager()->listTableNames());
     }
 
-    private function extension(): Extension
+    private function extension(string $extensionName = 'demo-module'): Extension
     {
         return new Extension(
             '10000000-0000-7000-8000-000000000702',
             [ExtensionScope::Database],
-            'demo-module',
-            'extensions/demo-module',
+            $extensionName,
+            'extensions/'.$extensionName,
             ExtensionStatus::Active,
         );
     }
 
     private function dropTestTables(): void
     {
+        foreach ($this->connection->createSchemaManager()->listTableNames() as $tableName) {
+            if (str_starts_with($tableName, 'ext')) {
+                $this->dropTableIfExists($tableName);
+            }
+        }
+
         foreach (['ext11_demo_module_post', 'ext11_demo_module_author', 'ext11_demo_module_entry', 'ext4_demo_module_entry'] as $tableName) {
             $this->dropTableIfExists($tableName);
         }

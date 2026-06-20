@@ -56,6 +56,13 @@ final class ExtensionDatabaseSchemaSynchronizer
                 return $this->invalid($extension, 'table_name_not_owned', ['table' => $physicalName]);
             }
 
+            if (!$this->names->isPortableIdentifier($physicalName)) {
+                return $this->invalid($extension, 'table_name_too_long', [
+                    'table' => $physicalName,
+                    'max_length' => ExtensionDatabaseTableNameResolver::MAX_IDENTIFIER_LENGTH,
+                ]);
+            }
+
             if (in_array(strtolower($physicalName), $knownTables, true)) {
                 $existing[] = $physicalName;
                 continue;
