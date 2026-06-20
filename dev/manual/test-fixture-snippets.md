@@ -86,6 +86,7 @@ Most tests use the SQLite database initialized by `TestSuiteLifecycle`. A small 
 The default local fixture is:
 
 ```text
+MYSQL_TEST_ACTIVE=false
 MYSQL_TEST_DSN=mysql://test:test@127.0.0.1:3306/studio_test?charset=utf8mb4
 ```
 
@@ -98,7 +99,7 @@ GRANT ALL PRIVILEGES ON studio_test.* TO 'test'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
-Developers may override the DSN through the shell or `.env.test.local` using `MYSQL_TEST_DSN`. The database must stay dedicated to tests because optional integration tests are allowed to drop every table in it during cleanup.
+Developers may override the DSN through the shell or `.env.test.local` using `MYSQL_TEST_DSN`. MySQL/MariaDB integration tests are destructive and stay skipped unless `MYSQL_TEST_ACTIVE=1` or another truthy value is set explicitly for the test run. The database must stay dedicated to tests because optional integration tests are allowed to drop every table in it during cleanup.
 
 ## References
 

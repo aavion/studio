@@ -22,8 +22,10 @@ final class ExtensionDatabaseMySqlIntegrationTest extends TestCase
 {
     public function testItCleansCreatedTablesAfterLaterDdlFailure(): void
     {
+        $this->skipUnlessMysqlIntegrationTestsAreActive();
+
         $connection = $this->connection();
-        $this->clearDatabaseOrSkip($connection);
+        $this->clearDatabase($connection);
 
         try {
             $result = (new ExtensionDatabaseSchemaSynchronizer($connection))->apply($this->extension(), [
@@ -44,20 +46,22 @@ final class ExtensionDatabaseMySqlIntegrationTest extends TestCase
         }
     }
 
+    private function skipUnlessMysqlIntegrationTestsAreActive(): void
+    {
+        $active = $_SERVER['MYSQL_TEST_ACTIVE'] ?? $_ENV['MYSQL_TEST_ACTIVE'] ?? getenv('MYSQL_TEST_ACTIVE') ?: 'false';
+        if (!in_array(strtolower(trim((string) $active)), ['1', 'true', 'yes', 'on'], true)) {
+            self::markTestSkipped('Set MYSQL_TEST_ACTIVE=1 to run destructive optional MySQL/MariaDB integration tests.');
+        }
+    }
+
     private function connection(): Connection
     {
         if (!extension_loaded('pdo_mysql')) {
-            self::markTestSkipped('pdo_mysql is required for optional MySQL/MariaDB integration tests.');
+            self::fail('pdo_mysql is required when MYSQL_TEST_ACTIVE enables MySQL/MariaDB integration tests.');
         }
 
-        try {
-            $connection = DriverManager::getConnection($this->connectionParams());
-            $connection->executeQuery('SELECT 1');
-        } catch (Throwable $error) {
-            self::markTestSkipped('Optional MySQL/MariaDB test database is not available: '.$error->getMessage());
-
-            throw $error;
-        }
+        $connection = DriverManager::getConnection($this->connectionParams());
+        $connection->executeQuery('SELECT 1');
 
         $this->assertUsableIntegrationDatabase($connection);
 
@@ -95,24 +99,10 @@ final class ExtensionDatabaseMySqlIntegrationTest extends TestCase
             $connection->executeStatement('CREATE TABLE '.$probeTable.' (id INT NOT NULL PRIMARY KEY)');
             $connection->executeStatement('DROP TABLE '.$probeTable);
         } catch (Throwable $error) {
-            self::markTestSkipped(
-                'Optional MySQL/MariaDB test database is not readable/writable: '.$error->getMessage(),
+            self::fail(
+                'MySQL/MariaDB test database must be readable and writable when MYSQL_TEST_ACTIVE is enabled: '
+                .$error->getMessage(),
             );
-
-            throw $error;
-        }
-    }
-
-    private function clearDatabaseOrSkip(Connection $connection): void
-    {
-        try {
-            $this->clearDatabase($connection);
-        } catch (Throwable $error) {
-            self::markTestSkipped(
-                'Optional MySQL/MariaDB test database cannot be cleaned safely: '.$error->getMessage(),
-            );
-
-            throw $error;
         }
     }
 
