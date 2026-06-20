@@ -8,9 +8,10 @@ final readonly class ExtensionDependencyParser
 {
     private const DEPENDENCY_LIST_PATTERN = '/^\[\s*(?:\[\s*[\'"]([^\'"]+)[\'"]\s*,\s*[\'"]([^\'"]+)[\'"]\s*\]\s*(?:,\s*\[\s*[\'"]([^\'"]+)[\'"]\s*,\s*[\'"]([^\'"]+)[\'"]\s*\]\s*)*)?\]$/';
     private const DEPENDENCY_PAIR_PATTERN = '/\[\s*[\'"]([^\'"]+)[\'"]\s*,\s*[\'"]([^\'"]+)[\'"]\s*\]/';
+    private const VERSION_CONSTRAINT_PATTERN = '/^(?:(>=|=)\s*)?([A-Za-z0-9][A-Za-z0-9._+~:-]*)$/';
 
     /**
-     * @return list<array{0: string, 1: string}>|null
+     * @return list<array{0: string, 1: string, 2: string}>|null
      */
     public function parse(mixed $value): ?array
     {
@@ -34,15 +35,30 @@ final readonly class ExtensionDependencyParser
 
         foreach ($matches as $match) {
             $extensionName = trim($match[1]);
-            $minimumVersion = trim($match[2]);
+            $constraint = $this->parseConstraint(trim($match[2]));
 
-            if ('' === $extensionName || '' === $minimumVersion) {
+            if ('' === $extensionName || null === $constraint) {
                 return null;
             }
 
-            $dependencies[] = [$extensionName, $minimumVersion];
+            $dependencies[] = [$extensionName, $constraint['version'], $constraint['operator']];
         }
 
         return $dependencies;
+    }
+
+    /**
+     * @return array{operator: string, version: string}|null
+     */
+    private function parseConstraint(string $value): ?array
+    {
+        if ('' === $value || 1 !== preg_match(self::VERSION_CONSTRAINT_PATTERN, $value, $matches)) {
+            return null;
+        }
+
+        return [
+            'operator' => $matches[1] ?? '',
+            'version' => $matches[2],
+        ];
     }
 }

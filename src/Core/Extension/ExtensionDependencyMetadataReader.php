@@ -18,7 +18,7 @@ final readonly class ExtensionDependencyMetadataReader
     /**
      * @param list<Message>|null $issues
      *
-     * @return list<array{0: string, 1: string}>
+     * @return list<array{0: string, 1: string, 2: string}>
      */
     public function dependencies(Extension $extension, ?array &$issues = null): array
     {

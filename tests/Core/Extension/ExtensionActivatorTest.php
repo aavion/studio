@@ -366,6 +366,9 @@ PHP);
         self::assertSame([[
             'extension' => 'theme-tools',
             'required_min_version' => '1.0.0',
+            'required_version' => '1.0.0',
+            'required_operator' => '',
+            'required_constraint' => '1.0.0',
             'installed_version' => '1.0.0',
             'status' => 'inactive',
             'required_by' => 'new-theme',
@@ -401,10 +404,156 @@ PHP);
         self::assertSame([[
             'extension' => 'system',
             'required_min_version' => $systemVersion,
+            'required_version' => $systemVersion,
+            'required_operator' => '',
+            'required_constraint' => $systemVersion,
             'installed_version' => $systemVersion,
             'status' => 'active',
             'required_by' => 'demo-module',
         ]], $result->value()['dependencies']);
+    }
+
+    public function testItSupportsBarePatchLineDependencyConstraints(): void
+    {
+        $this->insertExtension('theme-tools', ['module'], 'active', version: '1.2.5');
+        $this->insertExtension('new-theme', ['frontend-theme'], 'inactive', "[['theme-tools', '1.2.3']]");
+
+        $result = $this->activator()->planActivation('new-theme');
+
+        self::assertTrue($result->isSuccess());
+        self::assertSame('', $result->value()['dependencies'][0]['required_operator']);
+        self::assertSame('1.2.3', $result->value()['dependencies'][0]['required_version']);
+        self::assertSame('1.2.3', $result->value()['dependencies'][0]['required_constraint']);
+    }
+
+    public function testItBlocksBarePatchLineDependencyConstraintsAcrossMinorVersions(): void
+    {
+        $this->insertExtension('theme-tools', ['module'], 'active', version: '1.3.1');
+        $this->insertExtension('new-theme', ['frontend-theme'], 'inactive', "[['theme-tools', '1.2.3']]");
+
+        $result = $this->activator()->planActivation('new-theme');
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('extension.dependency.version_unsatisfied', $result->firstIssue()?->code());
+        self::assertSame('1.2.3', $result->firstIssue()?->context()['required_constraint']);
+    }
+
+    public function testItSupportsBareMinorLineDependencyConstraints(): void
+    {
+        $this->insertExtension('theme-tools', ['module'], 'active', version: '1.4.0');
+        $this->insertExtension('new-theme', ['frontend-theme'], 'inactive', "[['theme-tools', '1.1']]");
+
+        $result = $this->activator()->planActivation('new-theme');
+
+        self::assertTrue($result->isSuccess());
+        self::assertSame('1.1', $result->value()['dependencies'][0]['required_constraint']);
+    }
+
+    public function testItBlocksBareMinorLineDependencyConstraintsAcrossMajorVersions(): void
+    {
+        $this->insertExtension('theme-tools', ['module'], 'active', version: '2.0.0');
+        $this->insertExtension('new-theme', ['frontend-theme'], 'inactive', "[['theme-tools', '1.1']]");
+
+        $result = $this->activator()->planActivation('new-theme');
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('extension.dependency.version_unsatisfied', $result->firstIssue()?->code());
+        self::assertSame('1.1', $result->firstIssue()?->context()['required_constraint']);
+    }
+
+    public function testItSupportsBareOpenDependencyConstraints(): void
+    {
+        $this->insertExtension('theme-tools', ['module'], 'active', version: '3.0.0');
+        $this->insertExtension('new-theme', ['frontend-theme'], 'inactive', "[['theme-tools', '1']]");
+
+        $result = $this->activator()->planActivation('new-theme');
+
+        self::assertTrue($result->isSuccess());
+        self::assertSame('1', $result->value()['dependencies'][0]['required_constraint']);
+    }
+
+    public function testItSupportsExplicitMinimumDependencyConstraints(): void
+    {
+        $this->insertExtension('theme-tools', ['module'], 'active', version: '1.2.0');
+        $this->insertExtension('new-theme', ['frontend-theme'], 'inactive', "[['theme-tools', '>=1.1.0']]");
+
+        $result = $this->activator()->planActivation('new-theme');
+
+        self::assertTrue($result->isSuccess());
+        self::assertSame('>=', $result->value()['dependencies'][0]['required_operator']);
+        self::assertSame('1.1.0', $result->value()['dependencies'][0]['required_version']);
+        self::assertSame('>=1.1.0', $result->value()['dependencies'][0]['required_constraint']);
+    }
+
+    public function testItSupportsShortMinimumDependencyConstraints(): void
+    {
+        $this->insertExtension('theme-tools', ['module'], 'active', version: '0.2.7');
+        $this->insertExtension('new-theme', ['frontend-theme'], 'inactive', "[['theme-tools', '>=0.2']]");
+
+        $result = $this->activator()->planActivation('new-theme');
+
+        self::assertTrue($result->isSuccess());
+        self::assertSame('>=0.2', $result->value()['dependencies'][0]['required_constraint']);
+    }
+
+    public function testItBlocksUnsatisfiedShortMinimumDependencyConstraints(): void
+    {
+        $this->insertExtension('theme-tools', ['module'], 'active', version: '0.1.9');
+        $this->insertExtension('new-theme', ['frontend-theme'], 'inactive', "[['theme-tools', '>=0.2']]");
+
+        $result = $this->activator()->planActivation('new-theme');
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('extension.dependency.version_unsatisfied', $result->firstIssue()?->code());
+        self::assertSame('>=0.2', $result->firstIssue()?->context()['required_constraint']);
+    }
+
+    public function testItSupportsPinnedDependencyConstraints(): void
+    {
+        $this->insertExtension('theme-tools', ['module'], 'active', version: '1.2.7');
+        $this->insertExtension('new-theme', ['frontend-theme'], 'inactive', "[['theme-tools', '=1.2']]");
+
+        $result = $this->activator()->planActivation('new-theme');
+
+        self::assertTrue($result->isSuccess());
+        self::assertSame('=', $result->value()['dependencies'][0]['required_operator']);
+        self::assertSame('1.2', $result->value()['dependencies'][0]['required_version']);
+        self::assertSame('=1.2', $result->value()['dependencies'][0]['required_constraint']);
+    }
+
+    public function testItAllowsMajorZeroPinnedDependencyConstraints(): void
+    {
+        $this->insertExtension('theme-tools', ['module'], 'active', version: '0.9.9');
+        $this->insertExtension('new-theme', ['frontend-theme'], 'inactive', "[['theme-tools', '=0']]");
+
+        $result = $this->activator()->planActivation('new-theme');
+
+        self::assertTrue($result->isSuccess());
+        self::assertSame('=0', $result->value()['dependencies'][0]['required_constraint']);
+    }
+
+    public function testItBlocksUnsatisfiedPinnedDependencyConstraints(): void
+    {
+        $this->insertExtension('theme-tools', ['module'], 'active', version: '1.3.0');
+        $this->insertExtension('new-theme', ['frontend-theme'], 'inactive', "[['theme-tools', '=1.2']]");
+
+        $result = $this->activator()->planActivation('new-theme');
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('extension.dependency.version_unsatisfied', $result->firstIssue()?->code());
+        self::assertSame('=1.2', $result->firstIssue()?->context()['required_constraint']);
+    }
+
+    public function testItBlocksPinnedDependencyConstraintsPastMajorZero(): void
+    {
+        $this->insertExtension('theme-tools', ['module'], 'active', version: '1.0.0');
+        $this->insertExtension('new-theme', ['frontend-theme'], 'inactive', "[['theme-tools', '=0']]");
+
+        $result = $this->activator()->planActivation('new-theme');
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('extension.dependency.version_unsatisfied', $result->firstIssue()?->code());
+        self::assertSame('=0', $result->firstIssue()?->context()['required_constraint']);
     }
 
     public function testItBlocksMissingExtensionDependencies(): void

@@ -207,6 +207,16 @@ final class ExtensionValidatorTest extends TestCase
         self::assertSame('EXTENSION_DEPENDENCIES', $result->firstIssue()?->context()['key']);
     }
 
+    public function testItAcceptsExplicitExtensionDependencyConstraints(): void
+    {
+        $result = (new ExtensionValidator())->validate(
+            $this->candidateWithManifest(['EXTENSION_DEPENDENCIES' => '[["system",">=0.2.6"],["demo-module","=1.0.0"]]']),
+            ExtensionSpec::create(),
+        );
+
+        self::assertTrue($result->isSuccess());
+    }
+
     public function testItRejectsInvalidSchedulerTaskCronExpressions(): void
     {
         $this->writeFile('src/SchedulerTasks.php', <<<'PHP'

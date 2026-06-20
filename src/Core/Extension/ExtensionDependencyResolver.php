@@ -139,9 +139,9 @@ final readonly class ExtensionDependencyResolver
         $extensions[$extension->extensionName()] = $extension;
         $stack[] = $extension->extensionName();
 
-        foreach ($this->dependencyReader->dependencies($extension, $issues) as [$dependencyName, $minVersion]) {
+        foreach ($this->dependencyReader->dependencies($extension, $issues) as [$dependencyName, $requiredVersion, $operator]) {
             if ('system' === $dependencyName) {
-                $this->resolveSystemExtension($extension, $minVersion, $dependencies, $issues);
+                $this->resolveSystemExtension($extension, $requiredVersion, $operator, $dependencies, $issues);
 
                 continue;
             }
@@ -151,7 +151,10 @@ final readonly class ExtensionDependencyResolver
             $status = $dependency?->status();
             $dependencies[] = [
                 'extension' => $dependencyName,
-                'required_min_version' => $minVersion,
+                'required_min_version' => $requiredVersion,
+                'required_version' => $requiredVersion,
+                'required_operator' => $operator,
+                'required_constraint' => $this->constraintLabel($operator, $requiredVersion),
                 'installed_version' => $currentVersion,
                 'status' => $status?->value,
                 'required_by' => $extension->extensionName(),
@@ -184,12 +187,19 @@ final readonly class ExtensionDependencyResolver
                 continue;
             }
 
-            if (null === $currentVersion || version_compare($currentVersion, $minVersion, '<')) {
+            if (null === $currentVersion || !$this->versionSatisfies($currentVersion, $operator, $requiredVersion)) {
                 $issues[] = Message::create(
                     ExtensionMessageCode::EXTENSION_DEPENDENCY_VERSION_UNSATISFIED,
                     ExtensionMessageKey::EXTENSION_DEPENDENCY_VERSION_UNSATISFIED,
-                    ['%extension%' => $dependencyName, '%required_version%' => $minVersion, '%installed_version%' => $currentVersion ?? ''],
-                    ['extension' => $dependencyName, 'required_version' => $minVersion, 'installed_version' => $currentVersion, 'required_by' => $extension->extensionName()],
+                    ['%extension%' => $dependencyName, '%required_version%' => $this->constraintLabel($operator, $requiredVersion), '%installed_version%' => $currentVersion ?? ''],
+                    [
+                        'extension' => $dependencyName,
+                        'required_version' => $requiredVersion,
+                        'required_operator' => $operator,
+                        'required_constraint' => $this->constraintLabel($operator, $requiredVersion),
+                        'installed_version' => $currentVersion,
+                        'required_by' => $extension->extensionName(),
+                    ],
                     MessageLevel::Error,
                 );
 
@@ -206,7 +216,8 @@ final readonly class ExtensionDependencyResolver
      */
     private function resolveSystemExtension(
         Extension $extension,
-        string $minVersion,
+        string $requiredVersion,
+        string $operator,
         array &$dependencies,
         array &$issues,
     ): void {
@@ -217,21 +228,144 @@ final readonly class ExtensionDependencyResolver
 
         $dependencies[] = [
             'extension' => 'system',
-            'required_min_version' => $minVersion,
+            'required_min_version' => $requiredVersion,
+            'required_version' => $requiredVersion,
+            'required_operator' => $operator,
+            'required_constraint' => $this->constraintLabel($operator, $requiredVersion),
             'installed_version' => $currentVersion,
             'status' => ExtensionStatus::Active->value,
             'required_by' => $extension->extensionName(),
         ];
 
-        if (null === $currentVersion || version_compare($currentVersion, $minVersion, '<')) {
+        if (null === $currentVersion || !$this->versionSatisfies($currentVersion, $operator, $requiredVersion)) {
             $issues[] = Message::create(
                 ExtensionMessageCode::EXTENSION_DEPENDENCY_VERSION_UNSATISFIED,
                 ExtensionMessageKey::EXTENSION_DEPENDENCY_VERSION_UNSATISFIED,
-                ['%extension%' => 'system', '%required_version%' => $minVersion, '%installed_version%' => $currentVersion ?? ''],
-                ['extension' => 'system', 'required_version' => $minVersion, 'installed_version' => $currentVersion, 'required_by' => $extension->extensionName()],
+                ['%extension%' => 'system', '%required_version%' => $this->constraintLabel($operator, $requiredVersion), '%installed_version%' => $currentVersion ?? ''],
+                [
+                    'extension' => 'system',
+                    'required_version' => $requiredVersion,
+                    'required_operator' => $operator,
+                    'required_constraint' => $this->constraintLabel($operator, $requiredVersion),
+                    'installed_version' => $currentVersion,
+                    'required_by' => $extension->extensionName(),
+                ],
                 MessageLevel::Error,
             );
         }
+    }
+
+    private function versionSatisfies(string $currentVersion, string $operator, string $requiredVersion): bool
+    {
+        if ('' === $operator) {
+            $bounds = $this->bareVersionBounds($requiredVersion);
+            if (null === $bounds) {
+                return version_compare($currentVersion, $requiredVersion, '==');
+            }
+
+            if (null === $bounds['upper']) {
+                return version_compare($currentVersion, $bounds['lower'], '>=');
+            }
+
+            return version_compare($currentVersion, $bounds['lower'], '>=')
+                && version_compare($currentVersion, $bounds['upper'], '<');
+        }
+
+        if ('=' !== $operator) {
+            return version_compare($currentVersion, $this->versionFloor($requiredVersion), $operator);
+        }
+
+        $bounds = $this->pinnedVersionBounds($requiredVersion);
+        if (null === $bounds) {
+            return version_compare($currentVersion, $requiredVersion, '==');
+        }
+
+        return version_compare($currentVersion, $bounds['lower'], '>=')
+            && version_compare($currentVersion, $bounds['upper'], '<');
+    }
+
+    private function constraintLabel(string $operator, string $requiredVersion): string
+    {
+        return $operator.$requiredVersion;
+    }
+
+    private function versionFloor(string $requiredVersion): string
+    {
+        return $this->pinnedVersionBounds($requiredVersion)['lower'] ?? $requiredVersion;
+    }
+
+    /**
+     * @return array{lower: string, upper: string}|null
+     */
+    private function pinnedVersionBounds(string $requiredVersion): ?array
+    {
+        if (1 !== preg_match('/^\d+(?:\.\d+){0,2}$/', $requiredVersion)) {
+            return null;
+        }
+
+        $parts = array_map(static fn (string $part): int => (int) $part, explode('.', $requiredVersion));
+        $precision = count($parts);
+
+        while (count($parts) < 3) {
+            $parts[] = 0;
+        }
+
+        $lower = implode('.', $parts);
+        $upper = $parts;
+        $incrementIndex = $precision - 1;
+        ++$upper[$incrementIndex];
+
+        for ($index = $incrementIndex + 1; $index < 3; ++$index) {
+            $upper[$index] = 0;
+        }
+
+        return [
+            'lower' => $lower,
+            'upper' => implode('.', $upper),
+        ];
+    }
+
+    /**
+     * @return array{lower: string, upper: string|null}|null
+     */
+    private function bareVersionBounds(string $requiredVersion): ?array
+    {
+        if (1 !== preg_match('/^\d+(?:\.\d+){0,2}$/', $requiredVersion)) {
+            return null;
+        }
+
+        $parts = array_map(static fn (string $part): int => (int) $part, explode('.', $requiredVersion));
+        $precision = count($parts);
+
+        while (count($parts) < 3) {
+            $parts[] = 0;
+        }
+
+        $lower = implode('.', $parts);
+        $upper = $parts;
+        $incrementIndex = match ($precision) {
+            1 => null,
+            2 => 0,
+            default => 1,
+        };
+
+        if (null === $incrementIndex) {
+            return [
+                'lower' => $lower,
+                'upper' => null,
+            ];
+        }
+
+        ++$upper[$incrementIndex];
+
+        for ($index = $incrementIndex + 1; $index < 3; ++$index) {
+            $upper[$index] = 0;
+        }
+
+        return [
+            'lower' => $lower,
+            'upper' => implode('.', $upper),
+        ];
     }
 
     /**

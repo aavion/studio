@@ -392,13 +392,13 @@ final class ExtensionZipInstallerTest extends KernelTestCase
             $dependentSlug,
             '1.0.0',
             'dependent extension',
-            sprintf('[["%s", "1.0.0"]]', $slug),
+            sprintf('[["%s", "1.0"]]', $slug),
         );
         $this->persistExtension($slug, ExtensionStatus::Active);
         $this->persistExtension(
             $dependentSlug,
             ExtensionStatus::Active,
-            dependencies: sprintf('[["%s", "1.0.0"]]', $slug),
+            dependencies: sprintf('[["%s", "1.0"]]', $slug),
         );
         $this->writeUploadZip($installId, $slug, version: '1.1.0', readme: "new extension\n");
 
