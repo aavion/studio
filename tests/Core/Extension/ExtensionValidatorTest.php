@@ -143,6 +143,36 @@ final class ExtensionValidatorTest extends TestCase
         self::assertSame('EXTENSION_SLUG', $result->firstIssue()?->context()['key']);
     }
 
+    public function testItRejectsExtensionSlugsLongerThanStorageAllows(): void
+    {
+        $result = (new ExtensionValidator())->validate(
+            $this->candidateWithManifest(['EXTENSION_SLUG' => str_repeat('a', 121)]),
+            ExtensionSpec::create(),
+        );
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('extension.identifier.invalid', $result->firstIssue()?->code());
+        self::assertSame('EXTENSION_SLUG', $result->firstIssue()?->context()['key']);
+    }
+
+    public function testItRejectsDigitPrefixedExtensionSlugsBeforeCssValidation(): void
+    {
+        $this->writeFile('assets/app.css', <<<'CSS'
+.foreign-card {
+    color: red;
+}
+CSS);
+
+        $result = (new ExtensionValidator())->validate(
+            $this->candidateWithManifest(['EXTENSION_SLUG' => '3d-gallery']),
+            ExtensionSpec::create()->withInventoryDepth(4),
+        );
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('extension.identifier.invalid', $result->firstIssue()?->code());
+        self::assertSame('EXTENSION_SLUG', $result->firstIssue()?->context()['key']);
+    }
+
     public function testItAllowsAdditionalExtensionManifestKeysWithExtensionPrefix(): void
     {
         $result = (new ExtensionValidator())->validate(

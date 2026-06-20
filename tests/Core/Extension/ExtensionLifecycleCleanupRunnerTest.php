@@ -8,11 +8,18 @@ use App\Core\AdminAcl\AdminFeatureOverrideStore;
 use App\Core\AdminAcl\AdminFeatureRegistry;
 use App\Core\AdminAcl\AdminPermissionState;
 use App\Core\Config\ConfigValueType;
+use App\Core\Extension\Content\ExtensionContentSchemaDefinition;
+use App\Core\Extension\Content\ExtensionContentSchemaSynchronizer;
+use App\Core\Extension\Database\ExtensionDatabaseColumn;
+use App\Core\Extension\Database\ExtensionDatabaseSchemaSynchronizer;
+use App\Core\Extension\Database\ExtensionDatabaseTable;
 use App\Core\Extension\ExtensionStatus;
 use App\Core\Extension\ExtensionLifecycleCleanupRunner;
 use App\Core\Extension\ExtensionScope;
 use App\Core\Extension\Settings\ExtensionSettings;
+use App\Entity\ContentSchema;
 use App\Entity\Extension;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 final class ExtensionLifecycleCleanupRunnerTest extends KernelTestCase
@@ -65,6 +72,67 @@ final class ExtensionLifecycleCleanupRunnerTest extends KernelTestCase
 
         $settings->removeExtension('neighbor-module');
         $overrides->save([], 'test');
+    }
+
+    public function testItPurgesDatabaseTablesBeforeContentSchemasDuringCleanup(): void
+    {
+        self::bootKernel();
+        $settings = self::getContainer()->get(ExtensionSettings::class);
+        $overrides = self::getContainer()->get(AdminFeatureOverrideStore::class);
+        $registry = self::getContainer()->get(AdminFeatureRegistry::class);
+        $connection = self::getContainer()->get('doctrine.dbal.default_connection');
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        self::assertInstanceOf(EntityManagerInterface::class, $entityManager);
+        $database = new ExtensionDatabaseSchemaSynchronizer($connection);
+        $schemas = new ExtensionContentSchemaSynchronizer($entityManager);
+        $runner = new ExtensionLifecycleCleanupRunner($settings, $overrides, $registry, $database, $schemas);
+        $extension = new Extension(
+            '10000000-0000-7000-8000-000000000614',
+            [ExtensionScope::Database, ExtensionScope::ContentSchema],
+            'cleanup-order-module',
+            'extensions/cleanup-order-module',
+            ExtensionStatus::Removed,
+        );
+
+        $connection->executeStatement('DROP TABLE IF EXISTS ext20_cleanup_order_module_entry');
+        $databaseApply = $database->apply($extension, [
+            ExtensionDatabaseTable::create('entry', [
+                ExtensionDatabaseColumn::string('uid', 36),
+            ], ['uid']),
+        ]);
+        $schemaApply = $schemas->apply($extension, [
+            ExtensionContentSchemaDefinition::create('article', ['en' => 'Article'], [
+                'fields' => [
+                    ['identifier' => 'title', 'type' => 'string'],
+                    ['identifier' => 'subtitle', 'type' => 'string'],
+                    ['identifier' => 'body', 'type' => 'text'],
+                ],
+            ]),
+        ]);
+        self::assertTrue($databaseApply->isSuccess(), json_encode($databaseApply->toArray(), JSON_THROW_ON_ERROR));
+        self::assertTrue($schemaApply->isSuccess(), json_encode($schemaApply->toArray(), JSON_THROW_ON_ERROR));
+
+        try {
+            $result = $runner->cleanup($extension);
+
+            self::assertTrue($result->isSuccess());
+            self::assertSame([
+                [
+                    'action' => 'drop_extension_database_tables',
+                    'count' => 1,
+                ],
+                [
+                    'action' => 'delete_extension_content_schemas',
+                    'count' => 1,
+                ],
+            ], $result->value()['actions']);
+            self::assertNotContains('ext20_cleanup_order_module_entry', $connection->createSchemaManager()->listTableNames());
+            self::assertNull($entityManager->getRepository(ContentSchema::class)->findOneBy(['identifier' => 'ext20_cleanup_order_module_article']));
+        } finally {
+            $connection->executeStatement('DROP TABLE IF EXISTS ext20_cleanup_order_module_entry');
+            $schemas->purge($extension);
+            $entityManager->clear();
+        }
     }
 
     public function testItFailsCleanupWhenExtensionAclOverrideCannotBeRemoved(): void

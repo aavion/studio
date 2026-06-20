@@ -66,7 +66,7 @@ final readonly class ExtensionCssNamespaceValidator
     {
         $slug = trim((string) $candidate->manifest()->get('EXTENSION_SLUG', ''));
 
-        return 1 === preg_match('/\A[a-z][a-z0-9]*(?:-[a-z0-9]+)*\z/', $slug) ? $slug : '';
+        return ExtensionManifestSpec::isValidSlug($slug) ? $slug : '';
     }
 
     /**

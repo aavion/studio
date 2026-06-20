@@ -8,6 +8,8 @@ use App\Core\Message\MessageException;
 
 final readonly class ExtensionIdentity
 {
+    public const MAX_EXTENSION_NAME_LENGTH = 120;
+
     public static function assertExtensionName(string $extensionName): string
     {
         if (!self::isExtensionName($extensionName)) {
@@ -21,7 +23,8 @@ final readonly class ExtensionIdentity
 
     public static function isExtensionName(string $extensionName): bool
     {
-        return 1 === preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $extensionName);
+        return strlen($extensionName) <= self::MAX_EXTENSION_NAME_LENGTH
+            && 1 === preg_match('/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/', $extensionName);
     }
 
     /**

@@ -53,6 +53,8 @@ EXTENSION_SCOPE=[frontend-theme, module]
 EXTENSION_DEPENDENCIES=[]
 ```
 
+`EXTENSION_SLUG` must be storage-safe: it starts with a lowercase letter, uses only lowercase letters, digits, and single hyphen-separated segments, stays at 120 characters or less, and matches the extension folder name exactly.
+
 Optional source metadata stays split: `EXTENSION_SOURCE` points to the repository or release source root, and `EXTENSION_CHANNEL` identifies the branch or channel. The admin UI may turn those two values into a branch-specific link, but update tooling must still be able to reconstruct clone/fetch targets from the raw manifest values.
 
 Additional `EXTENSION_*` manifest keys become typed immutable metadata and can be read by extension-owned code through `ExtensionSettings::get('{extension-slug}', 'manifest.{key_without_extension_prefix}')`. For example, `EXTENSION_SOMEKEY=hallo welt` in `icon-captcha` is exposed as `ExtensionSettings::get('icon-captcha', 'manifest.somekey')`; a later `ExtensionSettings::set()` for the same key stores an override in the DB and leaves the manifest unchanged.

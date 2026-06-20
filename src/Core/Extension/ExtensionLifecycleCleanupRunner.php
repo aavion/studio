@@ -58,25 +58,6 @@ final readonly class ExtensionLifecycleCleanupRunner implements ExtensionLifecyc
         $actions = [...$actions, ...$settingsAndAcl->value()];
         $messages = [...$messages, ...$settingsAndAcl->messages()];
 
-        if (null !== $this->contentSchemaSynchronizer) {
-            $schemas = $this->contentSchemaSynchronizer->purge($extension);
-            if (!$schemas->isSuccess()) {
-                $messages = [...$messages, ...$this->restoreSettingsAndAclSnapshot($extension->extensionName(), $settingsSnapshot->value(), $aclSnapshot)];
-
-                return WorkflowResult::failed($schemas->issues(), [
-                    'extension' => $extension->extensionName(),
-                    'actions' => $actions,
-                    'content_schema_context' => $schemas->context(),
-                ], [...$messages, ...$schemas->messages()]);
-            }
-
-            $messages = [...$messages, ...$schemas->messages()];
-            $actions[] = [
-                'action' => 'delete_extension_content_schemas',
-                'count' => count($schemas->value()['deleted'] ?? []),
-            ];
-        }
-
         if (null !== $this->databaseSynchronizer) {
             $database = $this->databaseSynchronizer->purge($extension);
             if (!$database->isSuccess()) {
@@ -93,6 +74,25 @@ final readonly class ExtensionLifecycleCleanupRunner implements ExtensionLifecyc
             $actions[] = [
                 'action' => 'drop_extension_database_tables',
                 'count' => count($database->value()['dropped'] ?? []),
+            ];
+        }
+
+        if (null !== $this->contentSchemaSynchronizer) {
+            $schemas = $this->contentSchemaSynchronizer->purge($extension);
+            if (!$schemas->isSuccess()) {
+                $messages = [...$messages, ...$this->restoreSettingsAndAclSnapshot($extension->extensionName(), $settingsSnapshot->value(), $aclSnapshot)];
+
+                return WorkflowResult::failed($schemas->issues(), [
+                    'extension' => $extension->extensionName(),
+                    'actions' => $actions,
+                    'content_schema_context' => $schemas->context(),
+                ], [...$messages, ...$schemas->messages()]);
+            }
+
+            $messages = [...$messages, ...$schemas->messages()];
+            $actions[] = [
+                'action' => 'delete_extension_content_schemas',
+                'count' => count($schemas->value()['deleted'] ?? []),
             ];
         }
 
