@@ -25,6 +25,7 @@ use App\Entity\AclGroup;
 use App\Entity\Extension;
 use App\Security\AutoBan\AutoBanPolicy;
 use App\Security\AutoBan\AutoBanStore;
+use App\Security\AutoBan\AutoBanSubject;
 use App\Security\RateLimit\RateLimitPolicyCatalogue;
 use App\Security\UserAccountStatus;
 use App\Security\UserFlowConfig;
@@ -1265,6 +1266,28 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorTextContains('h1', 'Active auto-bans');
         self::assertSelectorTextContains('.system-muted', 'No active auto-bans.');
         self::assertSelectorExists('a[href="/admin/settings/security"]');
+    }
+
+    public function testAutoBanResetRedirectsBackToAutoBanList(): void
+    {
+        $client = self::createClient();
+        $this->loginUserWithLevel($client, AccessLevel::OWNER);
+        $store = self::getContainer()->get(AutoBanStore::class);
+        self::assertInstanceOf(AutoBanStore::class, $store);
+        foreach ($store->activeBans() as $activeBan) {
+            $store->reset($activeBan->key());
+        }
+
+        $ban = $store->ban(new AutoBanSubject(AutoBanSubject::VISITOR, 'backend-reset-redirect'), 3600);
+        self::assertNotNull($ban);
+
+        $crawler = $client->request('GET', '/admin/security/auto-bans/'.$ban->key());
+        self::assertResponseIsSuccessful();
+
+        $client->submit($crawler->selectButton('Reset auto-ban')->form());
+
+        self::assertResponseRedirects('/admin/security/auto-bans');
+        self::assertNull($store->activeByKey($ban->key()));
     }
 
     public function testSecuritySettingsSectionIsHiddenAndRejectsPostsForDelegatedAdmins(): void

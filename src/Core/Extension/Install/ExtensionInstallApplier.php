@@ -49,7 +49,13 @@ final readonly class ExtensionInstallApplier
         $installId = $this->payloadReader->string($payload, 'install_id');
         $slug = $this->payloadReader->string($payload, 'extension');
 
-        if (null === $installId || null === $slug || !ExtensionManifestSpec::isValidSlug($slug)) {
+        if (
+            null === $installId
+            || !$this->filesystem->isValidInstallId($installId)
+            || null === $slug
+            || 'system' === $slug
+            || !ExtensionManifestSpec::isValidSlug($slug)
+        ) {
             return $this->payloadReader->invalid('apply', array_keys($payload));
         }
 
@@ -99,6 +105,26 @@ final readonly class ExtensionInstallApplier
         }
 
         $manifestValue = $manifest->value();
+        $manifestSlug = trim((string) $manifestValue->get('EXTENSION_SLUG', ''));
+        if ($manifestSlug !== $slug || 'system' === $manifestSlug || !ExtensionManifestSpec::isValidSlug($manifestSlug)) {
+            return WorkflowResult::invalid([
+                Message::warning(
+                    ExtensionMessageCode::EXTENSION_INSTALL_ZIP_INVALID,
+                    ExtensionMessageKey::EXTENSION_INSTALL_ZIP_INVALID,
+                    context: [
+                        'install_id' => $installId,
+                        'reason' => 'extension_mismatch',
+                        'extension' => $slug,
+                        'manifest_extension' => $manifestSlug,
+                    ],
+                ),
+            ], [
+                'install_id' => $installId,
+                'extension' => $slug,
+                'manifest_extension' => $manifestSlug,
+            ]);
+        }
+
         try {
             $scopes = ExtensionScope::fromManifestValue((string) $manifestValue->get('EXTENSION_SCOPE', ''));
         } catch (\InvalidArgumentException) {

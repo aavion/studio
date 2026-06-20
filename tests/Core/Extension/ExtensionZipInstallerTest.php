@@ -69,6 +69,7 @@ final class ExtensionZipInstallerTest extends KernelTestCase
         '131313131313131313131313',
         '141414141414141414141414',
         '151515151515151515151515',
+        '161616161616161616161616',
     ];
 
     private string $projectDir;
@@ -161,6 +162,50 @@ final class ExtensionZipInstallerTest extends KernelTestCase
         $this->removePath($this->projectDir.'/extensions/'.$slug);
         $this->removePath($this->installRoot($installId));
         $this->deleteExtensionRow($slug);
+    }
+
+    public function testItRejectsApplyPayloadWithInvalidInstallId(): void
+    {
+        $apply = $this->installer()->apply([
+            'install_id' => '../outside',
+            'extension' => 'zip-install-apply',
+        ]);
+
+        self::assertSame(WorkflowStatus::Invalid, $apply->status());
+        self::assertSame('E_INVALID_ARGUMENT', $apply->firstIssue()?->code());
+    }
+
+    public function testItRejectsApplyPayloadWhenExtensionDoesNotMatchManifest(): void
+    {
+        if (!class_exists(ZipArchive::class)) {
+            self::markTestSkipped('ZipArchive is required for extension ZIP installer tests.');
+        }
+
+        $installId = '161616161616161616161616';
+        $manifestSlug = 'zip-install-review';
+        $payloadSlug = 'zip-install-apply';
+        $this->removePath($this->projectDir.'/extensions/'.$manifestSlug);
+        $this->removePath($this->projectDir.'/extensions/'.$payloadSlug);
+        $this->deleteExtensionRow($manifestSlug);
+        $this->deleteExtensionRow($payloadSlug);
+        $this->writeUploadZip($installId, $manifestSlug);
+
+        $verify = $this->installer()->verify(['install_id' => $installId]);
+        self::assertSame(WorkflowStatus::RequiresReview, $verify->status());
+
+        $apply = $this->installer()->apply([
+            'install_id' => $installId,
+            'extension' => $payloadSlug,
+            'was_active' => false,
+        ]);
+
+        self::assertSame(WorkflowStatus::Invalid, $apply->status());
+        self::assertSame('extension.install.zip_invalid', $apply->firstIssue()?->code());
+        self::assertSame('extension_mismatch', $apply->firstIssue()?->context()['reason'] ?? null);
+        self::assertFileDoesNotExist($this->projectDir.'/extensions/'.$manifestSlug);
+        self::assertFileDoesNotExist($this->projectDir.'/extensions/'.$payloadSlug);
+
+        $this->removePath($this->installRoot($installId));
     }
 
     public function testItBlocksUnsafeActiveOverwriteBeforeDeactivation(): void

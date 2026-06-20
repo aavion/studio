@@ -4,14 +4,28 @@ declare(strict_types=1);
 
 namespace App\Core\Extension\Install;
 
+use App\Core\Extension\ExtensionManifestSpec;
+use InvalidArgumentException;
+
 final readonly class ExtensionInstallFilesystem
 {
+    private const INSTALL_ID_PATTERN = '/^[a-f0-9]{24}$/';
+
     public function __construct(private string $projectDir)
     {
     }
 
+    public function isValidInstallId(string $installId): bool
+    {
+        return 1 === preg_match(self::INSTALL_ID_PATTERN, $installId);
+    }
+
     public function installRoot(string $environment, string $installId): string
     {
+        if (!$this->isValidInstallId($installId)) {
+            throw new InvalidArgumentException('Extension install id must be a 24-character lowercase hex token.');
+        }
+
         return $this->projectDir
             .DIRECTORY_SEPARATOR.'var'
             .DIRECTORY_SEPARATOR.'cache'
@@ -22,6 +36,10 @@ final readonly class ExtensionInstallFilesystem
 
     public function extensionTarget(string $extensionName): string
     {
+        if ('system' === $extensionName || !ExtensionManifestSpec::isValidSlug($extensionName)) {
+            throw new InvalidArgumentException('Extension target name must be a valid non-system extension slug.');
+        }
+
         return $this->projectDir.DIRECTORY_SEPARATOR.'extensions'.DIRECTORY_SEPARATOR.$extensionName;
     }
 

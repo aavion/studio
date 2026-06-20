@@ -45,7 +45,7 @@ final readonly class ExtensionInstallVerifier
     public function verify(array $payload): WorkflowResult
     {
         $installId = $this->payloadReader->string($payload, 'install_id');
-        if (null === $installId || 1 !== preg_match('/^[a-f0-9]{24}$/', $installId)) {
+        if (null === $installId || !$this->filesystem->isValidInstallId($installId)) {
             return $this->payloadReader->invalid('verify', array_keys($payload));
         }
 
