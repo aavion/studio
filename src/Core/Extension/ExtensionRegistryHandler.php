@@ -123,6 +123,9 @@ final readonly class ExtensionRegistryHandler
                 if ($changed && $wasActive) {
                     array_push($messages, ...$this->archiveContentForDeactivatedExtensions([$extension]));
                     $assetRebuildTriggers[] = $this->assetRebuildTrigger($extensionName, 'extension_registry_faulty');
+                }
+
+                if ($changed) {
                     $dependentChanges = $this->deactivateActiveDependents($extension, 'extension_registry_faulty');
                     $changes = [...$changes, ...$dependentChanges['changes']];
                     $messages = [...$messages, ...$dependentChanges['messages']];
@@ -157,7 +160,9 @@ final readonly class ExtensionRegistryHandler
 
             $wasActive = ExtensionStatus::Active === $extension->status();
 
-            if ($extension->markRemoved($this->removedMetadata($extension))) {
+            $changed = $extension->markRemoved($this->removedMetadata($extension));
+
+            if ($changed) {
                 $changes[] = $this->change($extensionName, 'removed', ExtensionStatus::Removed);
                 $messages[] = Message::error(
                     ExtensionMessageCode::EXTENSION_REGISTRY_EXTENSION_REMOVED,
@@ -169,6 +174,9 @@ final readonly class ExtensionRegistryHandler
                 if ($wasActive) {
                     array_push($messages, ...$this->archiveContentForDeactivatedExtensions([$extension]));
                     $assetRebuildTriggers[] = $this->assetRebuildTrigger($extensionName, 'extension_registry_removed');
+                }
+
+                if ($changed) {
                     $dependentChanges = $this->deactivateActiveDependents($extension, 'extension_registry_removed');
                     $changes = [...$changes, ...$dependentChanges['changes']];
                     $messages = [...$messages, ...$dependentChanges['messages']];

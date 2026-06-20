@@ -125,7 +125,9 @@ final readonly class ExtensionInstallApplier
                     'dependencies' => $dependencyPreflight->context()['dependencies'] ?? [],
                 ], $dependencyPreflight->messages());
             }
+        }
 
+        if ($existing instanceof Extension && ExtensionStatus::Removed !== $existing->status()) {
             $deactivationPlan = $this->activator->planDeactivation($slug);
 
             if (!$deactivationPlan->isSuccess()) {

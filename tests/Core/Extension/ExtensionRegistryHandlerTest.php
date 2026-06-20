@@ -114,6 +114,32 @@ final class ExtensionRegistryHandlerTest extends KernelTestCase
         self::assertSame(['test'], $assetRebuilder->environments);
     }
 
+    public function testItDeactivatesStaleActiveDependentsWhenInactiveExtensionIsMarkedRemoved(): void
+    {
+        $this->insertExtension('missing-module', 'extensions/missing-module', '1.0.0', 'inactive');
+        $this->insertExtension(
+            'dependent-module',
+            'extensions/dependent-module',
+            '1.0.0',
+            'active',
+            dependencies: '[["missing-module", "1.0.0"]]',
+        );
+        $this->writeExtensionManifest('dependent-module', '1.0.0', '[["missing-module", "1.0.0"]]');
+        $assetRebuilder = new RegistryHandlerExtensionLifecycleAssetRebuilder();
+
+        $result = $this->handler($assetRebuilder)->synchronize($this->candidates());
+
+        self::assertTrue($result->isSuccess(), json_encode($result->toArray(), JSON_THROW_ON_ERROR));
+        self::assertSame('removed', $this->extensionRow('missing-module')['status']);
+        self::assertSame('inactive', $this->extensionRow('dependent-module')['status']);
+        self::assertContains([
+            'extension' => 'dependent-module',
+            'action' => 'deactivated',
+            'status' => 'inactive',
+        ], $result->value());
+        self::assertSame(['test'], $assetRebuilder->environments);
+    }
+
     public function testItUpdatesVersionMismatches(): void
     {
         $this->insertExtension('demo-module', 'extensions/demo-module', '1.0.0', 'inactive', installedVersion: '1.0.0');

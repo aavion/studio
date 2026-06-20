@@ -7,7 +7,6 @@ namespace App\Core\Extension;
 use App\Core\Message\Message;
 use App\Core\Message\MessageLevel;
 use App\Core\Workflow\WorkflowResult;
-use App\Entity\Extension;
 
 final readonly class ExtensionRemovalPlanner
 {
@@ -28,19 +27,18 @@ final readonly class ExtensionRemovalPlanner
             return $this->extensionNotFound($extensionName);
         }
 
-        $changes = $this->plannedRemovalChanges($extension);
+        $changes = [];
+        $plan = $this->activator->planDeactivation($extensionName);
 
-        if (ExtensionStatus::Active === $extension->status()) {
-            $plan = $this->activator->planDeactivation($extensionName);
+        if (!$plan->isSuccess()) {
+            return WorkflowResult::failed($plan->issues(), [
+                'extension' => $extensionName,
+                'path' => $extension->path(),
+                'plan_context' => $plan->context(),
+            ], $plan->messages());
+        }
 
-            if (!$plan->isSuccess()) {
-                return WorkflowResult::failed($plan->issues(), [
-                    'extension' => $extensionName,
-                    'path' => $extension->path(),
-                    'plan_context' => $plan->context(),
-                ], $plan->messages());
-            }
-
+        if (ExtensionStatus::Removed !== $extension->status()) {
             $planChanges = $plan->value()['changes'] ?? [];
             if (is_array($planChanges)) {
                 $changes = array_values(array_filter(
@@ -49,9 +47,7 @@ final readonly class ExtensionRemovalPlanner
                 ));
             }
 
-            if (ExtensionStatus::Removed !== $extension->status()) {
-                $changes[] = ['extension' => $extension->extensionName(), 'action' => 'removed', 'status' => ExtensionStatus::Removed->value];
-            }
+            $changes[] = ['extension' => $extension->extensionName(), 'action' => 'removed', 'status' => ExtensionStatus::Removed->value];
         }
 
         return WorkflowResult::success([
@@ -61,24 +57,6 @@ final readonly class ExtensionRemovalPlanner
             'extension' => $extensionName,
             'path' => $extension->path(),
         ]);
-    }
-
-    /**
-     * @return list<array{extension: string, action: string, status: string}>
-     */
-    private function plannedRemovalChanges(Extension $extension): array
-    {
-        $changes = [];
-
-        if (ExtensionStatus::Active === $extension->status()) {
-            $changes[] = ['extension' => $extension->extensionName(), 'action' => 'deactivated', 'status' => ExtensionStatus::Inactive->value];
-        }
-
-        if (ExtensionStatus::Removed !== $extension->status()) {
-            $changes[] = ['extension' => $extension->extensionName(), 'action' => 'removed', 'status' => ExtensionStatus::Removed->value];
-        }
-
-        return $changes;
     }
 
     /**

@@ -66,7 +66,7 @@ final readonly class ExtensionRemover
         $previousStatuses = [$extensionName => $extension->status()];
         $contentStatusSnapshots = [];
 
-        if (ExtensionStatus::Active === $extension->status()) {
+        if (ExtensionStatus::Removed !== $extension->status()) {
             $plan = $this->activator->planDeactivation($extensionName);
 
             if (!$plan->isSuccess()) {

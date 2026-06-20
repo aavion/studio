@@ -54,6 +54,7 @@ final class ExtensionZipInstallerTest extends KernelTestCase
         '999999999999999999999999',
         '121212121212121212121212',
         '131313131313131313131313',
+        '141414141414141414141414',
     ];
 
     private string $projectDir;
@@ -463,6 +464,58 @@ final class ExtensionZipInstallerTest extends KernelTestCase
         self::assertStringContainsString('new extension', (string) file_get_contents($target.'/README.md'));
         self::assertSame(ExtensionStatus::Active, $this->extensionStatus($slug));
         self::assertSame(ExtensionStatus::Active, $this->extensionStatus($dependentSlug));
+        self::assertSame('1.1.0', $this->extensionVersion($slug));
+
+        $this->removePath($target);
+        $this->removePath($this->projectDir.'/extensions/'.$dependentSlug);
+        $this->removePath($this->installRoot($installId));
+        $this->deleteExtensionRow($slug);
+        $this->deleteExtensionRow($dependentSlug);
+    }
+
+    public function testItDeactivatesStaleActiveReverseDependentsWhenOverwritingInactiveExtension(): void
+    {
+        if (!class_exists(ZipArchive::class)) {
+            self::markTestSkipped('ZipArchive is required for extension ZIP installer tests.');
+        }
+
+        $installId = '141414141414141414141414';
+        $slug = 'zip-install-dependent';
+        $dependentSlug = 'zip-install-dependent-addon';
+        $target = $this->projectDir.'/extensions/'.$slug;
+        $this->removePath($target);
+        $this->deleteExtensionRow($slug);
+        $this->deleteExtensionRow($dependentSlug);
+        $this->writeExtensionDirectory($target, $slug, '1.0.0', 'old extension');
+        $this->writeExtensionDirectory(
+            $this->projectDir.'/extensions/'.$dependentSlug,
+            $dependentSlug,
+            '1.0.0',
+            'dependent extension',
+            sprintf('[["%s", "1.0"]]', $slug),
+        );
+        $this->persistExtension($slug, ExtensionStatus::Inactive);
+        $this->persistExtension(
+            $dependentSlug,
+            ExtensionStatus::Active,
+            dependencies: sprintf('[["%s", "1.0"]]', $slug),
+        );
+        $this->writeUploadZip($installId, $slug, version: '1.1.0', readme: "new extension\n");
+
+        $verify = $this->installer()->verify(['install_id' => $installId]);
+        self::assertSame(WorkflowStatus::RequiresReview, $verify->status());
+        self::assertContains($dependentSlug, $verify->value()['deactivate']);
+
+        $apply = $this->installer()->apply([
+            'install_id' => $installId,
+            'extension' => $slug,
+            'was_active' => false,
+        ]);
+
+        self::assertTrue($apply->isSuccess(), json_encode($apply->toArray(), JSON_THROW_ON_ERROR));
+        self::assertStringContainsString('new extension', (string) file_get_contents($target.'/README.md'));
+        self::assertSame(ExtensionStatus::Inactive, $this->extensionStatus($slug));
+        self::assertSame(ExtensionStatus::Inactive, $this->extensionStatus($dependentSlug));
         self::assertSame('1.1.0', $this->extensionVersion($slug));
 
         $this->removePath($target);

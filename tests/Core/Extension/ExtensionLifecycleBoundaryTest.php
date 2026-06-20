@@ -781,6 +781,25 @@ final class ExtensionLifecycleBoundaryTest extends KernelTestCase
         self::assertSame(['demo-addon', 'demo-module', 'demo-module'], array_column($result->value()['changes'], 'extension'));
     }
 
+    public function testExtensionRemoverDeactivatesStaleActiveDependentsBeforeDeletingInactiveExtension(): void
+    {
+        $this->insertExtension('demo-module', ['module'], 'inactive');
+        $this->insertExtension('demo-addon', ['module'], 'active', dependencies: '[["demo-module", "1.0.0"]]');
+        $this->writeTestFile($this->projectDir, 'extensions/demo-module/.manifest', 'EXTENSION_NAME=Demo');
+
+        $plan = $this->remover()->planRemoval('demo-module');
+        self::assertTrue($plan->isSuccess());
+        self::assertSame(['demo-addon', 'demo-module'], array_column($plan->value()['changes'], 'extension'));
+
+        $result = $this->remover()->remove('demo-module', 'test');
+
+        self::assertTrue($result->isSuccess(), json_encode($result->toArray(), JSON_THROW_ON_ERROR));
+        self::assertSame('removed', $this->extensionStatus('demo-module'));
+        self::assertSame('inactive', $this->extensionStatus('demo-addon'));
+        self::assertSame(['test'], $this->assetRebuilder->environments);
+        self::assertSame(['demo-addon', 'demo-module'], array_column($result->value()['changes'], 'extension'));
+    }
+
     public function testExtensionRemoverRestoresArchivedContentWhenFilesystemRemovalRollsBack(): void
     {
         $this->insertExtension('demo-module', ['module', 'content-schema'], 'active', path: $this->projectDir.'/not-managed');

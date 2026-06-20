@@ -151,7 +151,9 @@ final readonly class ExtensionInstallVerifier
                     ...$dependencyPreflight->messages(),
                 ]);
             }
+        }
 
+        if ($existing instanceof Extension && ExtensionStatus::Removed !== $existing->status()) {
             $deactivationPlan = $this->activator->planDeactivation($slug);
 
             if (!$deactivationPlan->isSuccess()) {
@@ -162,7 +164,7 @@ final readonly class ExtensionInstallVerifier
                 ], [
                     ...$validation->messages(),
                     ...$extensionValidation->messages(),
-                    ...$dependencyPreflight->messages(),
+                    ...($dependencyPreflight?->messages() ?? []),
                     ...$deactivationPlan->messages(),
                 ]);
             }
