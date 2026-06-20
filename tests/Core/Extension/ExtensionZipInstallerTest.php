@@ -24,6 +24,7 @@ final class ExtensionZipInstallerTest extends KernelTestCase
         'zip-install-review',
         'zip-install-rollback',
         'zip-install-symlink',
+        'zip-install-deep-policy',
         'zip-install-skip',
     ];
 
@@ -315,6 +316,41 @@ final class ExtensionZipInstallerTest extends KernelTestCase
         self::assertSame(WorkflowStatus::Invalid, $verify->status());
         self::assertSame('extension.policy.blocked_path', $verify->firstIssue()?->code());
         self::assertSame('reserved_project_path', $verify->firstIssue()?->context()['reason']);
+
+        $this->removePath($root);
+    }
+
+    public function testItRejectsDeepPolicyBlockedExtensionPaths(): void
+    {
+        if (!class_exists(ZipArchive::class)) {
+            self::markTestSkipped('ZipArchive is required for extension ZIP installer tests.');
+        }
+
+        $installId = '999999999999999999999999';
+        $slug = 'zip-install-deep-policy';
+        $root = $this->installRoot($installId);
+        $this->removePath($root);
+        mkdir($root, 0775, true);
+
+        $zip = new ZipArchive();
+        self::assertTrue(true === $zip->open($root.'/upload.zip', ZipArchive::CREATE | ZipArchive::OVERWRITE));
+        $zip->addFromString($slug.'/.manifest', <<<MANIFEST
+            EXTENSION_AUTHOR=Aavion Test
+            EXTENSION_SLUG={$slug}
+            EXTENSION_NAME=ZIP Install Test
+            EXTENSION_DESCRIPTION=Extension ZIP installer test fixture.
+            EXTENSION_VERSION=1.0.0
+            EXTENSION_SCOPE=module
+            EXTENSION_DEPENDENCIES=[]
+            MANIFEST);
+        $zip->addFromString($slug.'/assets/a/b/c/d/shell.php', '<?php echo "blocked";');
+        $zip->close();
+
+        $verify = $this->installer()->verify(['install_id' => $installId]);
+
+        self::assertSame(WorkflowStatus::Invalid, $verify->status());
+        self::assertSame('extension.policy.blocked_path', $verify->firstIssue()?->code());
+        self::assertSame('asset_executable_file', $verify->firstIssue()?->context()['reason']);
 
         $this->removePath($root);
     }

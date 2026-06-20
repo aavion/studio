@@ -162,6 +162,30 @@ final class ExtensionContentSchemaSynchronizerTest extends KernelTestCase
         self::assertNull($schema->activeVersion());
     }
 
+    public function testItClearsStagedSchemasWhenContributionFails(): void
+    {
+        $synchronizer = new ExtensionContentSchemaSynchronizer($this->entityManager);
+        $extension = $this->extension();
+
+        $result = $synchronizer->apply($extension, [
+            ExtensionContentSchemaDefinition::create('broken', ['en' => NAN], [
+                'fields' => [
+                    ['identifier' => 'title', 'type' => 'string'],
+                    ['identifier' => 'subtitle', 'type' => 'string'],
+                    ['identifier' => 'body', 'type' => 'text'],
+                ],
+            ]),
+        ]);
+
+        self::assertFalse($result->isSuccess());
+
+        $this->entityManager->flush();
+        $this->entityManager->clear();
+
+        $schema = $this->entityManager->getRepository(ContentSchema::class)->findOneBy(['identifier' => 'ext11_demo_module_broken']);
+        self::assertNull($schema);
+    }
+
     private function schema(string $customField, ?string $customTwig = null): ExtensionContentSchemaDefinition
     {
         return ExtensionContentSchemaDefinition::create('article', ['en' => 'Article'], [

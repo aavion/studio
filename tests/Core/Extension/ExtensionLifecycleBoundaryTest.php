@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Core\Extension;
 
+use App\Content\ContentStatus;
 use App\Core\Event\EventHookDescriptor;
 use App\Core\Event\EventHookMode;
 use App\Core\Event\EventMessageCode;
@@ -11,6 +12,9 @@ use App\Core\Event\EventMessageKey;
 use App\Core\Event\PublicHookFailedEvent;
 use App\Core\Message\Message;
 use App\Core\Extension\ActiveExtensionProvider;
+use App\Core\Extension\Content\ExtensionContentSchemaDefinition;
+use App\Core\Extension\Content\ExtensionContentSchemaImpact;
+use App\Core\Extension\Content\ExtensionContentSchemaSynchronizer;
 use App\Core\Extension\ExtensionActivator;
 use App\Core\Extension\ExtensionAssetRebuildMessage;
 use App\Core\Extension\ExtensionAssetRebuildMessageHandler;
@@ -23,6 +27,9 @@ use App\Core\Extension\ExtensionRuntimeContributionRegistry;
 use App\Core\Extension\ExtensionRuntimeFailureHandler;
 use App\Core\Extension\ExtensionScope;
 use App\Core\Workflow\WorkflowResult;
+use App\Entity\ContentItem;
+use App\Entity\ContentRevision;
+use App\Entity\ContentSchema;
 use App\Entity\Extension;
 use App\Tests\Support\FilesystemTestHelper;
 use App\Tests\Support\NullWorkflowResultMessageReporter;
@@ -736,6 +743,40 @@ final class ExtensionLifecycleBoundaryTest extends KernelTestCase
         self::assertSame(['demo-addon', 'demo-module', 'demo-module'], array_column($result->value()['changes'], 'extension'));
     }
 
+    public function testExtensionRemoverRestoresArchivedContentWhenFilesystemRemovalRollsBack(): void
+    {
+        $this->insertExtension('demo-module', ['module', 'content-schema'], 'active', path: $this->projectDir.'/not-managed');
+        $extension = $this->entityManager->getRepository(Extension::class)->findOneBy(['extensionName' => 'demo-module']);
+        self::assertInstanceOf(Extension::class, $extension);
+
+        $schemaSync = new ExtensionContentSchemaSynchronizer($this->entityManager);
+        self::assertTrue($schemaSync->apply($extension, [
+            ExtensionContentSchemaDefinition::create('article', ['en' => 'Article'], [
+                'fields' => [
+                    ['identifier' => 'title', 'type' => 'string'],
+                    ['identifier' => 'subtitle', 'type' => 'string'],
+                    ['identifier' => 'body', 'type' => 'text'],
+                ],
+            ]),
+        ])->isSuccess());
+
+        $schema = $this->entityManager->getRepository(ContentSchema::class)->findOneBy(['identifier' => 'ext11_demo_module_article']);
+        self::assertInstanceOf(ContentSchema::class, $schema);
+        self::assertNotNull($schema->activeVersion());
+
+        $content = new ContentItem('c4000000-0000-7000-8000-000000000001', 'extension-content');
+        $content->activateRevision(new ContentRevision('c4000000-0000-7000-8000-000000000101', $content, 1, $schema->activeVersion()));
+        $content->publish();
+        $this->entityManager->persist($content);
+        $this->entityManager->flush();
+
+        $result = $this->remover()->remove('demo-module', 'test');
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('active', $this->extensionStatus('demo-module'));
+        self::assertSame(ContentStatus::Published, $content->status());
+    }
+
     public function testExtensionRemoverPurgeRunsCleanupAndDeletesRegistryRow(): void
     {
         $this->insertExtension('demo-module', ['module'], 'removed');
@@ -855,7 +896,12 @@ final class ExtensionLifecycleBoundaryTest extends KernelTestCase
 
         return new ExtensionRemover(
             $this->entityManager,
-            new ExtensionActivator($this->entityManager, $this->assetRebuilder, $reporter),
+            new ExtensionActivator(
+                $this->entityManager,
+                $this->assetRebuilder,
+                $reporter,
+                contentSchemaImpact: new ExtensionContentSchemaImpact($this->entityManager),
+            ),
             $this->assetRebuilder,
             $this->cleanupRunner,
             $this->projectDir,

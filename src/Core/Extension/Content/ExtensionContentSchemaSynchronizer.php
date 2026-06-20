@@ -38,24 +38,20 @@ final readonly class ExtensionContentSchemaSynchronizer
         $created = [];
         $versioned = [];
         $unchanged = [];
+        $stagedEntities = [];
+        $schemaActiveVersionSnapshots = [];
 
         foreach ($definitions as $definition) {
             if (!$definition instanceof ExtensionContentSchemaDefinition) {
+                $this->restoreStagedSchemaState($stagedEntities, $schemaActiveVersionSnapshots);
+
                 return $this->invalid($extension, 'definition_invalid');
             }
 
             try {
-                $result = $this->upsert($extension, $definition);
+                $result = $this->upsert($extension, $definition, $stagedEntities, $schemaActiveVersionSnapshots);
             } catch (Throwable $error) {
-                return WorkflowResult::failed([
-                    Message::create(
-                        ExtensionMessageCode::EXTENSION_CONTENT_SCHEMA_CONTRIBUTION_INVALID,
-                        ExtensionMessageKey::EXTENSION_CONTENT_SCHEMA_CONTRIBUTION_INVALID,
-                        ['%reason%' => 'schema_sync_failed'],
-                        ['extension' => $extension->extensionName(), 'exception' => $error::class, 'message' => $error->getMessage()],
-                        MessageLevel::Exception,
-                    ),
-                ]);
+                return $this->failedSync($extension, $error, $stagedEntities, $schemaActiveVersionSnapshots);
             }
 
             match ($result['action']) {
@@ -65,7 +61,11 @@ final readonly class ExtensionContentSchemaSynchronizer
             };
         }
 
-        $this->entityManager->flush();
+        try {
+            $this->entityManager->flush();
+        } catch (Throwable $error) {
+            return $this->failedSync($extension, $error, $stagedEntities, $schemaActiveVersionSnapshots);
+        }
 
         return WorkflowResult::success([
             'created' => $created,
@@ -143,9 +143,17 @@ final readonly class ExtensionContentSchemaSynchronizer
     }
 
     /**
+     * @param list<object> $stagedEntities
+     * @param array<int, array{schema: ContentSchema, active_version: ContentSchemaVersion|null}> $schemaActiveVersionSnapshots
+     *
      * @return array{identifier: string, action: string}
      */
-    private function upsert(Extension $extension, ExtensionContentSchemaDefinition $definition): array
+    private function upsert(
+        Extension $extension,
+        ExtensionContentSchemaDefinition $definition,
+        array &$stagedEntities,
+        array &$schemaActiveVersionSnapshots,
+    ): array
     {
         $identifier = $definition->identifier($extension->extensionName());
         $schema = $this->entityManager->getRepository(ContentSchema::class)->findOneBy(['identifier' => $identifier]);
@@ -162,6 +170,7 @@ final readonly class ExtensionContentSchemaSynchronizer
                 metadata: $this->metadata($extension, $definition),
             );
             $this->entityManager->persist($schema);
+            $stagedEntities[] = $schema;
             $action = 'created';
         }
 
@@ -171,6 +180,12 @@ final readonly class ExtensionContentSchemaSynchronizer
         if ($activeVersion instanceof ContentSchemaVersion && $activeVersion->definitionHash() === $hash) {
             return ['identifier' => $identifier, 'action' => $action];
         }
+
+        $objectId = spl_object_id($schema);
+        $schemaActiveVersionSnapshots[$objectId] ??= [
+            'schema' => $schema,
+            'active_version' => $activeVersion,
+        ];
 
         $version = new ContentSchemaVersion(
             $this->uuidFactory->generate(),
@@ -184,8 +199,53 @@ final readonly class ExtensionContentSchemaSynchronizer
         );
         $schema->activateVersion($version);
         $this->entityManager->persist($version);
+        $stagedEntities[] = $version;
 
         return ['identifier' => $identifier, 'action' => 'created' === $action ? 'created' : 'versioned'];
+    }
+
+    /**
+     * @param list<object> $stagedEntities
+     * @param array<int, array{schema: ContentSchema, active_version: ContentSchemaVersion|null}> $schemaActiveVersionSnapshots
+     */
+    private function failedSync(
+        Extension $extension,
+        Throwable $error,
+        array $stagedEntities,
+        array $schemaActiveVersionSnapshots,
+    ): WorkflowResult {
+        $this->restoreStagedSchemaState($stagedEntities, $schemaActiveVersionSnapshots);
+
+        return WorkflowResult::failed([
+            Message::create(
+                ExtensionMessageCode::EXTENSION_CONTENT_SCHEMA_CONTRIBUTION_INVALID,
+                ExtensionMessageKey::EXTENSION_CONTENT_SCHEMA_CONTRIBUTION_INVALID,
+                ['%reason%' => 'schema_sync_failed'],
+                ['extension' => $extension->extensionName(), 'exception' => $error::class, 'message' => $error->getMessage()],
+                MessageLevel::Exception,
+            ),
+        ]);
+    }
+
+    /**
+     * @param list<object> $stagedEntities
+     * @param array<int, array{schema: ContentSchema, active_version: ContentSchemaVersion|null}> $schemaActiveVersionSnapshots
+     */
+    private function restoreStagedSchemaState(array $stagedEntities, array $schemaActiveVersionSnapshots): void
+    {
+        foreach ($schemaActiveVersionSnapshots as $snapshot) {
+            null === $snapshot['active_version']
+                ? $snapshot['schema']->disable()
+                : $snapshot['schema']->activateVersion($snapshot['active_version']);
+        }
+
+        foreach (array_reverse($stagedEntities) as $entity) {
+            $this->entityManager->detach($entity);
+        }
+
+        foreach ($schemaActiveVersionSnapshots as $snapshot) {
+            $this->entityManager->detach($snapshot['schema']);
+        }
     }
 
     private function nextVersion(ContentSchema $schema): int

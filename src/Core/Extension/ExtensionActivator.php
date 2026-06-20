@@ -12,7 +12,6 @@ use App\Core\Extension\ExtensionMessageCode;
 use App\Core\Extension\ExtensionMessageKey;
 use App\Core\Workflow\WorkflowResult;
 use App\Content\ContentStatus;
-use App\Entity\ContentItem;
 use App\Entity\Extension;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -158,6 +157,10 @@ final readonly class ExtensionActivator
             $this->restoreArchivedContent($archivedContentSnapshots);
         }
 
+        if ($finalized->isSuccess() && [] !== $archivedContentSnapshots) {
+            $finalized = $this->withArchivedContentSnapshots($finalized, $archivedContentSnapshots);
+        }
+
         return $this->report(
             $finalized,
             'extension.deactivate',
@@ -217,16 +220,27 @@ final readonly class ExtensionActivator
      */
     private function restoreArchivedContent(array $contentSnapshots): void
     {
-        foreach ($contentSnapshots as $uid => $status) {
-            $item = $this->entityManager->find(ContentItem::class, $uid);
-            if ($item instanceof ContentItem) {
-                $item->restoreStatus($status);
-            }
-        }
+        $this->store->restoreContentStatuses($contentSnapshots);
 
         if ([] !== $contentSnapshots) {
             $this->entityManager->flush();
         }
+    }
+
+    /**
+     * @param array<string, ContentStatus> $contentSnapshots
+     */
+    private function withArchivedContentSnapshots(WorkflowResult $result, array $contentSnapshots): WorkflowResult
+    {
+        $serialized = array_map(static fn (ContentStatus $status): string => $status->value, $contentSnapshots);
+
+        return WorkflowResult::success([
+            ...($result->value() ?? []),
+            'content_status_snapshots' => $serialized,
+        ], [
+            ...$result->context(),
+            'content_status_snapshots' => $serialized,
+        ], $result->messages());
     }
 
     /**

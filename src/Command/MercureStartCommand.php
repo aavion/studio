@@ -39,6 +39,7 @@ final class MercureStartCommand extends Command
             $this->runtime->logPath(),
             $this->runtime->pidPath(),
             $this->runtime->startEnvironment(),
+            closeInheritedFileDescriptors: true,
         );
 
         $output->writeln($started ? 'Mercure hub start was requested.' : 'Mercure hub could not be started.');

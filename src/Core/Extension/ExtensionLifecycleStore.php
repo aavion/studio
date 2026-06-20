@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Core\Extension;
 
+use App\Content\ContentStatus;
 use App\Core\Filesystem\PathGuard;
+use App\Entity\ContentItem;
 use App\Entity\Extension;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -119,6 +121,20 @@ final readonly class ExtensionLifecycleStore
 
             if ($extension instanceof Extension) {
                 $extension->restoreStatus($status);
+            }
+        }
+    }
+
+    /**
+     * @param array<string, ContentStatus> $snapshots
+     */
+    public function restoreContentStatuses(array $snapshots): void
+    {
+        foreach ($snapshots as $uid => $status) {
+            $item = $this->entityManager->find(ContentItem::class, $uid);
+
+            if ($item instanceof ContentItem) {
+                $item->restoreStatus($status);
             }
         }
     }

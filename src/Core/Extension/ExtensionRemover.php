@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Extension;
 
+use App\Content\ContentStatus;
 use App\Core\Message\Message;
 use App\Core\Message\MessageLevel;
 use App\Core\Message\WorkflowResultMessageReporterInterface;
@@ -63,6 +64,7 @@ final readonly class ExtensionRemover
         $messages = [];
         $changes = [];
         $previousStatuses = [$extensionName => $extension->status()];
+        $contentStatusSnapshots = [];
 
         if (ExtensionStatus::Active === $extension->status()) {
             $plan = $this->activator->planDeactivation($extensionName);
@@ -88,6 +90,7 @@ final readonly class ExtensionRemover
                 ], $messages), 'extension.remove', ['extension' => $extensionName, 'environment' => $environment]);
             }
 
+            $contentStatusSnapshots = $this->contentStatusSnapshots($deactivation->context()['content_status_snapshots'] ?? []);
             $deactivationChanges = $deactivation->value()['changes'] ?? [];
             if (is_array($deactivationChanges)) {
                 $changes = [...$changes, ...array_values(array_filter(
@@ -101,7 +104,7 @@ final readonly class ExtensionRemover
         $messages = [...$messages, ...$filesystem->messages()];
 
         if (!$filesystem->isSuccess()) {
-            $rollbackMessages = $this->restoreExtensionStatuses($previousStatuses);
+            $rollbackMessages = $this->restoreLifecycleSnapshots($previousStatuses, $contentStatusSnapshots);
 
             return $this->report(WorkflowResult::failed($filesystem->issues(), [
                 'extension' => $extensionName,
@@ -182,13 +185,15 @@ final readonly class ExtensionRemover
 
     /**
      * @param array<string, ExtensionStatus> $statuses
+     * @param array<string, ContentStatus> $contentStatuses
      *
      * @return list<Message>
      */
-    private function restoreExtensionStatuses(array $statuses): array
+    private function restoreLifecycleSnapshots(array $statuses, array $contentStatuses): array
     {
         try {
             $this->store->restoreStatuses($statuses);
+            $this->store->restoreContentStatuses($contentStatuses);
             $this->entityManager->flush();
         } catch (Throwable $error) {
             return [
@@ -205,6 +210,31 @@ final readonly class ExtensionRemover
         }
 
         return [];
+    }
+
+    /**
+     * @return array<string, ContentStatus>
+     */
+    private function contentStatusSnapshots(mixed $value): array
+    {
+        if (!is_array($value)) {
+            return [];
+        }
+
+        $snapshots = [];
+
+        foreach ($value as $uid => $status) {
+            if (!is_string($uid) || !is_string($status)) {
+                continue;
+            }
+
+            $contentStatus = ContentStatus::tryFrom($status);
+            if (null !== $contentStatus) {
+                $snapshots[$uid] = $contentStatus;
+            }
+        }
+
+        return $snapshots;
     }
 
     /**
