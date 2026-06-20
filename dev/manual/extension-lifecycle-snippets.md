@@ -48,7 +48,7 @@ Deferred Messenger work is drained opportunistically after HTTP responses throug
 
 Extension discovery is intentionally not registered as a Symfony cache warmer. Cold container builds must not touch Messenger or database-backed extension state before setup has established the application schema. Setup runs extension discovery after migrations and initial data seeding, then runs `assets:rebuild --trigger=setup --json` so extension-aware translation aggregation happens after discovery and non-blocking rebuild warnings can be surfaced in the setup action log. A future scheduler job should call `extensions:discover` periodically; installer completion and Admin UI refresh actions already provide additional explicit trigger points.
 
-Repository demo extensions live under `extensions/demo-*`. They are intentionally small and inactive after discovery; use them to exercise extension discovery, registry views, scoped assets, provider paths, extension runtime contributions, and lifecycle UI flows. Demo extensions may include tiny `extension.php` contribution loaders, but they execute only after explicit activation.
+The repository demo extension lives under `extensions/demo-module`. It is intentionally small and inactive after discovery; use it to exercise extension discovery, registry views, scoped assets, extension runtime contributions, and lifecycle UI flows. Demo extensions may include tiny `extension.php` contribution loaders, but they execute only after explicit activation.
 
 Extension Twig validation checks syntax while accepting runtime filters, functions, and tests as extension placeholders. Availability of Symfony, Studio, theme, or extension-provided Twig extensions is verified by render/runtime coverage instead of discovery-time linting.
 
