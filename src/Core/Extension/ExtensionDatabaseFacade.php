@@ -37,11 +37,11 @@ final readonly class ExtensionDatabaseFacade
             [$where, $params] = $this->where($criteria);
             $limit = $this->limit($options['limit'] ?? self::MAX_FETCH_ROWS);
             $offset = max(0, min(100000, is_int($options['offset'] ?? null) ? $options['offset'] : (int) ($options['offset'] ?? 0)));
-            $sql = 'SELECT * FROM '.$this->connection->quoteIdentifier($tableName).$where;
+            $sql = 'SELECT * FROM '.$this->connection->quoteSingleIdentifier($tableName).$where;
 
             if (is_string($options['order_by'] ?? null) && IdentifierSpec::isPortableDatabaseIdentifier($options['order_by'])) {
                 $direction = strtolower((string) ($options['direction'] ?? 'asc'));
-                $sql .= ' ORDER BY '.$this->connection->quoteIdentifier($options['order_by']).('desc' === $direction ? ' DESC' : ' ASC');
+                $sql .= ' ORDER BY '.$this->connection->quoteSingleIdentifier($options['order_by']).('desc' === $direction ? ' DESC' : ' ASC');
             }
 
             $sql .= ' LIMIT '.$limit.' OFFSET '.$offset;
@@ -192,7 +192,7 @@ final readonly class ExtensionDatabaseFacade
         $params = [];
         $index = 0;
         foreach ($criteria as $column => $value) {
-            $quotedColumn = $this->connection->quoteIdentifier($column);
+            $quotedColumn = $this->connection->quoteSingleIdentifier($column);
             if (null === $value) {
                 $clauses[] = $quotedColumn.' IS NULL';
                 continue;
