@@ -22,6 +22,8 @@ final readonly class ExtensionAdminOverview
         private SystemExtensionMetadataProvider $systemExtensionMetadata,
         private Security $security,
         private AdminFeatureAccessPolicy $adminAcl,
+        private ?ExtensionRuntimeContributionRegistry $runtimeContributions = null,
+        private ?ExtensionPhpLoader $extensionPhpLoader = null,
     ) {
     }
 
@@ -147,7 +149,7 @@ final readonly class ExtensionAdminOverview
             $cleanupActions[] = $this->action($extension, 'delete', 'danger', $state);
         }
 
-        return [...$stateActions, ...$cleanupActions];
+        return [...$stateActions, ...$this->operationActions($extension, $state), ...$cleanupActions];
     }
 
     private function action(Extension $extension, string $action, string $variant, AdminPermissionState $state): array
@@ -159,6 +161,31 @@ final readonly class ExtensionAdminOverview
             'variant' => $variant,
             'disabled' => !$state->isMutable(),
         ];
+    }
+
+    /**
+     * @return list<array{id: string, label_key: string, path: string, variant: string, disabled: bool, live: bool, target: string}>
+     */
+    private function operationActions(Extension $extension, AdminPermissionState $state): array
+    {
+        if (ExtensionStatus::Active !== $extension->status() || null === $this->runtimeContributions) {
+            return [];
+        }
+
+        $this->extensionPhpLoader?->loadActiveExtensions();
+
+        return array_map(
+            fn (ExtensionOperationRegistration $operation): array => [
+                'id' => 'operation-'.strtr($operation->target(), '.:', '__'),
+                'label_key' => $operation->definition()->labelKey(),
+                'path' => $this->detailPath($extension->extensionName()),
+                'variant' => 'secondary',
+                'disabled' => !$state->isMutable(),
+                'live' => true,
+                'target' => $operation->target(),
+            ],
+            $this->runtimeContributions->extensionOperations($extension->extensionName()),
+        );
     }
 
     /**

@@ -17,6 +17,22 @@
                         <button class="system-backend-button system-button-{{ action.variant }}" type="button" disabled>
                             {{ action.label_key|trans }}
                         </button>
+                    {% elseif action.live|default(false) %}
+                        <form
+                            method="post"
+                            action="{{ action.path }}"
+                            data-controller="operation-overlay"
+                            data-action="submit->operation-overlay#submit"
+                            data-operation-overlay-enabled-value="true"
+                            data-operation-overlay-redirect-on-success-value="{{ action.path }}"
+                        >
+                            <input type="hidden" name="_form_id" value="extension-operation-{{ action.target }}">
+                            <input type="hidden" name="_extension_operation" value="{{ action.target }}">
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token('extension-operation-' ~ action.target) }}">
+                            <button class="system-backend-button system-button-{{ action.variant }}" type="submit">
+                                {{ action.label_key|trans }}
+                            </button>
+                        </form>
                     {% else %}
                         <a class="system-backend-button system-button-{{ action.variant }}" href="{{ action.path }}">
                             {{ action.label_key|trans }}

@@ -14,7 +14,9 @@ use App\Core\Extension\Database\ExtensionDatabaseProviderInterface;
 use App\Core\Extension\Database\ExtensionDatabaseTable;
 use App\Core\Extension\ExtensionContributionContext;
 use App\Core\Extension\ExtensionEventListenerContribution;
+use App\Core\Extension\ExtensionActionQueueProviderInterface;
 use App\Core\Extension\ExtensionMessageKey;
+use App\Core\Extension\ExtensionOperationDefinition;
 use App\Core\Extension\ExtensionProviderContribution;
 use App\Core\Extension\ExtensionRuntimeContributionFactory;
 use App\Core\Extension\Settings\ExtensionSettingDefinition;
@@ -99,6 +101,7 @@ final readonly class ExtensionRuntimeContributionExpander
             || $contribution instanceof CookieConsentDefinition
             || $contribution instanceof ExtensionDatabaseTable
             || $contribution instanceof ExtensionContentSchemaDefinition
+            || $contribution instanceof ExtensionOperationDefinition
             || $contribution instanceof ExtensionEventListenerContribution
             || $contribution instanceof ExtensionProviderContribution;
     }
@@ -198,7 +201,7 @@ final readonly class ExtensionRuntimeContributionExpander
             $providerHandled = true;
         }
 
-        if ($contribution instanceof SchedulerCallableProviderInterface || $contribution instanceof SchedulerActionQueueProviderInterface) {
+        if ($contribution instanceof SchedulerCallableProviderInterface || $contribution instanceof SchedulerActionQueueProviderInterface || $contribution instanceof ExtensionActionQueueProviderInterface) {
             yield $contribution;
             $providerHandled = true;
         }

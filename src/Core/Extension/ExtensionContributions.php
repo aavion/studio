@@ -49,7 +49,7 @@ final class ExtensionContributions implements \IteratorAggregate
     }
 
     public function add(
-        StaticViewInjection|ConfigurableStaticViewInjectionSet|DynamicViewInjection|ExtensionSettingDefinition|SchedulerTaskDefinition|ApiEndpointDefinition|ApiEndpointHandlerInterface|LiveEndpointDefinition|LiveEndpointHandlerInterface|CookieConsentDefinition|ExtensionDatabaseTable|ExtensionContentSchemaDefinition|ExtensionRuntimeContributionFactory|ExtensionActivationContributionFactory|ExtensionRuntimeBoot|ExtensionEventListenerContribution|ExtensionProviderContribution|StaticViewInjectionProviderInterface|DynamicViewInjectionProviderInterface|ExtensionSettingProviderInterface|ApiEndpointProviderInterface|ApiEndpointHandlerProviderInterface|LiveEndpointProviderInterface|LiveEndpointHandlerProviderInterface|CookieConsentProviderInterface|SchedulerTaskProviderInterface|SchedulerCallableProviderInterface|SchedulerActionQueueProviderInterface|ExtensionDatabaseProviderInterface|ExtensionContentSchemaProviderInterface $contribution,
+        StaticViewInjection|ConfigurableStaticViewInjectionSet|DynamicViewInjection|ExtensionSettingDefinition|SchedulerTaskDefinition|ApiEndpointDefinition|ApiEndpointHandlerInterface|LiveEndpointDefinition|LiveEndpointHandlerInterface|CookieConsentDefinition|ExtensionDatabaseTable|ExtensionContentSchemaDefinition|ExtensionOperationDefinition|ExtensionRuntimeContributionFactory|ExtensionActivationContributionFactory|ExtensionRuntimeBoot|ExtensionEventListenerContribution|ExtensionProviderContribution|StaticViewInjectionProviderInterface|DynamicViewInjectionProviderInterface|ExtensionSettingProviderInterface|ApiEndpointProviderInterface|ApiEndpointHandlerProviderInterface|LiveEndpointProviderInterface|LiveEndpointHandlerProviderInterface|CookieConsentProviderInterface|SchedulerTaskProviderInterface|SchedulerCallableProviderInterface|SchedulerActionQueueProviderInterface|ExtensionActionQueueProviderInterface|ExtensionDatabaseProviderInterface|ExtensionContentSchemaProviderInterface $contribution,
     ): self {
         $this->items[] = $contribution;
 
@@ -200,6 +200,16 @@ final class ExtensionContributions implements \IteratorAggregate
     }
 
     public function schedulerActionQueueProvider(SchedulerActionQueueProviderInterface $provider): self
+    {
+        return $this->add($provider);
+    }
+
+    public function operation(ExtensionOperationDefinition $definition): self
+    {
+        return $this->add($definition);
+    }
+
+    public function actionQueueProvider(ExtensionActionQueueProviderInterface $provider): self
     {
         return $this->add($provider);
     }

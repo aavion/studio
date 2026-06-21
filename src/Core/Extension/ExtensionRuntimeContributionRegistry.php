@@ -14,6 +14,7 @@ use App\Core\Extension\Content\ExtensionContentSchemaProviderInterface;
 use App\Core\Extension\Contribution\ExtensionRuntimeContributionExpander;
 use App\Core\Extension\Contribution\ExtensionRuntimeContributionGuard;
 use App\Core\Extension\Contribution\ExtensionRuntimeEndpointContributions;
+use App\Core\Extension\Contribution\ExtensionRuntimeOperationContributions;
 use App\Core\Extension\Contribution\ExtensionRuntimeSchedulerContributions;
 use App\Core\Extension\Contribution\ExtensionRuntimeViewContributions;
 use App\Core\Extension\Database\ExtensionDatabaseProviderInterface;
@@ -49,6 +50,7 @@ final class ExtensionRuntimeContributionRegistry implements StaticViewInjectionP
         $this->viewContributions = new ExtensionRuntimeViewContributions($extensionSettingsStore);
         $this->endpointContributions = new ExtensionRuntimeEndpointContributions();
         $this->schedulerContributions = new ExtensionRuntimeSchedulerContributions();
+        $this->operationContributions = new ExtensionRuntimeOperationContributions();
     }
 
     private ExtensionRuntimeViewContributions $viewContributions;
@@ -56,6 +58,8 @@ final class ExtensionRuntimeContributionRegistry implements StaticViewInjectionP
     private ExtensionRuntimeEndpointContributions $endpointContributions;
 
     private ExtensionRuntimeSchedulerContributions $schedulerContributions;
+
+    private ExtensionRuntimeOperationContributions $operationContributions;
 
     private array $extensionSettingDefinitions = [];
 
@@ -87,6 +91,7 @@ final class ExtensionRuntimeContributionRegistry implements StaticViewInjectionP
         $this->viewContributions = clone $this->viewContributions;
         $this->endpointContributions = clone $this->endpointContributions;
         $this->schedulerContributions = clone $this->schedulerContributions;
+        $this->operationContributions = clone $this->operationContributions;
     }
 
     private function guard(): ExtensionRuntimeContributionGuard
@@ -191,6 +196,12 @@ final class ExtensionRuntimeContributionRegistry implements StaticViewInjectionP
             return;
         }
 
+        if ($contribution instanceof ExtensionOperationDefinition) {
+            $this->addOperationDefinition($extension, $contribution);
+
+            return;
+        }
+
         if ($contribution instanceof ExtensionEventListenerContribution) {
             $this->addEventListenerContribution($extension, $contribution);
 
@@ -215,6 +226,11 @@ final class ExtensionRuntimeContributionRegistry implements StaticViewInjectionP
             $schedulerProviderHandled = true;
         }
 
+        if ($contribution instanceof ExtensionActionQueueProviderInterface) {
+            $this->operationContributions->addActionQueueProvider($extension, $contribution);
+            $schedulerProviderHandled = true;
+        }
+
         if ($schedulerProviderHandled) {
             return;
         }
@@ -225,6 +241,7 @@ final class ExtensionRuntimeContributionRegistry implements StaticViewInjectionP
         $this->viewContributions = clone $registry->viewContributions;
         $this->endpointContributions = clone $registry->endpointContributions;
         $this->schedulerContributions = clone $registry->schedulerContributions;
+        $this->operationContributions = clone $registry->operationContributions;
         $this->extensionSettingDefinitions = $registry->extensionSettingDefinitions;
         $this->cookieConsentDefinitions = $registry->cookieConsentDefinitions;
         $this->cookieConsentOwners = $registry->cookieConsentOwners;
@@ -257,6 +274,11 @@ final class ExtensionRuntimeContributionRegistry implements StaticViewInjectionP
     {
         $this->guard()->assertContentSchema($extension, $definition);
         $this->contentSchemaDefinitions[] = $definition;
+    }
+
+    private function addOperationDefinition(Extension $extension, ExtensionOperationDefinition $definition): void
+    {
+        $this->operationContributions->addOperation($extension, $definition, $this->guard());
     }
 
     private function addEventListenerContribution(Extension $extension, ExtensionEventListenerContribution $contribution): void
@@ -384,7 +406,29 @@ final class ExtensionRuntimeContributionRegistry implements StaticViewInjectionP
 
     public function schedulerActionQueue(string $target): ?ActionQueue
     {
-        return $this->schedulerContributions->schedulerActionQueue($target);
+        return $this->operationContributions->schedulerActionQueue($target)
+            ?? $this->schedulerContributions->schedulerActionQueue($target);
+    }
+
+    /**
+     * @return list<ExtensionOperationRegistration>
+     */
+    public function extensionOperations(?string $extensionName = null): array
+    {
+        return $this->operationContributions->operations($extensionName);
+    }
+
+    public function extensionOperation(string $target): ?ExtensionOperationRegistration
+    {
+        return $this->operationContributions->operation($target);
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    public function extensionActionQueue(string $target, array $payload = []): ?ActionQueue
+    {
+        return $this->operationContributions->extensionActionQueue($target, $payload);
     }
 
     /**

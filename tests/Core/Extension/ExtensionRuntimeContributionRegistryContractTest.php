@@ -9,8 +9,10 @@ use App\Core\Extension\Content\ExtensionContentSchemaDefinition;
 use App\Core\Extension\Database\ExtensionDatabaseColumn;
 use App\Core\Extension\Database\ExtensionDatabaseTable;
 use App\Core\Extension\ExtensionContributionContext;
+use App\Core\Extension\ExtensionActionQueueProviderInterface;
 use App\Core\Extension\ExtensionContributions;
 use App\Core\Extension\ExtensionEventListenerContribution;
+use App\Core\Extension\ExtensionOperationDefinition;
 use App\Core\Extension\ExtensionProviderContribution;
 use App\Core\Extension\ExtensionRuntimeBoot;
 use App\Core\Extension\ExtensionRuntimeContributionRegistry;
@@ -474,6 +476,69 @@ final class ExtensionRuntimeContributionRegistryContractTest extends TestCase
         self::assertNull($registry->schedulerCallable('other-module.cleanup'));
         self::assertSame('demo-module.queue', $registry->schedulerActionQueue('demo-module.queue')?->name());
         self::assertNull($registry->schedulerActionQueue('other-module.queue'));
+    }
+
+    public function testItRegistersExtensionOperationQueuesForLiveAndSchedulerUse(): void
+    {
+        $registry = new ExtensionRuntimeContributionRegistry();
+        $registry->add($this->extension([ExtensionScope::Module]), ExtensionContributions::create()
+            ->operation(new ExtensionOperationDefinition(
+                'demo-module.cleanup',
+                'ext.demo-module.cleanup.label',
+                'ext.demo-module.cleanup.description',
+            ))
+            ->actionQueueProvider(new class implements ExtensionActionQueueProviderInterface {
+                public function extensionActionQueue(string $target, array $payload = []): ?ActionQueue
+                {
+                    if ('demo-module.cleanup' !== $target) {
+                        return null;
+                    }
+
+                    return ActionQueue::create('extension cleanup', context: [
+                        'target' => $target,
+                        'payload' => $payload,
+                    ]);
+                }
+            }));
+
+        self::assertSame('demo-module.cleanup', $registry->extensionOperations('demo-module')[0]->target());
+        self::assertSame('extension cleanup', $registry->extensionActionQueue('demo-module.cleanup', ['mode' => 'fast'])?->name());
+        self::assertSame('fast', $registry->extensionActionQueue('demo-module.cleanup', ['mode' => 'fast'])?->context()['payload']['mode']);
+        self::assertSame('extension cleanup', $registry->schedulerActionQueue('demo-module.cleanup')?->name());
+        self::assertNull($registry->extensionActionQueue('other-module.cleanup'));
+    }
+
+    public function testItRejectsForeignExtensionOperationDefinitions(): void
+    {
+        $this->expectExceptionMessage('message.extension.runtime.contribution_unsupported');
+
+        (new ExtensionRuntimeContributionRegistry())->add(
+            $this->extension([ExtensionScope::Module]),
+            new ExtensionOperationDefinition(
+                'demo-module.cleanup',
+                'ext.other.cleanup.label',
+                'ext.demo-module.cleanup.description',
+            ),
+        );
+    }
+
+    public function testItRejectsDuplicateExtensionOperationTargets(): void
+    {
+        $this->expectExceptionMessage('message.extension.runtime.contribution_unsupported');
+
+        (new ExtensionRuntimeContributionRegistry())->add($this->extension([ExtensionScope::Module]), [
+            new ExtensionOperationDefinition(
+                'demo-module.cleanup',
+                'ext.demo-module.cleanup.label',
+                'ext.demo-module.cleanup.description',
+            ),
+            new ExtensionOperationDefinition(
+                'demo-module.cleanup_alias',
+                'ext.demo-module.cleanup_alias.label',
+                'ext.demo-module.cleanup_alias.description',
+                'demo-module.cleanup',
+            ),
+        ]);
     }
 
     /**

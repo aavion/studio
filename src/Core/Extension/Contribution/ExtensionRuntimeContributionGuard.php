@@ -15,8 +15,10 @@ use App\Core\Extension\ExtensionEventListenerContribution;
 use App\Core\Extension\ExtensionLiveContributionGuard;
 use App\Core\Extension\ExtensionMessageCode;
 use App\Core\Extension\ExtensionMessageKey;
+use App\Core\Extension\ExtensionOperationDefinition;
 use App\Core\Extension\ExtensionProviderContribution;
 use App\Core\Extension\ExtensionScope;
+use App\Core\Extension\ExtensionTranslationKey;
 use App\Core\Extension\Settings\ExtensionSettingDefinition;
 use App\Core\Message\MessageException;
 use App\Core\Statistics\VisitorIdGenerator;
@@ -230,6 +232,39 @@ final readonly class ExtensionRuntimeContributionGuard
         ], [
             'extension' => $extension->extensionName(),
             'required_scope' => $contribution->scope()->value,
+        ]);
+    }
+
+    public function assertOperationDefinition(Extension $extension, ExtensionOperationDefinition $definition): void
+    {
+        $prefix = $extension->extensionName().'.';
+        if (!str_starts_with($definition->identifier(), $prefix) || !str_starts_with($definition->target(), $prefix)) {
+            throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_RUNTIME_CONTRIBUTION_UNSUPPORTED, [
+                '%extension%' => $extension->extensionName(),
+                '%type%' => ExtensionOperationDefinition::class.'('.$definition->identifier().') foreign_target',
+            ], [
+                'extension' => $extension->extensionName(),
+                'identifier' => $definition->identifier(),
+                'target' => $definition->target(),
+                'expected_prefix' => $prefix,
+            ]);
+        }
+
+        if (
+            ExtensionTranslationKey::isOwnedBy($extension->extensionName(), $definition->labelKey())
+            && ExtensionTranslationKey::isOwnedBy($extension->extensionName(), $definition->descriptionKey())
+        ) {
+            return;
+        }
+
+        throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_RUNTIME_CONTRIBUTION_UNSUPPORTED, [
+            '%extension%' => $extension->extensionName(),
+            '%type%' => ExtensionOperationDefinition::class.'('.$definition->identifier().') foreign_translation_key',
+        ], [
+            'extension' => $extension->extensionName(),
+            'identifier' => $definition->identifier(),
+            'label_key' => $definition->labelKey(),
+            'description_key' => $definition->descriptionKey(),
         ]);
     }
 
