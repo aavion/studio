@@ -439,6 +439,38 @@ final class ExtensionLifecycleBoundaryTest extends KernelTestCase
         self::assertSame(['demo-module'], $second->value()['skipped']);
     }
 
+    public function testExtensionPhpLoaderLoadsDependenciesBeforeDependents(): void
+    {
+        $this->insertExtension('demo-addon', ['module'], 'active', dependencies: '[["demo-module", "1.0.0"]]');
+        $this->insertExtension('demo-module', ['module'], 'active');
+        $this->writeTestFile($this->projectDir, 'extensions/demo-addon/extension.php', <<<'PHP'
+            <?php
+
+            file_put_contents(dirname(__DIR__, 2).'/load-order.txt', "addon\n", FILE_APPEND);
+
+            return [];
+            PHP);
+        $this->writeTestFile($this->projectDir, 'extensions/demo-module/extension.php', <<<'PHP'
+            <?php
+
+            file_put_contents(dirname(__DIR__, 2).'/load-order.txt', "module\n", FILE_APPEND);
+
+            return [];
+            PHP);
+
+        $result = (new ExtensionPhpLoader(
+            new ActiveExtensionProvider($this->entityManager),
+            $this->entityManager,
+            $this->projectDir,
+            new NullWorkflowResultMessageReporter(),
+            runtimeContributions: new ExtensionRuntimeContributionRegistry(),
+        ))->loadActiveExtensions();
+
+        self::assertTrue($result->isSuccess());
+        self::assertSame(['demo-module', 'demo-addon'], $result->value()['loaded']);
+        self::assertSame(['module', 'addon'], file($this->projectDir.'/load-order.txt', FILE_IGNORE_NEW_LINES));
+    }
+
     public function testExtensionPhpLoaderDoesNotKeepContributionsWhenRuntimeBootFails(): void
     {
         $this->insertExtension('demo-module', ['module'], 'active');
@@ -802,6 +834,44 @@ final class ExtensionLifecycleBoundaryTest extends KernelTestCase
         self::assertSame('faulty', $this->extensionStatus('scheduler-module'));
     }
 
+    public function testExtensionPhpLoaderRejectsExtensionCommandSchedulerTasks(): void
+    {
+        $this->insertExtension('scheduler-module', ['module', 'scheduler-tasks'], 'active');
+        $this->writeTestFile($this->projectDir, 'extensions/scheduler-module/extension.php', <<<'PHP'
+            <?php
+
+            use App\Scheduler\SchedulerTaskDefinition;
+            use App\Scheduler\SchedulerTaskType;
+
+            return new SchedulerTaskDefinition(
+                'scheduler-module.cleanup',
+                'ext.scheduler_module.cleanup.label',
+                'ext.scheduler_module.cleanup.description',
+                'scheduler-module',
+                SchedulerTaskType::Command,
+                'demo:cleanup --unsafe',
+                '*/15 * * * *',
+                false,
+            );
+            PHP);
+        $registry = new ExtensionRuntimeContributionRegistry();
+
+        $result = (new ExtensionPhpLoader(
+            new ActiveExtensionProvider($this->entityManager),
+            $this->entityManager,
+            $this->projectDir,
+            new NullWorkflowResultMessageReporter(),
+            runtimeContributions: $registry,
+        ))->loadActiveExtensions();
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('extension.lifecycle.php_load_failed', $result->firstIssue()?->code());
+        self::assertSame('message.extension.runtime.contribution_unsupported', $result->firstIssue()?->context()['previous_message']['key'] ?? null);
+        self::assertSame('command', $result->firstIssue()?->context()['previous_message']['context']['task_type'] ?? null);
+        self::assertSame([], $registry->schedulerTasks());
+        self::assertSame('faulty', $this->extensionStatus('scheduler-module'));
+    }
+
     public function testExtensionPhpLoaderKeepsSchedulerExecutionProviders(): void
     {
         $this->insertExtension('scheduler-module', ['module', 'scheduler-tasks'], 'active');
@@ -827,6 +897,16 @@ final class ExtensionLifecycleBoundaryTest extends KernelTestCase
                             \App\Scheduler\SchedulerTaskType::Callable,
                             'scheduler-module.cleanup',
                             '*/15 * * * *',
+                            false,
+                        ),
+                        new SchedulerTaskDefinition(
+                            'scheduler-module.queue',
+                            'ext.scheduler_module.queue.label',
+                            'ext.scheduler_module.queue.description',
+                            'scheduler-module',
+                            \App\Scheduler\SchedulerTaskType::ActionQueue,
+                            'scheduler-module.queue',
+                            '*/30 * * * *',
                             false,
                         ),
                     ];
@@ -857,6 +937,7 @@ final class ExtensionLifecycleBoundaryTest extends KernelTestCase
 
         self::assertTrue($result->isSuccess());
         self::assertSame('scheduler-module.cleanup', $registry->schedulerTasks()[0]->identifier());
+        self::assertSame('scheduler-module.queue', $registry->schedulerTasks()[1]->identifier());
         self::assertNotNull($registry->schedulerCallable('scheduler-module.cleanup'));
         self::assertNull($registry->schedulerCallable('scheduler-module.missing'));
         self::assertSame('scheduler-module.queue', $registry->schedulerActionQueue('scheduler-module.queue')?->name());

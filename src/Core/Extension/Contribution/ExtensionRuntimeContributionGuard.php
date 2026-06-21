@@ -66,6 +66,21 @@ final readonly class ExtensionRuntimeContributionGuard
             ]);
         }
 
+        if (SchedulerTaskType::Command === $definition->type()) {
+            throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_RUNTIME_CONTRIBUTION_UNSUPPORTED, [
+                '%extension%' => $extension->extensionName(),
+                '%type%' => SchedulerTaskDefinition::class.'('.$definition->identifier().') unsupported_task_type',
+            ], [
+                'extension' => $extension->extensionName(),
+                'identifier' => $definition->identifier(),
+                'task_type' => $definition->type()->value,
+                'supported_task_types' => [
+                    SchedulerTaskType::ActionQueue->value,
+                    SchedulerTaskType::Callable->value,
+                ],
+            ]);
+        }
+
         $prefix = $extension->extensionName().'.';
         if (!str_starts_with($definition->identifier(), $prefix)) {
             throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_RUNTIME_CONTRIBUTION_UNSUPPORTED, [
@@ -78,10 +93,7 @@ final readonly class ExtensionRuntimeContributionGuard
             ]);
         }
 
-        if (
-            in_array($definition->type(), [SchedulerTaskType::Callable, SchedulerTaskType::ActionQueue], true)
-            && !str_starts_with($definition->target(), $prefix)
-        ) {
+        if (!str_starts_with($definition->target(), $prefix)) {
             throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_RUNTIME_CONTRIBUTION_UNSUPPORTED, [
                 '%extension%' => $extension->extensionName(),
                 '%type%' => SchedulerTaskDefinition::class.'('.$definition->identifier().') foreign_target',

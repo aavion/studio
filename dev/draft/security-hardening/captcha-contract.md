@@ -364,7 +364,7 @@ At every checkpoint and again before opening review, verify these edges explicit
 - Lazy contribution factories are staged before commit to the runtime registry; failed factories leave no partial contributions behind.
 - Provider contribution callables are accepted only for matching active provider scopes.
 - Provider scopes remain single-active and activation conflicts are planned before mutation.
-- Scheduler task definitions and scheduler callable/action-queue providers require the visible `scheduler-tasks` scope because they can run extension PHP repeatedly.
+- Scheduler task definitions and scheduler callable/action-queue providers require the visible `scheduler-tasks` scope because they can run extension PHP repeatedly. Extension-provided task definitions may target only owner-prefixed callables or ActionQueues; raw `Command` scheduler tasks are system-owned until a dedicated extension command policy exists.
 - Extension operation definitions and operation action-queue providers require the visible `operations` scope because they expose detached operation-runner workflows.
 - Native/system fallback records cannot be deactivated by single-active provider replacement.
 - Template lookup for `@provider/captcha/**` resolves only an active `captcha-provider` extension or native fallback. The validator must reject `templates/provider/captcha/**` from non-`captcha-provider` extensions.
@@ -377,6 +377,7 @@ At every checkpoint and again before opening review, verify these edges explicit
 - Captcha skipped/fallback success cannot reset rate limits or satisfy recovery.
 - Captcha verified success cannot reset unrelated buckets or unbounded subjects.
 - Captcha payloads, challenge IDs, provider internals, submitted answers, raw IPs, session IDs, or secrets are not logged.
+- Scheduler run context is redacted before persistence/API output so command lines, output excerpts, working directories, and credential-like values are not stored as history.
 - Ambient request superglobals remain blocked in general extension PHP; documented request, query, form, file, and cookie-policy data reaches extension-owned providers, forms, endpoints, and hooks through context DTOs or handler method parameters.
 - Direct process/shell execution remains blocked; the `operations` scope routes extension-owned workflows through registered Operation-layer action queues instead of free process helpers.
 - Extension-owned filesystem reads remain possible for extension-private files without exposing public asset or template boundary escapes.

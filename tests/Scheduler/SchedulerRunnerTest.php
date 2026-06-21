@@ -169,7 +169,35 @@ final class SchedulerRunnerTest extends KernelTestCase
         self::assertSame(SchedulerTaskRunStatus::Success, $runs[0]->status());
     }
 
-    public function testItReplacesInvalidRunContextAfterFlushFailure(): void
+    public function testItRedactsSchedulerRunContextBeforePersisting(): void
+    {
+        $this->synchronizer()->synchronize();
+        $task = $this->entityManager->find(SchedulerTask::class, 'system.test_task');
+        self::assertInstanceOf(SchedulerTask::class, $task);
+        $task->activate('* * * * *');
+        $this->entityManager->flush();
+
+        $result = $this->runner(new TestSensitiveContextSchedulerTaskExecutor())->run('system.test_task', true);
+
+        self::assertSame('completed', $result->toArray()['status']);
+        $updated = $this->entityManager->find(SchedulerTask::class, 'system.test_task');
+        self::assertInstanceOf(SchedulerTask::class, $updated);
+        $runs = $this->entityManager->getRepository(SchedulerTaskRun::class)->findBy(['task' => $updated]);
+        self::assertCount(1, $runs);
+
+        $context = $runs[0]->context();
+        self::assertSame(SchedulerTaskRunStatus::Failed, $runs[0]->status());
+        self::assertSame('[redacted]', $context['command']);
+        self::assertSame('[redacted]', $context['command_line']);
+        self::assertSame('[redacted]', $context['cwd']);
+        self::assertSame('[redacted]', $context['output_excerpt']);
+        self::assertSame('[redacted]', $context['error_excerpt']);
+        self::assertSame('[redacted]', $context['headers']['authorization']);
+        self::assertSame(7, $context['exit_code']);
+        self::assertSame('failed', $context['reason']);
+    }
+
+    public function testItRedactsUnsupportedRunContextBeforePersisting(): void
     {
         $this->synchronizer()->synchronize();
         $task = $this->entityManager->find(SchedulerTask::class, 'system.test_task');
@@ -182,15 +210,14 @@ final class SchedulerRunnerTest extends KernelTestCase
         self::assertInstanceOf(SchedulerTask::class, $updated);
 
         self::assertSame('completed', $payload['status']);
-        self::assertSame('failed', $payload['tasks'][0]['status']);
+        self::assertSame('success', $payload['tasks'][0]['status']);
         self::assertSame('active', $payload['tasks'][0]['task_status']);
-        self::assertSame(1, $updated->failureCount());
+        self::assertSame(0, $updated->failureCount());
 
         $runs = $this->entityManager->getRepository(SchedulerTaskRun::class)->findBy(['task' => $updated]);
         self::assertCount(1, $runs);
-        self::assertSame(SchedulerTaskRunStatus::Failed, $runs[0]->status());
-        self::assertArrayHasKey('exception', $runs[0]->context());
-        self::assertArrayNotHasKey('resource', $runs[0]->context());
+        self::assertSame(SchedulerTaskRunStatus::Success, $runs[0]->status());
+        self::assertSame('[unsupported]', $runs[0]->context()['resource']);
     }
 
     public function testItReportsForcedInactiveTaskAsSkipped(): void
@@ -623,6 +650,30 @@ final readonly class TestInvalidContextSchedulerTaskExecutor implements Schedule
     public function execute(SchedulerTask $task): SchedulerTaskExecution
     {
         return SchedulerTaskExecution::success(['resource' => fopen('php://memory', 'r')]);
+    }
+}
+
+final readonly class TestSensitiveContextSchedulerTaskExecutor implements SchedulerTaskExecutorInterface
+{
+    public function supports(SchedulerTask $task): bool
+    {
+        return true;
+    }
+
+    public function execute(SchedulerTask $task): SchedulerTaskExecution
+    {
+        return SchedulerTaskExecution::failed([
+            'command' => ['php', 'bin/console', 'secret:rotate', '--token=abc'],
+            'command_line' => "'php' 'bin/console' 'secret:rotate' '--token=abc'",
+            'cwd' => '/secret/path',
+            'output_excerpt' => 'secret stdout',
+            'error_excerpt' => 'secret stderr',
+            'headers' => [
+                'authorization' => 'Bearer abc',
+            ],
+            'exit_code' => 7,
+            'reason' => 'failed',
+        ]);
     }
 }
 

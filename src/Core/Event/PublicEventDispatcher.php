@@ -166,7 +166,7 @@ final readonly class PublicEventDispatcher
         $this->reportHookFailure($event, $hook, $issue, $previous, [
             ...$context,
             'extension_listener' => $extension,
-        ], null);
+        ], $extension);
         $this->reportFailure([$issue], $eventClass, $context, $extension);
     }
 

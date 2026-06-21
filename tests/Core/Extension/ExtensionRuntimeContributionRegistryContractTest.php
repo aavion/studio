@@ -106,6 +106,40 @@ final class ExtensionRuntimeContributionRegistryContractTest extends TestCase
         self::assertSame([], $registry->extensionSettings());
     }
 
+    public function testStagedContributionsAreVisibleDuringAfterValidationAndRolledBackOnFailure(): void
+    {
+        $extension = $this->extension([ExtensionScope::Module]);
+        $registry = new ExtensionRuntimeContributionRegistry();
+        $setting = new ExtensionSettingDefinition(
+            'demo-module',
+            'display.mode',
+            'extension.demo_module.display_mode.label',
+            'compact',
+        );
+
+        $registry->addStaged($extension, $setting, static function () use ($registry): void {
+            self::assertSame('display.mode', $registry->extensionSettings()[0]->key());
+        });
+
+        self::assertSame([$setting], $registry->extensionSettings());
+
+        try {
+            $registry->addStaged($extension, new ExtensionSettingDefinition(
+                'demo-module',
+                'display.color',
+                'extension.demo_module.display_color.label',
+                'blue',
+            ), static function (): void {
+                throw new \RuntimeException('boot failed');
+            });
+
+            self::fail('Expected after-validation failures to roll back the staged registry.');
+        } catch (\RuntimeException) {
+        }
+
+        self::assertSame([$setting], $registry->extensionSettings());
+    }
+
     public function testItAcceptsDatabaseAndContentSchemaContributionsForMatchingScopes(): void
     {
         $extension = $this->extension([ExtensionScope::Module, ExtensionScope::Database, ExtensionScope::ContentSchema]);

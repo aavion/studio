@@ -16,6 +16,7 @@ final readonly class SchedulerRunReporter
     public function __construct(
         private MessageLoggerInterface $messageLogger,
         private SchedulerFailurePolicy $failurePolicy = new SchedulerFailurePolicy(),
+        private SchedulerRunContextRedactor $contextRedactor = new SchedulerRunContextRedactor(),
     ) {
     }
 
@@ -96,7 +97,7 @@ final readonly class SchedulerRunReporter
             'task' => $task->identifier(),
             'run' => $run->uid(),
             'failure_count' => $task->failureCount(),
-            'messages' => array_map(static fn (Message $message): array => $message->toArray(), $messages),
+            'messages' => array_map(fn (Message $message): array => $this->contextRedactor->redact($message->toArray()), $messages),
         ]));
     }
 

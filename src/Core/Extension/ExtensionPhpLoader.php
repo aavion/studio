@@ -32,6 +32,7 @@ final class ExtensionPhpLoader implements EventSubscriberInterface
     private array $loadedExtensions = [];
     private ExtensionDependentDeactivator $dependentDeactivator;
     private ExtensionClassAutoloader $classAutoloader;
+    private ExtensionDependencyMetadataReader $dependencyReader;
 
     public function __construct(
         private readonly ActiveExtensionProviderInterface $extensionProvider,
@@ -47,9 +48,11 @@ final class ExtensionPhpLoader implements EventSubscriberInterface
         ?ExtensionDependentDeactivator $dependentDeactivator = null,
         ?ExtensionClassAutoloader $classAutoloader = null,
         ?ExtensionRuntimeServices $extensionRuntimeServices = null,
+        ?ExtensionDependencyMetadataReader $dependencyReader = null,
     ) {
         $this->dependentDeactivator = $dependentDeactivator ?? new ExtensionDependentDeactivator($entityManager);
         $this->classAutoloader = $classAutoloader ?? new ExtensionClassAutoloader($projectDir, $pathGuard);
+        $this->dependencyReader = $dependencyReader ?? new ExtensionDependencyMetadataReader();
         if (null !== $extensionRuntimeServices) {
             ExtensionRuntime::configure($extensionRuntimeServices);
         }
@@ -89,7 +92,7 @@ final class ExtensionPhpLoader implements EventSubscriberInterface
         }
 
         try {
-            $extensions = $this->extensionProvider->extensions();
+            $extensions = $this->dependencyOrderedExtensions($this->extensionProvider->extensions());
         } catch (Throwable $error) {
             return WorkflowResult::failed([$this->exceptionIssue($error, ['stage' => 'active_extension_lookup'])]);
         }
@@ -198,6 +201,65 @@ final class ExtensionPhpLoader implements EventSubscriberInterface
             'operation' => 'extension.php_load',
             'environment' => $this->environment,
         ]);
+    }
+
+    /**
+     * @param list<Extension> $extensions
+     *
+     * @return list<Extension>
+     */
+    private function dependencyOrderedExtensions(array $extensions): array
+    {
+        $byName = [];
+        foreach ($extensions as $extension) {
+            $byName[$extension->extensionName()] = $extension;
+        }
+
+        $ordered = [];
+        $visiting = [];
+        $visited = [];
+
+        foreach ($extensions as $extension) {
+            $this->visitDependencyOrderedExtension($extension, $byName, $ordered, $visiting, $visited);
+        }
+
+        return array_values($ordered);
+    }
+
+    /**
+     * @param array<string, Extension> $byName
+     * @param array<string, Extension> $ordered
+     * @param array<string, true> $visiting
+     * @param array<string, true> $visited
+     */
+    private function visitDependencyOrderedExtension(
+        Extension $extension,
+        array $byName,
+        array &$ordered,
+        array &$visiting,
+        array &$visited,
+    ): void {
+        $name = $extension->extensionName();
+        if (isset($visited[$name])) {
+            return;
+        }
+
+        if (isset($visiting[$name])) {
+            return;
+        }
+
+        $visiting[$name] = true;
+        foreach ($this->dependencyReader->dependencies($extension) as [$dependencyName]) {
+            if ('system' === $dependencyName || !isset($byName[$dependencyName])) {
+                continue;
+            }
+
+            $this->visitDependencyOrderedExtension($byName[$dependencyName], $byName, $ordered, $visiting, $visited);
+        }
+
+        unset($visiting[$name]);
+        $visited[$name] = true;
+        $ordered[$name] = $extension;
     }
 
     private function loaderPath(Extension $extension): ?string

@@ -106,16 +106,25 @@ final class ExtensionRuntimeContributionRegistry implements StaticViewInjectionP
 
     public function addStaged(Extension $extension, mixed $contribution, ?callable $afterValidation = null): void
     {
+        $previous = clone $this;
         $staged = clone $this;
         foreach (($this->contributionExpander ?? new ExtensionRuntimeContributionExpander())->expand($extension, $contribution) as $expandedContribution) {
             $staged->addToRegistry($extension, $expandedContribution);
         }
 
-        if (null !== $afterValidation) {
-            $afterValidation();
+        $this->replaceWith($staged);
+
+        if (null === $afterValidation) {
+            return;
         }
 
-        $this->replaceWith($staged);
+        try {
+            $afterValidation();
+        } catch (\Throwable $error) {
+            $this->replaceWith($previous);
+
+            throw $error;
+        }
     }
 
     private function addToRegistry(Extension $extension, object $contribution): void

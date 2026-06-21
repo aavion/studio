@@ -123,7 +123,7 @@ final class PublicEventDispatcherTest extends TestCase
         self::assertTrue($result->isSuccess());
         self::assertTrue($event->context()['after_failure']);
         self::assertInstanceOf(PublicHookFailedEvent::class, $reported);
-        self::assertNull($reported->extension());
+        self::assertSame('demo-module', $reported->extension());
         self::assertSame('demo-module', $reported->context()['extension_listener']);
         self::assertSame('extension-listener-test', $reported->context()['operation']);
     }
