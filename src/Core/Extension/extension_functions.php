@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Core\Extension\ExtensionCacheInterface;
 use App\Core\Extension\ExtensionRuntime;
 use App\Core\Extension\ExtensionVendorFacade;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 if (!function_exists('require_vendor')) {
     function require_vendor(string $package): bool
@@ -166,6 +167,18 @@ if (!function_exists('extension_storage_list')) {
     function extension_storage_list(string $prefix = '', array $options = []): array
     {
         return ExtensionRuntime::storageList($prefix, $options);
+    }
+}
+
+if (!function_exists('extension_upload_store')) {
+    /**
+     * @param array<string, mixed> $options
+     *
+     * @return array{path: string, original_name: string, size: int, mime_type: string|null, extension: string|null}|null
+     */
+    function extension_upload_store(UploadedFile $file, string $targetPath, array $options = []): ?array
+    {
+        return ExtensionRuntime::uploadStore($file, $targetPath, $options);
     }
 }
 

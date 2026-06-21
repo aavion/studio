@@ -315,11 +315,16 @@ services:
             $databases: '@App\Core\Extension\ExtensionDatabaseFacade'
             $mail: '@App\Core\Extension\ExtensionMailFacade'
             $storage: '@App\Core\Extension\ExtensionStorage'
+            $uploads: '@App\Core\Extension\ExtensionUploadStorage'
 
     App\Core\Extension\ExtensionStorage:
         arguments:
             $projectDir: '%kernel.project_dir%'
             $environment: '%kernel.environment%'
+
+    App\Core\Extension\ExtensionUploadStorage:
+        arguments:
+            $storage: '@App\Core\Extension\ExtensionStorage'
 
     App\Security\AutoBan\AutoBanSignalEvaluator:
         arguments:

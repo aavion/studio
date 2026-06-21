@@ -23,6 +23,7 @@ final readonly class ExtensionRuntimeServices
         private ?ExtensionDatabaseFacade $databases = null,
         private ?ExtensionMailFacade $mail = null,
         private ?ExtensionStorage $storage = null,
+        private ?ExtensionUploadStorage $uploads = null,
     ) {
     }
 
@@ -94,5 +95,10 @@ final readonly class ExtensionRuntimeServices
     public function storage(): ?ExtensionStorage
     {
         return $this->storage;
+    }
+
+    public function uploads(): ?ExtensionUploadStorage
+    {
+        return $this->uploads;
     }
 }

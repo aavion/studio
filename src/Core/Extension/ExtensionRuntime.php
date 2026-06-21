@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Core\Extension;
 
+use Symfony\Component\HttpFoundation\File\UploadedFile;
+
 final class ExtensionRuntime
 {
     private static ?ExtensionRuntimeServices $services = null;
@@ -198,6 +200,19 @@ final class ExtensionRuntime
         $storage = self::$services?->storage();
 
         return null !== $slug && null !== $storage ? $storage->list($slug, $prefix, $options) : [];
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     *
+     * @return array{path: string, original_name: string, size: int, mime_type: string|null, extension: string|null}|null
+     */
+    public static function uploadStore(UploadedFile $file, string $targetPath, array $options = []): ?array
+    {
+        $slug = self::callerExtensionSlug();
+        $uploads = self::$services?->uploads();
+
+        return null !== $slug && null !== $uploads ? $uploads->store($slug, $file, $targetPath, $options) : null;
     }
 
     /**
