@@ -28,6 +28,7 @@ final class SecurityController extends AbstractController
             'registration_enabled' => $this->config->registrationEnabled(),
             'account_closed' => '1' === $request->query->get('account_closed'),
             'auto_ban_recovery_login' => '1' === (string) $request->query->get('bypass', ''),
+            'captcha_error' => 'failed' === (string) $request->query->get('captcha', ''),
         ]);
     }
 

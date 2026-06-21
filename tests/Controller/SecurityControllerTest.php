@@ -47,6 +47,11 @@ final class SecurityControllerTest extends WebTestCase
         self::assertSelectorExists('input[name="captcha[provider]"][value="none"]');
         self::assertSelectorExists('input[name="captcha[fallback_rendered]"][value="1"]');
         self::assertSelectorExists('input[name="captcha[form_id]"][value="user-login-form"]');
+
+        $client->request('GET', '/user/login?bypass=1&captcha=failed');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('.system-frontend-auth-notice', 'The captcha could not be verified. Please try again.');
     }
 
     public function testLoginFormAuthenticatesUserAccount(): void

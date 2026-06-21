@@ -17,6 +17,9 @@
         {% if account_closed|default(false) %}
             <p class="system-frontend-auth-notice">{{ 'ui.user.login.account_closed'|trans }}</p>
         {% endif %}
+        {% if captcha_error|default(false) %}
+            <p class="system-frontend-auth-notice">{{ 'ui.user.login.captcha_failed'|trans }}</p>
+        {% endif %}
         <form id="user-login-form" action="{{ path('user_login') }}" method="post" class="system-frontend-auth-form">
             {% include '@frontend/partials/forms/fields/input.html.twig' with {
                 name: 'username',

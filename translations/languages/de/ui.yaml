@@ -63,6 +63,7 @@ ui:
       forgot_password: 'Passwort vergessen?'
       invalid_credentials: 'Username oder Passwort ist nicht gültig.'
       account_closed: 'Dein Account wurde geschlossen.'
+      captcha_failed: 'Das Captcha konnte nicht bestätigt werden. Bitte versuche es erneut.'
     register:
       title: 'Account erstellen'
       link: 'Account erstellen'
