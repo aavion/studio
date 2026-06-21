@@ -27,6 +27,7 @@ final readonly class ExtensionRuntimeServices
         private ?ExtensionRequestSnapshot $requests = null,
         private ?ExtensionContentFacade $content = null,
         private ?ExtensionPermissionFacade $permissions = null,
+        private ?ExtensionCsrfFacade $csrf = null,
     ) {
     }
 
@@ -118,5 +119,10 @@ final readonly class ExtensionRuntimeServices
     public function permissions(): ?ExtensionPermissionFacade
     {
         return $this->permissions;
+    }
+
+    public function csrf(): ?ExtensionCsrfFacade
+    {
+        return $this->csrf;
     }
 }

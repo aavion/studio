@@ -264,6 +264,22 @@ final class ExtensionRuntime
         return null !== $slug && null !== $permissions && $permissions->can($slug, $action, $subject, $options);
     }
 
+    public static function csrfToken(string $intent): string
+    {
+        $slug = self::callerExtensionSlug();
+        $csrf = self::$services?->csrf();
+
+        return null !== $slug && null !== $csrf ? $csrf->token($slug, $intent) : '';
+    }
+
+    public static function csrfValid(string $intent, ?string $token = null): bool
+    {
+        $slug = self::callerExtensionSlug();
+        $csrf = self::$services?->csrf();
+
+        return null !== $slug && null !== $csrf && $csrf->valid($slug, $intent, $token);
+    }
+
     /**
      * @param array<string, mixed> $options
      * @return array<string, mixed>|null

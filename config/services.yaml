@@ -319,6 +319,7 @@ services:
             $requests: '@App\Core\Extension\ExtensionRequestSnapshot'
             $content: '@App\Core\Extension\ExtensionContentFacade'
             $permissions: '@App\Core\Extension\ExtensionPermissionFacade'
+            $csrf: '@App\Core\Extension\ExtensionCsrfFacade'
 
     App\Core\Extension\ExtensionStorage:
         arguments:
@@ -344,6 +345,11 @@ services:
         arguments:
             $entityManager: '@doctrine.orm.entity_manager'
             $security: '@security.helper'
+
+    App\Core\Extension\ExtensionCsrfFacade:
+        arguments:
+            $tokens: '@security.csrf.token_manager'
+            $requestStack: '@request_stack'
 
     App\Security\AutoBan\AutoBanSignalEvaluator:
         arguments:

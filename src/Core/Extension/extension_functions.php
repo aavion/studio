@@ -227,6 +227,20 @@ if (!function_exists('extension_can')) {
     }
 }
 
+if (!function_exists('extension_csrf_token')) {
+    function extension_csrf_token(string $intent): string
+    {
+        return ExtensionRuntime::csrfToken($intent);
+    }
+}
+
+if (!function_exists('extension_csrf_valid')) {
+    function extension_csrf_valid(string $intent, ?string $token = null): bool
+    {
+        return ExtensionRuntime::csrfValid($intent, $token);
+    }
+}
+
 if (!function_exists('extension_lookup')) {
     /**
      * @param array<string, mixed> $options
