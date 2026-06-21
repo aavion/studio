@@ -89,6 +89,7 @@ message:
     runtime:
       contribution_unsupported: 'Extension "%extension%" returned unsupported runtime contribution type "%type%".'
       log: '%message%'
+      mail_stub: 'Extension "%extension%" queued mail workflow "%workflow%" through the development mail stub.'
     live:
       endpoint_path_invalid: 'Extension "%extension%" tried to register live endpoint path "%path%" outside its own /api/live/{extension}/ namespace.'
       endpoint_handler_invalid: 'Extension "%extension%" tried to register live endpoint handler "%handler%" outside its own handler namespace.'

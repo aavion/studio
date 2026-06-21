@@ -21,6 +21,7 @@ final readonly class ExtensionRuntimeServices
         private ?ExtensionAlertFacade $alerts = null,
         private ?ExtensionReferenceFacade $references = null,
         private ?ExtensionDatabaseFacade $databases = null,
+        private ?ExtensionMailFacade $mail = null,
     ) {
     }
 
@@ -82,5 +83,10 @@ final readonly class ExtensionRuntimeServices
     public function databases(): ?ExtensionDatabaseFacade
     {
         return $this->databases;
+    }
+
+    public function mail(): ?ExtensionMailFacade
+    {
+        return $this->mail;
     }
 }

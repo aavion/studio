@@ -114,6 +114,18 @@ if (!function_exists('extension_alert')) {
     }
 }
 
+if (!function_exists('extension_mail')) {
+    /**
+     * @param string|list<string> $recipients
+     * @param array<string, mixed> $parameters
+     * @param array<string, mixed> $options
+     */
+    function extension_mail(string $workflow, string|array $recipients, array $parameters = [], array $options = []): bool
+    {
+        return ExtensionRuntime::mail($workflow, $recipients, $parameters, $options);
+    }
+}
+
 if (!function_exists('extension_lookup')) {
     /**
      * @param array<string, mixed> $options

@@ -75,6 +75,7 @@ final class ExtensionMessageCode
     public const EXTENSION_LIFECYCLE_PHP_LOAD_FAILED = 'extension.lifecycle.php_load_failed';
     public const EXTENSION_LIFECYCLE_ROLLED_BACK = 'extension.lifecycle.rolled_back';
     public const EXTENSION_RUNTIME_LOG = 'extension.runtime.log';
+    public const EXTENSION_RUNTIME_MAIL_STUB = 'extension.runtime.mail_stub';
     public const EXTENSION_LIVE_ENDPOINT_PATH_INVALID = 'extension.live.endpoint_path_invalid';
     public const EXTENSION_LIVE_ENDPOINT_HANDLER_INVALID = 'extension.live.endpoint_handler_invalid';
     public const EXTENSION_LIVE_ENDPOINT_RESERVED = 'extension.live.endpoint_reserved';

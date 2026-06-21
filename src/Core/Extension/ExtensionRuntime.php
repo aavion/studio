@@ -140,6 +140,19 @@ final class ExtensionRuntime
     }
 
     /**
+     * @param string|list<string> $recipients
+     * @param array<string, mixed> $parameters
+     * @param array<string, mixed> $options
+     */
+    public static function mail(string $workflow, string|array $recipients, array $parameters = [], array $options = []): bool
+    {
+        $slug = self::callerExtensionSlug();
+        $mail = self::$services?->mail();
+
+        return null !== $slug && null !== $mail && $mail->mail($slug, $workflow, $recipients, $parameters, $options);
+    }
+
+    /**
      * @param array<string, mixed> $options
      * @return array<string, mixed>|null
      */
