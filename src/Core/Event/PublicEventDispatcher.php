@@ -111,41 +111,8 @@ final readonly class PublicEventDispatcher
             return PublicEventDispatchResult::failed($event, [$issue]);
         }
 
-        try {
-            $this->extensionListenerDispatcher?->dispatch($event, $registeredHooks[$eventClass]);
-        } catch (ExtensionEventListenerFailedException $error) {
-            $extension = $error->registration()->extensionName();
-            $previous = $error->getPrevious() ?? $error;
-            $this->debugCollector?->recordHook(
-                $eventClass,
-                $registeredHooks[$eventClass]->domain(),
-                $registeredHooks[$eventClass]->mode()->value,
-                $registeredHooks[$eventClass]->mutable(),
-                'failed',
-                $context,
-                $extension,
-                1,
-            );
-
-            $issue = Message::exception(EventMessageCode::EVENT_HOOK_LISTENER_FAILED, EventMessageKey::EVENT_HOOK_LISTENER_FAILED, [
-                '%event%' => $eventClass,
-            ], [
-                'event' => $eventClass,
-                'domain' => $registeredHooks[$eventClass]->domain(),
-                'exception' => $previous::class,
-                'message' => $previous->getMessage(),
-                'context' => $context,
-                'extension' => $extension,
-                'listener' => 'extension',
-            ]);
-
-            $this->reportHookFailure($event, $registeredHooks[$eventClass], $issue, $previous, [
-                ...$context,
-                'extension_listener' => $extension,
-            ], null);
-            $this->reportFailure([$issue], $eventClass, $context, $extension);
-
-            return PublicEventDispatchResult::failed($event, [$issue]);
+        foreach ($this->extensionListenerDispatcher?->dispatchCollectingFailures($event, $registeredHooks[$eventClass]) ?? [] as $error) {
+            $this->reportExtensionListenerFailure($event, $registeredHooks[$eventClass], $error, $context);
         }
 
         $this->debugCollector?->recordHook(
@@ -159,6 +126,48 @@ final readonly class PublicEventDispatcher
         );
 
         return PublicEventDispatchResult::success($event);
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     */
+    private function reportExtensionListenerFailure(
+        PublicEventInterface $event,
+        EventHookDescriptor $hook,
+        ExtensionEventListenerFailedException $error,
+        array $context,
+    ): void {
+        $eventClass = $event::class;
+        $extension = $error->registration()->extensionName();
+        $previous = $error->getPrevious() ?? $error;
+        $this->debugCollector?->recordHook(
+            $eventClass,
+            $hook->domain(),
+            $hook->mode()->value,
+            $hook->mutable(),
+            'failed',
+            $context,
+            $extension,
+            1,
+        );
+
+        $issue = Message::exception(EventMessageCode::EVENT_HOOK_LISTENER_FAILED, EventMessageKey::EVENT_HOOK_LISTENER_FAILED, [
+            '%event%' => $eventClass,
+        ], [
+            'event' => $eventClass,
+            'domain' => $hook->domain(),
+            'exception' => $previous::class,
+            'message' => $previous->getMessage(),
+            'context' => $context,
+            'extension' => $extension,
+            'listener' => 'extension',
+        ]);
+
+        $this->reportHookFailure($event, $hook, $issue, $previous, [
+            ...$context,
+            'extension_listener' => $extension,
+        ], null);
+        $this->reportFailure([$issue], $eventClass, $context, $extension);
     }
 
     /**

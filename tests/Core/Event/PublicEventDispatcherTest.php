@@ -90,7 +90,7 @@ final class PublicEventDispatcherTest extends TestCase
         self::assertSame('demo-extension', $reported->extension());
     }
 
-    public function testItReportsExtensionListenerFailuresWithExtensionOwnership(): void
+    public function testItReportsExtensionListenerFailuresWithoutCancellingLaterExtensionListeners(): void
     {
         $dispatcher = new EventDispatcher();
         $reported = null;
@@ -98,24 +98,30 @@ final class PublicEventDispatcherTest extends TestCase
             $reported = $event;
         });
         $registry = new ExtensionRuntimeContributionRegistry();
-        $registry->add($this->extension(), new ExtensionEventListenerContribution(
+        $registry->add($this->extension('demo-module'), new ExtensionEventListenerContribution(
             ViewContextEvent::class,
             static function (): void {
                 throw new \RuntimeException('Extension listener failed');
             },
+            10,
+        ));
+        $registry->add($this->extension('demo-addon'), new ExtensionEventListenerContribution(
+            ViewContextEvent::class,
+            static function (ViewContextEvent $event): void {
+                $event->set('after_failure', true);
+            },
         ));
 
+        $event = new ViewContextEvent([]);
         $result = (new PublicEventDispatcher(
             $dispatcher,
             new PublicEventHookRegistry(),
             new NullWorkflowResultMessageReporter(),
             extensionListenerDispatcher: new ExtensionEventListenerDispatcher($registry),
-        ))->dispatch(new ViewContextEvent([]), ['operation' => 'extension-listener-test']);
+        ))->dispatch($event, ['operation' => 'extension-listener-test']);
 
-        self::assertFalse($result->isSuccess());
-        self::assertSame('event.hook_listener_failed', $result->firstIssue()?->code());
-        self::assertSame('demo-module', $result->firstIssue()?->context()['extension']);
-        self::assertSame('extension', $result->firstIssue()?->context()['listener']);
+        self::assertTrue($result->isSuccess());
+        self::assertTrue($event->context()['after_failure']);
         self::assertInstanceOf(PublicHookFailedEvent::class, $reported);
         self::assertNull($reported->extension());
         self::assertSame('demo-module', $reported->context()['extension_listener']);
@@ -139,13 +145,16 @@ final class PublicEventDispatcherTest extends TestCase
         self::assertSame('Original failure', $result->firstIssue()?->context()['message']);
     }
 
-    private function extension(): Extension
+    private function extension(string $name = 'demo-module'): Extension
     {
         return new Extension(
-            '10000000-0000-7000-8000-000000000703',
+            match ($name) {
+                'demo-addon' => '10000000-0000-7000-8000-000000000704',
+                default => '10000000-0000-7000-8000-000000000703',
+            },
             [ExtensionScope::Module],
-            'demo-module',
-            'extensions/demo-module',
+            $name,
+            'extensions/'.$name,
             ExtensionStatus::Active,
         );
     }
