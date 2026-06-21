@@ -41,6 +41,13 @@ if (!function_exists('extension_settings_get')) {
     }
 }
 
+if (!function_exists('extension_file_get')) {
+    function extension_file_get(string $path): ?string
+    {
+        return ExtensionRuntime::fileGet($path);
+    }
+}
+
 if (!function_exists('extension_asset')) {
     function extension_asset(string $path, bool $private = false): ?string
     {

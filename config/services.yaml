@@ -284,6 +284,10 @@ services:
     App\Core\Extension\ExtensionCacheInterface:
         alias: App\Core\Extension\ExtensionCache
 
+    App\Core\Extension\ExtensionFileReader:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
     App\Core\Extension\ExtensionAssetReader:
         arguments:
             $projectDir: '%kernel.project_dir%'
@@ -300,6 +304,7 @@ services:
             $projectDir: '%kernel.project_dir%'
             $cache: '@App\Core\Extension\ExtensionCacheInterface'
             $settings: '@App\Core\Extension\Settings\ExtensionSettings'
+            $files: '@App\Core\Extension\ExtensionFileReader'
             $assets: '@App\Core\Extension\ExtensionAssetReader'
             $assetUrls: '@App\Core\Extension\ExtensionAssetUrlGenerator'
             $endpointUrls: '@App\Core\Extension\ExtensionEndpointUrlGenerator'

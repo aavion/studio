@@ -12,6 +12,7 @@ final readonly class ExtensionRuntimeServices
         private string $projectDir,
         private ?ExtensionCacheInterface $cache = null,
         private ?ExtensionSettings $settings = null,
+        private ?ExtensionFileReader $files = null,
         private ?ExtensionAssetReader $assets = null,
         private ?ExtensionAssetUrlGenerator $assetUrls = null,
         private ?ExtensionEndpointUrlGenerator $endpointUrls = null,
@@ -35,6 +36,11 @@ final readonly class ExtensionRuntimeServices
     public function settings(): ?ExtensionSettings
     {
         return $this->settings;
+    }
+
+    public function files(): ?ExtensionFileReader
+    {
+        return $this->files;
     }
 
     public function assets(): ?ExtensionAssetReader
