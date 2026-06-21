@@ -318,6 +318,7 @@ services:
             $uploads: '@App\Core\Extension\ExtensionUploadStorage'
             $requests: '@App\Core\Extension\ExtensionRequestSnapshot'
             $content: '@App\Core\Extension\ExtensionContentFacade'
+            $permissions: '@App\Core\Extension\ExtensionPermissionFacade'
 
     App\Core\Extension\ExtensionStorage:
         arguments:
@@ -337,6 +338,11 @@ services:
             $entityManager: '@doctrine.orm.entity_manager'
             $contentResolver: '@App\Content\Read\PublishedContentResolver'
             $contentAccess: '@App\Content\Read\ContentReadAccessPolicy'
+            $security: '@security.helper'
+
+    App\Core\Extension\ExtensionPermissionFacade:
+        arguments:
+            $entityManager: '@doctrine.orm.entity_manager'
             $security: '@security.helper'
 
     App\Security\AutoBan\AutoBanSignalEvaluator:

@@ -26,6 +26,7 @@ final readonly class ExtensionRuntimeServices
         private ?ExtensionUploadStorage $uploads = null,
         private ?ExtensionRequestSnapshot $requests = null,
         private ?ExtensionContentFacade $content = null,
+        private ?ExtensionPermissionFacade $permissions = null,
     ) {
     }
 
@@ -112,5 +113,10 @@ final readonly class ExtensionRuntimeServices
     public function content(): ?ExtensionContentFacade
     {
         return $this->content;
+    }
+
+    public function permissions(): ?ExtensionPermissionFacade
+    {
+        return $this->permissions;
     }
 }

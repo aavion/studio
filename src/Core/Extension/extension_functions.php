@@ -216,6 +216,17 @@ if (!function_exists('extension_content_get')) {
     }
 }
 
+if (!function_exists('extension_can')) {
+    /**
+     * @param array<string, mixed> $subject
+     * @param array<string, mixed> $options
+     */
+    function extension_can(string $action, array $subject = [], array $options = []): bool
+    {
+        return ExtensionRuntime::can($action, $subject, $options);
+    }
+}
+
 if (!function_exists('extension_lookup')) {
     /**
      * @param array<string, mixed> $options

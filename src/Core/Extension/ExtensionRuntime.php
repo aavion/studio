@@ -253,6 +253,18 @@ final class ExtensionRuntime
     }
 
     /**
+     * @param array<string, mixed> $subject
+     * @param array<string, mixed> $options
+     */
+    public static function can(string $action, array $subject = [], array $options = []): bool
+    {
+        $slug = self::callerExtensionSlug();
+        $permissions = self::$services?->permissions();
+
+        return null !== $slug && null !== $permissions && $permissions->can($slug, $action, $subject, $options);
+    }
+
+    /**
      * @param array<string, mixed> $options
      * @return array<string, mixed>|null
      */
