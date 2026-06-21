@@ -61,6 +61,11 @@ final class ExtensionRuntimeContributionRegistry implements StaticViewInjectionP
 
     private array $cookieConsentDefinitions = [];
 
+    /**
+     * @var array<string, string>
+     */
+    private array $cookieConsentOwners = [];
+
     private array $databaseTables = [];
 
     private array $contentSchemaDefinitions = [];
@@ -222,6 +227,7 @@ final class ExtensionRuntimeContributionRegistry implements StaticViewInjectionP
         $this->schedulerContributions = clone $registry->schedulerContributions;
         $this->extensionSettingDefinitions = $registry->extensionSettingDefinitions;
         $this->cookieConsentDefinitions = $registry->cookieConsentDefinitions;
+        $this->cookieConsentOwners = $registry->cookieConsentOwners;
         $this->databaseTables = $registry->databaseTables;
         $this->contentSchemaDefinitions = $registry->contentSchemaDefinitions;
         $this->eventListeners = $registry->eventListeners;
@@ -238,6 +244,7 @@ final class ExtensionRuntimeContributionRegistry implements StaticViewInjectionP
     {
         $this->guard()->assertCookieConsentDefinition($extension, $definition, $this->existingCookieConsentNames());
         $this->cookieConsentDefinitions[] = $definition;
+        $this->cookieConsentOwners[$definition->name()] = $extension->extensionName();
     }
 
     private function addDatabaseTable(Extension $extension, ExtensionDatabaseTable $table): void
@@ -332,6 +339,21 @@ final class ExtensionRuntimeContributionRegistry implements StaticViewInjectionP
     public function cookieConsentDefinitions(): array
     {
         return $this->cookieConsentDefinitions;
+    }
+
+    public function cookieConsentDefinitionForExtension(string $extensionName, string $name): ?CookieConsentDefinition
+    {
+        if (($this->cookieConsentOwners[$name] ?? null) !== $extensionName) {
+            return null;
+        }
+
+        foreach ($this->cookieConsentDefinitions as $definition) {
+            if ($definition->name() === $name) {
+                return $definition;
+            }
+        }
+
+        return null;
     }
 
     public function schedulerTasks(): array

@@ -280,6 +280,33 @@ final class ExtensionRuntime
         return null !== $slug && null !== $csrf && $csrf->valid($slug, $intent, $token);
     }
 
+    public static function cookieGet(string $name): ?string
+    {
+        $slug = self::callerExtensionSlug();
+        $cookies = self::$services?->cookies();
+
+        return null !== $slug && null !== $cookies ? $cookies->get($slug, $name) : null;
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     */
+    public static function cookieSet(string $name, string $value, array $options = []): bool
+    {
+        $slug = self::callerExtensionSlug();
+        $cookies = self::$services?->cookies();
+
+        return null !== $slug && null !== $cookies && $cookies->set($slug, $name, $value, $options);
+    }
+
+    public static function cookieDelete(string $name): bool
+    {
+        $slug = self::callerExtensionSlug();
+        $cookies = self::$services?->cookies();
+
+        return null !== $slug && null !== $cookies && $cookies->delete($slug, $name);
+    }
+
     /**
      * @param array<string, mixed> $options
      * @return array<string, mixed>|null

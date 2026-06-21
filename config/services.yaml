@@ -320,6 +320,7 @@ services:
             $content: '@App\Core\Extension\ExtensionContentFacade'
             $permissions: '@App\Core\Extension\ExtensionPermissionFacade'
             $csrf: '@App\Core\Extension\ExtensionCsrfFacade'
+            $cookies: '@App\Core\Extension\ExtensionCookieFacade'
 
     App\Core\Extension\ExtensionStorage:
         arguments:
@@ -350,6 +351,12 @@ services:
         arguments:
             $tokens: '@security.csrf.token_manager'
             $requestStack: '@request_stack'
+
+    App\Core\Extension\ExtensionCookieFacade:
+        arguments:
+            $requestStack: '@request_stack'
+            $consent: '@App\Privacy\Cookie\CookieConsentManager'
+            $runtimeContributions: '@App\Core\Extension\ExtensionRuntimeContributionRegistry'
 
     App\Security\AutoBan\AutoBanSignalEvaluator:
         arguments:

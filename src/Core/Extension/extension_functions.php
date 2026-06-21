@@ -241,6 +241,30 @@ if (!function_exists('extension_csrf_valid')) {
     }
 }
 
+if (!function_exists('extension_cookie_get')) {
+    function extension_cookie_get(string $name): ?string
+    {
+        return ExtensionRuntime::cookieGet($name);
+    }
+}
+
+if (!function_exists('extension_cookie_set')) {
+    /**
+     * @param array<string, mixed> $options
+     */
+    function extension_cookie_set(string $name, string $value, array $options = []): bool
+    {
+        return ExtensionRuntime::cookieSet($name, $value, $options);
+    }
+}
+
+if (!function_exists('extension_cookie_delete')) {
+    function extension_cookie_delete(string $name): bool
+    {
+        return ExtensionRuntime::cookieDelete($name);
+    }
+}
+
 if (!function_exists('extension_lookup')) {
     /**
      * @param array<string, mixed> $options
