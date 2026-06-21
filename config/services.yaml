@@ -316,6 +316,7 @@ services:
             $mail: '@App\Core\Extension\ExtensionMailFacade'
             $storage: '@App\Core\Extension\ExtensionStorage'
             $uploads: '@App\Core\Extension\ExtensionUploadStorage'
+            $requests: '@App\Core\Extension\ExtensionRequestSnapshot'
 
     App\Core\Extension\ExtensionStorage:
         arguments:
@@ -325,6 +326,10 @@ services:
     App\Core\Extension\ExtensionUploadStorage:
         arguments:
             $storage: '@App\Core\Extension\ExtensionStorage'
+
+    App\Core\Extension\ExtensionRequestSnapshot:
+        arguments:
+            $requestStack: '@request_stack'
 
     App\Security\AutoBan\AutoBanSignalEvaluator:
         arguments:

@@ -182,6 +182,17 @@ if (!function_exists('extension_upload_store')) {
     }
 }
 
+if (!function_exists('extension_request')) {
+    /**
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>
+     */
+    function extension_request(array $options = []): array
+    {
+        return ExtensionRuntime::request($options);
+    }
+}
+
 if (!function_exists('extension_lookup')) {
     /**
      * @param array<string, mixed> $options

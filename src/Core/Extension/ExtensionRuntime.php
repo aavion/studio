@@ -217,6 +217,18 @@ final class ExtensionRuntime
 
     /**
      * @param array<string, mixed> $options
+     * @return array<string, mixed>
+     */
+    public static function request(array $options = []): array
+    {
+        $slug = self::callerExtensionSlug();
+        $requests = self::$services?->requests();
+
+        return null !== $slug && null !== $requests ? $requests->snapshot($slug, $options) : [];
+    }
+
+    /**
+     * @param array<string, mixed> $options
      * @return array<string, mixed>|null
      */
     public static function lookup(string $type, string $identifier, array $options = []): ?array
