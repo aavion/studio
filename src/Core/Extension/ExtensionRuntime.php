@@ -57,6 +57,14 @@ final class ExtensionRuntime
         return null !== $slug && null !== $assets ? $assets->read($slug, $path, $private) : null;
     }
 
+    public static function assetUrl(string $path): ?string
+    {
+        $slug = self::callerExtensionSlug();
+        $assetUrls = self::$services?->assetUrls();
+
+        return null !== $slug && null !== $assetUrls ? $assetUrls->url($slug, $path) : null;
+    }
+
     /**
      * @internal test helper
      */

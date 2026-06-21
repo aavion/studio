@@ -288,12 +288,17 @@ services:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
+    App\Core\Extension\ExtensionAssetUrlGenerator:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
     App\Core\Extension\ExtensionRuntimeServices:
         arguments:
             $projectDir: '%kernel.project_dir%'
             $cache: '@App\Core\Extension\ExtensionCacheInterface'
             $settings: '@App\Core\Extension\Settings\ExtensionSettings'
             $assets: '@App\Core\Extension\ExtensionAssetReader'
+            $assetUrls: '@App\Core\Extension\ExtensionAssetUrlGenerator'
 
     App\Security\AutoBan\AutoBanSignalEvaluator:
         arguments:

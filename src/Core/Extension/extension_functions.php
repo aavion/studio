@@ -47,3 +47,10 @@ if (!function_exists('extension_asset')) {
         return ExtensionRuntime::asset($path, $private);
     }
 }
+
+if (!function_exists('extension_asset_url')) {
+    function extension_asset_url(string $path): ?string
+    {
+        return ExtensionRuntime::assetUrl($path);
+    }
+}

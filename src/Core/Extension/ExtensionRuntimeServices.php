@@ -13,6 +13,7 @@ final readonly class ExtensionRuntimeServices
         private ?ExtensionCacheInterface $cache = null,
         private ?ExtensionSettings $settings = null,
         private ?ExtensionAssetReader $assets = null,
+        private ?ExtensionAssetUrlGenerator $assetUrls = null,
     ) {
     }
 
@@ -34,5 +35,10 @@ final readonly class ExtensionRuntimeServices
     public function assets(): ?ExtensionAssetReader
     {
         return $this->assets;
+    }
+
+    public function assetUrls(): ?ExtensionAssetUrlGenerator
+    {
+        return $this->assetUrls;
     }
 }
