@@ -32,6 +32,32 @@ final class CaptchaRecoveryLoginSubscriberTest extends TestCase
         self::assertSame('/user/login?bypass=1&captcha=failed', $event->getResponse()?->headers->get('Location'));
     }
 
+    public function testItPreservesSafeReturnTargetWhenRecoveryCaptchaFails(): void
+    {
+        $csrfTokens = new CsrfTokenManager();
+        $subscriber = $this->subscriber($csrfTokens);
+        $event = $this->event($this->recoveryLoginRequest($csrfTokens, [
+            '_target_path' => '/admin/settings',
+        ]));
+
+        $subscriber->onKernelRequest($event);
+
+        self::assertSame('/user/login?bypass=1&captcha=failed&return_to=%2Fadmin%2Fsettings', $event->getResponse()?->headers->get('Location'));
+    }
+
+    public function testItDropsUnsafeReturnTargetWhenRecoveryCaptchaFails(): void
+    {
+        $csrfTokens = new CsrfTokenManager();
+        $subscriber = $this->subscriber($csrfTokens);
+        $event = $this->event($this->recoveryLoginRequest($csrfTokens, [
+            '_target_path' => '//example.test/admin',
+        ]));
+
+        $subscriber->onKernelRequest($event);
+
+        self::assertSame('/user/login?bypass=1&captcha=failed', $event->getResponse()?->headers->get('Location'));
+    }
+
     public function testItAllowsRecoveryLoginWhenCaptchaWasSkippedServerSide(): void
     {
         $csrfTokens = new CsrfTokenManager();

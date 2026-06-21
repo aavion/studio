@@ -41,10 +41,16 @@ final readonly class CaptchaRecoveryLoginSubscriber implements EventSubscriberIn
             return;
         }
 
-        $event->setResponse(new RedirectResponse($this->urls->generate('user_login', [
+        $parameters = [
             'bypass' => '1',
             'captcha' => 'failed',
-        ]), 303));
+        ];
+        $returnTo = $this->returnTo($request);
+        if (null !== $returnTo) {
+            $parameters['return_to'] = $returnTo;
+        }
+
+        $event->setResponse(new RedirectResponse($this->urls->generate('user_login', $parameters), 303));
     }
 
     private function isRecoveryLoginSubmission(Request $request): bool
@@ -63,5 +69,21 @@ final readonly class CaptchaRecoveryLoginSubscriber implements EventSubscriberIn
         return is_string($token)
             && '' !== $token
             && $this->csrfTokens->isTokenValid(new CsrfToken(AutoBanRequestSubscriber::RECOVERY_LOGIN_TOKEN_ID, $token));
+    }
+
+    private function returnTo(Request $request): ?string
+    {
+        $target = $request->request->get('_target_path');
+
+        return is_string($target) && $this->isSafeLocalTarget($target) ? $target : null;
+    }
+
+    private function isSafeLocalTarget(string $target): bool
+    {
+        return '' !== $target
+            && str_starts_with($target, '/')
+            && !str_starts_with($target, '//')
+            && !str_contains($target, '\\')
+            && 1 !== preg_match('/[\x00-\x1F\x7F]/', $target);
     }
 }
