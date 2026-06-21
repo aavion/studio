@@ -69,13 +69,20 @@ final readonly class LiveOperationRunLifecycle
             $operationId = basename($path, '.json');
             $state = $this->storage->read($operationId);
 
-            if (null === $state || (!$this->isExpiredTerminal($state, $cutoff) && !$this->isExpiredActive($state, $cutoff))) {
+            if (null === $state) {
+                if ($this->storage->validOperationId($operationId) && $this->isExpiredFile($path, $cutoff)) {
+                    $this->removeRunFiles($operationId, $path);
+                    ++$removed;
+                }
+
                 continue;
             }
 
-            @unlink($path);
-            @unlink($this->storage->outputPath($operationId));
-            @unlink($this->storage->pidPath($operationId));
+            if (!$this->isExpiredTerminal($state, $cutoff) && !$this->isExpiredActive($state, $cutoff)) {
+                continue;
+            }
+
+            $this->removeRunFiles($operationId, $path);
             ++$removed;
         }
 
@@ -126,6 +133,20 @@ final readonly class LiveOperationRunLifecycle
         $timestamp = $this->timestamp($state['updated_at'] ?? $state['created_at'] ?? null);
 
         return null !== $timestamp && $timestamp <= $cutoff;
+    }
+
+    private function isExpiredFile(string $path, int $cutoff): bool
+    {
+        $modifiedAt = filemtime($path);
+
+        return false !== $modifiedAt && $modifiedAt <= $cutoff;
+    }
+
+    private function removeRunFiles(string $operationId, string $statePath): void
+    {
+        @unlink($statePath);
+        @unlink($this->storage->outputPath($operationId));
+        @unlink($this->storage->pidPath($operationId));
     }
 
     private function timestamp(mixed $value): ?int

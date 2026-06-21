@@ -43,7 +43,10 @@ final class LiveOperationRunStoreTest extends TestCase
         self::assertSame('success', $payload['status']);
         self::assertSame(1, $payload['cursor']);
         self::assertSame('Clear cache', $payload['entries'][0]['name']);
-        self::assertSame(['status' => 'success'], $payload['result']);
+        self::assertArrayNotHasKey('context', $payload['entries'][0]);
+        self::assertSame('success', $payload['result']['status']);
+        self::assertSame([], $payload['result']['issues']);
+        self::assertSame([], $payload['result']['messages']);
         self::assertStringEndsWith('/var/operations/test/'.$run['operation_id'].'.out', $store->outputPath($run['operation_id']));
         self::assertNull($store->pollingPayload($run['operation_id'], 'wrong-token'));
     }
@@ -148,6 +151,76 @@ final class LiveOperationRunStoreTest extends TestCase
         self::assertArrayNotHasKey('token', $report);
         self::assertArrayNotHasKey('payload', $report);
         self::assertArrayNotHasKey('context', $report['result']);
+    }
+
+    public function testItBuildsSanitizedPollingPayloads(): void
+    {
+        $projectDir = $this->createTemporaryDirectory('live-operation-polling-redaction');
+        $store = new LiveOperationRunStore($projectDir, 'test');
+        $run = $store->create('backend.cache_clear', [], 'Cache clear');
+        $issue = Message::warning(
+            OperationMessageCode::OPERATION_EXCEPTION,
+            OperationMessageKey::OPERATION_EXCEPTION,
+            ['%operation%' => 'Clear cache'],
+            ['database_password' => 'db-secret'],
+        );
+
+        $store->appendEntry(
+            $run['operation_id'],
+            ActionLogEntry::pending('Clear cache')->start()->finish(ActionLogStatus::Warning, [$issue], [
+                'database_password' => 'db-secret',
+                'reason' => 'manual review',
+            ]),
+            1,
+            1,
+        );
+        $result = WorkflowResult::failed([$issue], ['secret' => 'hidden'])->toArray();
+        $result['value'] = ['admin_password' => 'admin-secret'];
+
+        $store->finish($run['operation_id'], false, $result);
+
+        $payload = $store->pollingPayload($run['operation_id'], $run['token']);
+        $encoded = json_encode($payload, JSON_THROW_ON_ERROR);
+
+        self::assertIsArray($payload);
+        self::assertIsString($encoded);
+        self::assertSame('failed', $payload['result']['status']);
+        self::assertSame('message.operation.exception', $payload['result']['issues'][0]['translation_key']);
+        self::assertSame('[redacted]', $payload['entries'][0]['context']['database_password']);
+        self::assertSame('manual review', $payload['entries'][0]['context']['reason']);
+        self::assertSame('[redacted]', $payload['entries'][0]['issues'][0]['context']['database_password']);
+        self::assertSame('[redacted]', $payload['result']['issues'][0]['context']['database_password']);
+        self::assertArrayNotHasKey('context', $payload['result']);
+        self::assertArrayNotHasKey('value', $payload['result']);
+        self::assertStringNotContainsString('db-secret', $encoded);
+        self::assertStringNotContainsString('hidden', $encoded);
+        self::assertStringNotContainsString('admin-secret', $encoded);
+    }
+
+    public function testItBuildsSanitizedOperationSummaries(): void
+    {
+        $projectDir = $this->createTemporaryDirectory('live-operation-summary-redaction');
+        $store = new LiveOperationRunStore($projectDir, 'test');
+        $run = $store->create('backend.cache_clear', [], 'Cache clear');
+        $issue = Message::warning(
+            OperationMessageCode::OPERATION_EXCEPTION,
+            OperationMessageKey::OPERATION_EXCEPTION,
+            ['%operation%' => 'Clear cache'],
+            ['database_password' => 'db-secret'],
+        );
+
+        $store->finish($run['operation_id'], false, WorkflowResult::failed([$issue], ['secret' => 'hidden'])->toArray());
+
+        $summaries = $store->summaries();
+        $encoded = json_encode($summaries, JSON_THROW_ON_ERROR);
+
+        self::assertCount(1, $summaries);
+        self::assertIsString($encoded);
+        self::assertSame('failed', $summaries[0]['result_status']);
+        self::assertSame('message.operation.exception', $summaries[0]['issue']['translation_key']);
+        self::assertSame('[redacted]', $summaries[0]['issue']['context']['database_password']);
+        self::assertStringNotContainsString('db-secret', $encoded);
+        self::assertStringNotContainsString('hidden', $encoded);
     }
 
     public function testItMarksReviewRequiredRunsAsTerminalAndExposesContinuationState(): void
@@ -376,16 +449,39 @@ final class LiveOperationRunStoreTest extends TestCase
         self::assertNull($store->read($run['operation_id']));
     }
 
+    public function testItCleansExpiredCorruptedRunState(): void
+    {
+        $projectDir = $this->createTemporaryDirectory('live-operation-cleanup-corrupt');
+        $store = new LiveOperationRunStore($projectDir, 'test');
+        $run = $store->create('backend.cache_clear', [], 'Cache clear');
+        file_put_contents($store->outputPath($run['operation_id']), 'runner output');
+        file_put_contents($store->pidPath($run['operation_id']), '12345');
+        $statePath = $this->statePath($store, $run['operation_id']);
+        file_put_contents($statePath, '{broken');
+
+        $result = $store->cleanup(0);
+
+        self::assertSame(['checked' => 1, 'removed' => 1], $result);
+        self::assertFileDoesNotExist($statePath);
+        self::assertFileDoesNotExist($store->outputPath($run['operation_id']));
+        self::assertFileDoesNotExist($store->pidPath($run['operation_id']));
+    }
+
     /**
      * @param array<string, mixed> $changes
      */
     private function rewriteState(LiveOperationRunStore $store, string $operationId, array $changes): void
     {
-        $path = dirname($store->outputPath($operationId)).'/'.$operationId.'.json';
+        $path = $this->statePath($store, $operationId);
         $state = json_decode((string) file_get_contents($path), true, flags: JSON_THROW_ON_ERROR);
 
         self::assertIsArray($state);
         file_put_contents($path, json_encode([...$state, ...$changes], JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
+    }
+
+    private function statePath(LiveOperationRunStore $store, string $operationId): string
+    {
+        return dirname($store->outputPath($operationId)).'/'.$operationId.'.json';
     }
 
     /**
