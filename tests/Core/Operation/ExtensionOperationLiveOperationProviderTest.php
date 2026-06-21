@@ -76,7 +76,7 @@ final class ExtensionOperationLiveOperationProviderTest extends TestCase
     {
         return new Extension(
             '10000000-0000-7000-8000-000000000801',
-            [ExtensionScope::Module],
+            [ExtensionScope::Module, ExtensionScope::Operations],
             'demo-module',
             'extensions/demo-module',
             ExtensionStatus::Active,

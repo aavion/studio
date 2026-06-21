@@ -769,7 +769,7 @@ final class ExtensionLifecycleBoundaryTest extends KernelTestCase
 
     public function testExtensionPhpLoaderRejectsElevatedSchedulerContributions(): void
     {
-        $this->insertExtension('scheduler-module', ['module'], 'active');
+        $this->insertExtension('scheduler-module', ['module', 'scheduler-tasks'], 'active');
         $this->writeTestFile($this->projectDir, 'extensions/scheduler-module/extension.php', <<<'PHP'
             <?php
 
@@ -804,7 +804,7 @@ final class ExtensionLifecycleBoundaryTest extends KernelTestCase
 
     public function testExtensionPhpLoaderKeepsSchedulerExecutionProviders(): void
     {
-        $this->insertExtension('scheduler-module', ['module'], 'active');
+        $this->insertExtension('scheduler-module', ['module', 'scheduler-tasks'], 'active');
         $this->writeTestFile($this->projectDir, 'extensions/scheduler-module/extension.php', <<<'PHP'
             <?php
 

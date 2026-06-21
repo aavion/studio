@@ -401,12 +401,30 @@ final class ExtensionRuntimeContributionRegistryContractTest extends TestCase
         );
     }
 
-    public function testItRejectsSchedulerTaskIdentifiersOutsideExtensionNamespace(): void
+    public function testItRejectsSchedulerTasksWithoutSchedulerScope(): void
     {
         $this->expectExceptionMessage('message.extension.runtime.contribution_unsupported');
 
         (new ExtensionRuntimeContributionRegistry())->add(
             $this->extension([ExtensionScope::Module]),
+            new SchedulerTaskDefinition(
+                'demo-module.cleanup',
+                'extension.demo_module.cleanup.label',
+                'extension.demo_module.cleanup.description',
+                'demo-module',
+                SchedulerTaskType::Callable,
+                'demo-module.cleanup',
+                '*/15 * * * *',
+            ),
+        );
+    }
+
+    public function testItRejectsSchedulerTaskIdentifiersOutsideExtensionNamespace(): void
+    {
+        $this->expectExceptionMessage('message.extension.runtime.contribution_unsupported');
+
+        (new ExtensionRuntimeContributionRegistry())->add(
+            $this->extension([ExtensionScope::Module, ExtensionScope::SchedulerTasks]),
             new SchedulerTaskDefinition(
                 'other-module.cleanup',
                 'extension.demo_module.cleanup.label',
@@ -424,7 +442,7 @@ final class ExtensionRuntimeContributionRegistryContractTest extends TestCase
         $registry = new ExtensionRuntimeContributionRegistry();
 
         $registry->add(
-            $this->extension([ExtensionScope::Module]),
+            $this->extension([ExtensionScope::Module, ExtensionScope::SchedulerTasks]),
             new SchedulerTaskDefinition(
                 'demo-module.cleanup',
                 'extension.demo_module.cleanup.label',
@@ -439,12 +457,24 @@ final class ExtensionRuntimeContributionRegistryContractTest extends TestCase
         self::assertSame('demo-module.cleanup', $registry->schedulerTasks()[0]->identifier());
     }
 
+    public function testItRejectsSchedulerRuntimeProvidersWithoutSchedulerScope(): void
+    {
+        $this->expectExceptionMessage('message.extension.runtime.contribution_unsupported');
+
+        (new ExtensionRuntimeContributionRegistry())->add($this->extension([ExtensionScope::Module]), new class implements SchedulerCallableProviderInterface {
+            public function schedulerCallable(string $target): ?callable
+            {
+                return static fn (): SchedulerTaskExecution => SchedulerTaskExecution::success(['target' => $target]);
+            }
+        });
+    }
+
     public function testItRejectsSchedulerTaskTargetsOutsideExtensionNamespace(): void
     {
         $this->expectExceptionMessage('message.extension.runtime.contribution_unsupported');
 
         (new ExtensionRuntimeContributionRegistry())->add(
-            $this->extension([ExtensionScope::Module]),
+            $this->extension([ExtensionScope::Module, ExtensionScope::SchedulerTasks]),
             new SchedulerTaskDefinition(
                 'demo-module.cleanup',
                 'extension.demo_module.cleanup.label',
@@ -460,7 +490,7 @@ final class ExtensionRuntimeContributionRegistryContractTest extends TestCase
     public function testItScopesSchedulerRuntimeProvidersToExtensionTargets(): void
     {
         $registry = new ExtensionRuntimeContributionRegistry();
-        $registry->add($this->extension([ExtensionScope::Module]), new class implements SchedulerCallableProviderInterface, SchedulerActionQueueProviderInterface {
+        $registry->add($this->extension([ExtensionScope::Module, ExtensionScope::SchedulerTasks]), new class implements SchedulerCallableProviderInterface, SchedulerActionQueueProviderInterface {
             public function schedulerCallable(string $target): ?callable
             {
                 return static fn (): SchedulerTaskExecution => SchedulerTaskExecution::success(['target' => $target]);
@@ -478,10 +508,36 @@ final class ExtensionRuntimeContributionRegistryContractTest extends TestCase
         self::assertNull($registry->schedulerActionQueue('other-module.queue'));
     }
 
+    public function testItRejectsExtensionOperationDefinitionsWithoutOperationsScope(): void
+    {
+        $this->expectExceptionMessage('message.extension.runtime.contribution_unsupported');
+
+        (new ExtensionRuntimeContributionRegistry())->add(
+            $this->extension([ExtensionScope::Module]),
+            new ExtensionOperationDefinition(
+                'demo-module.cleanup',
+                'ext.demo-module.cleanup.label',
+                'ext.demo-module.cleanup.description',
+            ),
+        );
+    }
+
+    public function testItRejectsExtensionActionQueueProvidersWithoutOperationsScope(): void
+    {
+        $this->expectExceptionMessage('message.extension.runtime.contribution_unsupported');
+
+        (new ExtensionRuntimeContributionRegistry())->add($this->extension([ExtensionScope::Module]), new class implements ExtensionActionQueueProviderInterface {
+            public function extensionActionQueue(string $target, array $payload = []): ?ActionQueue
+            {
+                return ActionQueue::create($target, context: ['payload' => $payload]);
+            }
+        });
+    }
+
     public function testItRegistersExtensionOperationQueuesForLiveAndSchedulerUse(): void
     {
         $registry = new ExtensionRuntimeContributionRegistry();
-        $registry->add($this->extension([ExtensionScope::Module]), ExtensionContributions::create()
+        $registry->add($this->extension([ExtensionScope::Module, ExtensionScope::Operations]), ExtensionContributions::create()
             ->operation(new ExtensionOperationDefinition(
                 'demo-module.cleanup',
                 'ext.demo-module.cleanup.label',
@@ -513,7 +569,7 @@ final class ExtensionRuntimeContributionRegistryContractTest extends TestCase
         $this->expectExceptionMessage('message.extension.runtime.contribution_unsupported');
 
         (new ExtensionRuntimeContributionRegistry())->add(
-            $this->extension([ExtensionScope::Module]),
+            $this->extension([ExtensionScope::Module, ExtensionScope::Operations]),
             new ExtensionOperationDefinition(
                 'demo-module.cleanup',
                 'ext.other.cleanup.label',
@@ -526,7 +582,7 @@ final class ExtensionRuntimeContributionRegistryContractTest extends TestCase
     {
         $this->expectExceptionMessage('message.extension.runtime.contribution_unsupported');
 
-        (new ExtensionRuntimeContributionRegistry())->add($this->extension([ExtensionScope::Module]), [
+        (new ExtensionRuntimeContributionRegistry())->add($this->extension([ExtensionScope::Module, ExtensionScope::Operations]), [
             new ExtensionOperationDefinition(
                 'demo-module.cleanup',
                 'ext.demo-module.cleanup.label',

@@ -17,6 +17,8 @@ enum ExtensionScope: string
     case EditorProvider = 'editor-provider';
     case Database = 'database';
     case ContentSchema = 'content-schema';
+    case SchedulerTasks = 'scheduler-tasks';
+    case Operations = 'operations';
 
     /**
      * @return list<self>
@@ -54,7 +56,7 @@ enum ExtensionScope: string
     {
         return match ($this) {
             self::FrontendTheme, self::BackendTheme, self::SystemTemplate, self::CaptchaProvider, self::EditorProvider => true,
-            self::Module, self::Api, self::Database, self::ContentSchema => false,
+            self::Module, self::Api, self::Database, self::ContentSchema, self::SchedulerTasks, self::Operations => false,
         };
     }
 
@@ -62,7 +64,7 @@ enum ExtensionScope: string
     {
         return match ($this) {
             self::CaptchaProvider, self::EditorProvider => true,
-            self::FrontendTheme, self::BackendTheme, self::SystemTemplate, self::Module, self::Api, self::Database, self::ContentSchema => false,
+            self::FrontendTheme, self::BackendTheme, self::SystemTemplate, self::Module, self::Api, self::Database, self::ContentSchema, self::SchedulerTasks, self::Operations => false,
         };
     }
 

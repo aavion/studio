@@ -49,6 +49,8 @@ final readonly class ExtensionRuntimeContributionGuard
 
     public function assertSchedulerTask(Extension $extension, SchedulerTaskDefinition $definition): void
     {
+        $this->assertSchedulerScope($extension, SchedulerTaskDefinition::class.'('.$definition->identifier().')');
+
         if ($definition->source() !== $extension->extensionName()) {
             throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_SCHEDULER_SOURCE_INVALID, [
                 '%task%' => $definition->identifier(),
@@ -90,6 +92,11 @@ final readonly class ExtensionRuntimeContributionGuard
                 'expected_prefix' => $prefix,
             ]);
         }
+    }
+
+    public function assertSchedulerProvider(Extension $extension, string $type): void
+    {
+        $this->assertSchedulerScope($extension, $type);
     }
 
     public function assertStaticViewInjection(Extension $extension, StaticViewInjection $injection): void
@@ -237,6 +244,8 @@ final readonly class ExtensionRuntimeContributionGuard
 
     public function assertOperationDefinition(Extension $extension, ExtensionOperationDefinition $definition): void
     {
+        $this->assertOperationScope($extension, ExtensionOperationDefinition::class.'('.$definition->identifier().')');
+
         $prefix = $extension->extensionName().'.';
         if (!str_starts_with($definition->identifier(), $prefix) || !str_starts_with($definition->target(), $prefix)) {
             throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_RUNTIME_CONTRIBUTION_UNSUPPORTED, [
@@ -266,6 +275,11 @@ final readonly class ExtensionRuntimeContributionGuard
             'label_key' => $definition->labelKey(),
             'description_key' => $definition->descriptionKey(),
         ]);
+    }
+
+    public function assertOperationProvider(Extension $extension, string $type): void
+    {
+        $this->assertOperationScope($extension, $type);
     }
 
     private function assertViewTemplate(Extension $extension, ViewSurface $surface, string $template, string $type): void
@@ -299,6 +313,36 @@ final readonly class ExtensionRuntimeContributionGuard
         throw MessageException::invalidArgument(ApiMessageKey::API_ENDPOINT_OWNER_INVALID, [
             '%owner%' => $extension->extensionName(),
         ], ['extension' => $extension->extensionName(), 'required_scope' => ExtensionScope::Api->value]);
+    }
+
+    private function assertSchedulerScope(Extension $extension, string $type): void
+    {
+        if ($extension->hasScope(ExtensionScope::SchedulerTasks)) {
+            return;
+        }
+
+        throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_RUNTIME_CONTRIBUTION_UNSUPPORTED, [
+            '%extension%' => $extension->extensionName(),
+            '%type%' => $type.' scope_missing',
+        ], [
+            'extension' => $extension->extensionName(),
+            'required_scope' => ExtensionScope::SchedulerTasks->value,
+        ]);
+    }
+
+    private function assertOperationScope(Extension $extension, string $type): void
+    {
+        if ($extension->hasScope(ExtensionScope::Operations)) {
+            return;
+        }
+
+        throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_RUNTIME_CONTRIBUTION_UNSUPPORTED, [
+            '%extension%' => $extension->extensionName(),
+            '%type%' => $type.' scope_missing',
+        ], [
+            'extension' => $extension->extensionName(),
+            'required_scope' => ExtensionScope::Operations->value,
+        ]);
     }
 
     /**
