@@ -135,6 +135,9 @@ message:
     request_rejected: 'The request could not be accepted.'
     storage_degraded: 'Rate-limit storage was unavailable; the request was allowed.'
     reset_degraded: 'Rate-limit reset storage was unavailable.'
+  captcha:
+    provider_runtime_failed: 'Captcha provider "%provider%" failed during %phase%.'
+    provider_result_invalid: 'Captcha provider "%provider%" returned an invalid %phase% result.'
   auto_ban:
     storage_degraded: 'Auto-ban storage was unavailable; enforcement failed open.'
     evaluation_degraded: 'Auto-ban score evaluation was unavailable; the request was allowed.'

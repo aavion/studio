@@ -269,7 +269,7 @@ Define:
 - `CaptchaValidationRequest`: workflow key, form instance ID, submitted payload, route/request metadata, and safe abuse/rate context.
 - `CaptchaValidationResult`: explicit result kind: `skipped`, `verified`, `recoverableFailure`, `suspiciousFailure`, `providerUnavailable`, and `providerFault`.
 - `CaptchaInstanceStore` and `CaptchaRequestGuardSubscriber`: core-owned render-instance cache and mutating-request guard that turn rendered captcha fields into a server-owned `failed`, `skipped`, or `verified` submission result.
-- `CaptchaFailureCode`: stable failure codes suitable for translation, logging, and abuse signals.
+- `CaptchaFailureCode`: stable core failure codes for provider runtime failures and invalid provider return values. Provider-owned challenge outcomes may add provider-local failure details in their own result context without flooding the core message log.
 
 The provider callable should own challenge generation, challenge refresh, one-shot validation, external verification, and provider-specific payload interpretation.
 
@@ -286,6 +286,8 @@ The provider callable should own challenge generation, challenge refresh, one-sh
 - Skipped/no-provider success lets the workflow continue but is not verified human proof.
 - Verified provider success may reset only explicitly resettable captcha-failure buckets where policy allows.
 - Provider `none`, missing provider, disabled provider, skipped result, or fallback success must not reset rate limits, refill budgets, clear bans, or satisfy captcha-based `429` recovery.
+- Provider-backed recoverable or suspicious challenge failures are recorded as captcha security signals with low-to-moderate score weight. Visitor mismatches against an existing captcha instance create a separate low-risk captcha security signal because they can indicate replay or challenge-binding abuse. Automatic fallback failures such as missing render instances, cache misses, missing providers, skipped fallback, provider faults, or invalid provider returns must not create captcha-failure security signals.
+- Initial submit rate limiting relies on the addressed form's ordinary bucket, for example registration or generic public form submit. Do not double-consume a second captcha-failure limiter in the same form POST path; reserve the resettable captcha-failure bucket for future 429 recovery or provider-specific challenge flows where a verified solve can safely reset only that scoped bucket.
 
 ### Settings and workflow configuration
 

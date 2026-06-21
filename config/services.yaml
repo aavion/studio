@@ -461,6 +461,14 @@ services:
     App\Core\Message\WorkflowResultMessageReporterInterface:
         alias: App\Core\Message\WorkflowResultMessageReporter
 
+    App\Security\Captcha\CaptchaProviderBridge:
+        arguments:
+            $messageReporter: '@App\Core\Message\MessageReporterInterface'
+
+    App\Security\Captcha\CaptchaRequestGuardSubscriber:
+        arguments:
+            $failureSignals: '@App\Security\Captcha\CaptchaFailureSignalRecorder'
+
     App\Core\Log\MonologMessageLogger:
         arguments:
             $logger: '@monolog.logger.message'

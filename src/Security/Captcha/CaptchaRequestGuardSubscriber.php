@@ -17,6 +17,7 @@ final readonly class CaptchaRequestGuardSubscriber implements EventSubscriberInt
     public function __construct(
         private CaptchaInstanceStore $instances,
         private CaptchaProviderBridge $providerBridge,
+        private ?CaptchaFailureSignalRecorder $failureSignals = null,
     ) {
     }
 
@@ -44,7 +45,13 @@ final readonly class CaptchaRequestGuardSubscriber implements EventSubscriberInt
     {
         $instanceId = $request->request->all()[CaptchaInstanceStore::INSTANCE_FIELD] ?? null;
         $entry = is_string($instanceId) ? $this->instances->consume($instanceId) : null;
-        if (!$entry instanceof CaptchaInstanceEntry || !$this->instances->matchesVisitor($request, $entry)) {
+        if (!$entry instanceof CaptchaInstanceEntry) {
+            return CaptchaResult::Failed;
+        }
+
+        if (!$this->instances->matchesVisitor($request, $entry)) {
+            $this->failureSignals?->recordVisitorMismatch($request, $entry);
+
             return CaptchaResult::Failed;
         }
 
@@ -60,6 +67,7 @@ final readonly class CaptchaRequestGuardSubscriber implements EventSubscriberInt
                 'route' => $request->attributes->get('_route'),
             ],
         ));
+        $this->failureSignals?->record($request, $entry, $validation);
 
         return $validation->captchaResult();
     }

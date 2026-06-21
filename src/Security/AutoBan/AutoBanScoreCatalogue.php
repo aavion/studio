@@ -11,6 +11,8 @@ final readonly class AutoBanScoreCatalogue
     public const SIGNAL_SUSPICIOUS_PAYLOAD = 'security.signal.suspicious_payload';
     public const SIGNAL_SESSION_VISITOR_MISMATCH = 'security.signal.session_visitor_mismatch';
     public const SIGNAL_AUTH_FAILURE = 'security.signal.auth_failure';
+    public const SIGNAL_CAPTCHA_FAILURE = 'security.signal.captcha_failure';
+    public const SIGNAL_CAPTCHA_VISITOR_MISMATCH = 'security.signal.captcha_visitor_mismatch';
     public const SIGNAL_TRIGGERED = 'security.signal.auto_ban_triggered';
     public const SIGNAL_RESET = 'security.signal.auto_ban_reset';
 
@@ -19,6 +21,8 @@ final readonly class AutoBanScoreCatalogue
     public const WEIGHT_SUSPICIOUS_PAYLOAD = 100;
     public const WEIGHT_SESSION_COPY = 100;
     public const WEIGHT_AUTH_FAILURE = 10;
+    public const WEIGHT_CAPTCHA_FAILURE = 10;
+    public const WEIGHT_CAPTCHA_VISITOR_MISMATCH = 3;
 
     public function scoreFor(string $signalType, string $reasonCode, ?int $httpStatus = null): int
     {
@@ -40,6 +44,14 @@ final readonly class AutoBanScoreCatalogue
 
         if (self::SIGNAL_AUTH_FAILURE === $reasonCode) {
             return self::WEIGHT_AUTH_FAILURE;
+        }
+
+        if (self::SIGNAL_CAPTCHA_FAILURE === $reasonCode) {
+            return self::WEIGHT_CAPTCHA_FAILURE;
+        }
+
+        if (self::SIGNAL_CAPTCHA_VISITOR_MISMATCH === $reasonCode) {
+            return self::WEIGHT_CAPTCHA_VISITOR_MISMATCH;
         }
 
         return 0;
