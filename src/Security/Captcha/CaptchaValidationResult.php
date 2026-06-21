@@ -92,6 +92,12 @@ final readonly class CaptchaValidationResult
         return CaptchaValidationStatus::Verified === $this->status;
     }
 
+    public function allowsWorkflow(): bool
+    {
+        return $this->isVerified()
+            || (CaptchaValidationStatus::Skipped === $this->status && !$this->isProviderBacked());
+    }
+
     public function isProviderBacked(): bool
     {
         return null !== $this->provider && '' !== trim($this->provider) && 'none' !== strtolower($this->provider);

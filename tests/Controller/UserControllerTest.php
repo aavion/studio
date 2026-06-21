@@ -357,6 +357,42 @@ final class UserControllerTest extends WebTestCase
         }
     }
 
+    public function testRegistrationDirectPostWithoutCaptchaStillUsesNoProviderFallback(): void
+    {
+        $client = self::createClient();
+        $config = self::getContainer()->get(Config::class);
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $originalSiteUrl = $config->get('site.url', 'http://localhost');
+        $config->set('site.url', 'https://example.test');
+        $config->set('user.registration.mode', 'auto_approval');
+
+        try {
+            $client->request('GET', '/user/register');
+            $token = $client->getCrawler()->filter('input[name="_csrf_token"]')->attr('value');
+            self::assertIsString($token);
+
+            $client->request('POST', '/user/register', [
+                '_csrf_token' => $token,
+                'email' => 'direct-registration@example.test',
+            ]);
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('.system-frontend-auth-notice', 'If the address can be registered, an email with account setup instructions was created.');
+
+            $accountToken = $entityManager->getRepository(AccountToken::class)->findOneBy([
+                'email' => 'direct-registration@example.test',
+                'type' => AccountTokenType::Registration,
+            ]);
+
+            self::assertInstanceOf(AccountToken::class, $accountToken);
+            $entityManager->remove($accountToken);
+        } finally {
+            $config->set('site.url', (string) $originalSiteUrl);
+            $config->set('user.registration.mode', 'disabled');
+            $entityManager->flush();
+        }
+    }
+
     public function testPasswordResetTokenRendersPasswordPolicyMeter(): void
     {
         $client = self::createClient();
