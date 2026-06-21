@@ -7,6 +7,7 @@ namespace App\Core\Config\Settings;
 use App\Core\AdminAcl\AdminFeatureDefaults;
 use App\Core\AdminAcl\AdminFeatureOverrideStore;
 use App\Core\Config\ConfigDefaultProviderInterface;
+use App\Core\Extension\ExtensionHttpRequest;
 
 final class CoreConfigDefaultProvider implements ConfigDefaultProviderInterface
 {
@@ -51,6 +52,7 @@ final class CoreConfigDefaultProvider implements ConfigDefaultProviderInterface
         }
 
         $defaults[AdminFeatureOverrideStore::CONFIG_KEY] = ($this->adminFeatureDefaults ?? new AdminFeatureDefaults())->overrides();
+        $defaults[ExtensionHttpRequest::ALLOW_PRIVATE_NETWORKS_KEY] = false;
 
         return $this->defaults = $defaults;
     }

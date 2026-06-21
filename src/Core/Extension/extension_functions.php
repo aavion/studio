@@ -74,3 +74,14 @@ if (!function_exists('extension_api_url')) {
         return ExtensionRuntime::apiUrl($endpoint, $params);
     }
 }
+
+if (!function_exists('extension_http_request')) {
+    /**
+     * @param array<string, mixed> $options
+     * @return array{ok: bool, status: int|null, headers: array<string, list<string>>, body: string, json: mixed, error: string|null}
+     */
+    function extension_http_request(string $method, string $url, mixed $payload = null, array $options = []): array
+    {
+        return ExtensionRuntime::httpRequest($method, $url, $payload, $options);
+    }
+}

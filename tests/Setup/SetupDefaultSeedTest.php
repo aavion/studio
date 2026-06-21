@@ -8,6 +8,7 @@ use App\Api\ApiFeaturePolicy;
 use App\Core\AdminAcl\AdminFeatureDefaults;
 use App\Core\AdminAcl\AdminFeatureOverrideStore;
 use App\Core\Config\ConfigDefaultProviderInterface;
+use App\Core\Extension\ExtensionHttpRequest;
 use App\Core\Geo\MaxMindGeoIpConfig;
 use App\Core\Log\DatabaseLogRetentionPolicy;
 use App\Setup\DatabaseDriver;
@@ -35,6 +36,7 @@ final class SetupDefaultSeedTest extends TestCase
         self::assertTrue($settings[ApiFeaturePolicy::ENABLED_KEY]);
         self::assertFalse($settings[ApiFeaturePolicy::CORS_ENABLED_KEY]);
         self::assertSame([], $settings[ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY]);
+        self::assertFalse($settings[ExtensionHttpRequest::ALLOW_PRIVATE_NETWORKS_KEY]);
         self::assertFalse($settings[MaxMindGeoIpConfig::ENABLED_KEY]);
         self::assertSame(MaxMindGeoIpConfig::DEFAULT_DATABASE_PATH, $settings[MaxMindGeoIpConfig::DATABASE_PATH_KEY]);
         self::assertSame('', $settings[MaxMindGeoIpConfig::LICENSE_KEY_KEY]);
@@ -98,6 +100,7 @@ final class SetupDefaultSeedTest extends TestCase
             ApiFeaturePolicy::ENABLED_KEY,
             ApiFeaturePolicy::CORS_ENABLED_KEY,
             ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY,
+            ExtensionHttpRequest::ALLOW_PRIVATE_NETWORKS_KEY,
             SchedulerSettings::ENABLED_KEY,
             SchedulerSettings::GET_AUTH_ENABLED_KEY,
             SchedulerSettings::EXTENSION_ACTION_QUEUES_ENABLED_KEY,

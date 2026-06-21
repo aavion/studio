@@ -88,6 +88,27 @@ final class ExtensionRuntime
     }
 
     /**
+     * @param array<string, mixed> $options
+     * @return array{ok: bool, status: int|null, headers: array<string, list<string>>, body: string, json: mixed, error: string|null}
+     */
+    public static function httpRequest(string $method, string $url, mixed $payload = null, array $options = []): array
+    {
+        $slug = self::callerExtensionSlug();
+        $httpRequests = self::$services?->httpRequests();
+
+        return null !== $slug && null !== $httpRequests
+            ? $httpRequests->request($slug, $method, $url, $payload, $options)
+            : [
+                'ok' => false,
+                'status' => null,
+                'headers' => [],
+                'body' => '',
+                'json' => null,
+                'error' => 'invalid_extension',
+            ];
+    }
+
+    /**
      * @internal test helper
      */
     public static function reset(): void
