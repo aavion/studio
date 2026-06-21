@@ -11,6 +11,10 @@ final readonly class DetachedProcessStarter
     /**
      * @param list<string> $command
      * @param array<string, string|false> $environment
+     *
+     * Keep descriptor cleanup opt-in for long-lived services that must outlive
+     * the current process, such as Mercure. Operation and scheduler runners
+     * intentionally inherit locks by default to prevent unsafe parallel runs.
      */
     public function start(
         array $command,
