@@ -21,7 +21,7 @@ final class ExtensionApiContributionGuardTest extends TestCase
         $extension = $this->extension('demo-module');
 
         ExtensionApiContributionGuard::assertEndpoint($extension, new ApiEndpointDefinition(
-            'extension',
+            $extension->extensionName(),
             'GET',
             ExtensionApiEndpointPath::path($extension->extensionName(), 'demo'),
             'api_v1_endpoint_dispatch',
@@ -41,9 +41,27 @@ final class ExtensionApiContributionGuardTest extends TestCase
         $this->expectException(MessageException::class);
 
         ExtensionApiContributionGuard::assertEndpoint($extension, new ApiEndpointDefinition(
-            'extension',
+            $extension->extensionName(),
             'GET',
             '/api/v1/ext/demo-module/demo',
+            'api_v1_endpoint_dispatch',
+            'getDemoModuleContribution',
+            'Return demo contribution.',
+            'extensions.demo-module.demo',
+            ['extensions-demo-module-demo'],
+        ));
+    }
+
+    public function testItRejectsForeignEndpointOwners(): void
+    {
+        $extension = $this->extension('demo-module');
+
+        $this->expectException(MessageException::class);
+
+        ExtensionApiContributionGuard::assertEndpoint($extension, new ApiEndpointDefinition(
+            'system',
+            'GET',
+            ExtensionApiEndpointPath::path($extension->extensionName(), 'demo'),
             'api_v1_endpoint_dispatch',
             'getDemoModuleContribution',
             'Return demo contribution.',
@@ -59,7 +77,7 @@ final class ExtensionApiContributionGuardTest extends TestCase
         $this->expectException(MessageException::class);
 
         ExtensionApiContributionGuard::assertEndpoint($extension, new ApiEndpointDefinition(
-            'extension',
+            $extension->extensionName(),
             'GET',
             ExtensionApiEndpointPath::path($extension->extensionName(), 'demo'),
             'api_v1_endpoint_dispatch',
@@ -78,7 +96,7 @@ final class ExtensionApiContributionGuardTest extends TestCase
         $this->expectException(MessageException::class);
 
         ExtensionApiContributionGuard::assertEndpoint($extension, new ApiEndpointDefinition(
-            'extension',
+            $extension->extensionName(),
             'GET',
             ExtensionApiEndpointPath::path($extension->extensionName(), 'demo'),
             'api_v1_endpoint_dispatch',
@@ -95,7 +113,7 @@ final class ExtensionApiContributionGuardTest extends TestCase
         $extension = $this->extension('demo-module');
 
         ExtensionApiContributionGuard::assertEndpoint($extension, new ApiEndpointDefinition(
-            'extension',
+            $extension->extensionName(),
             'GET',
             ExtensionApiEndpointPath::path($extension->extensionName(), 'demo'),
             'api_v1_endpoint_dispatch',
@@ -116,7 +134,7 @@ final class ExtensionApiContributionGuardTest extends TestCase
         $this->expectException(MessageException::class);
 
         ExtensionApiContributionGuard::assertEndpoint($extension, new ApiEndpointDefinition(
-            'extension',
+            $extension->extensionName(),
             'GET',
             ExtensionApiEndpointPath::path($extension->extensionName(), 'demo'),
             'api_v1_endpoint_dispatch',
@@ -134,7 +152,7 @@ final class ExtensionApiContributionGuardTest extends TestCase
         $this->expectException(MessageException::class);
 
         ExtensionApiContributionGuard::assertEndpoint($extension, new ApiEndpointDefinition(
-            'extension',
+            $extension->extensionName(),
             'GET',
             ExtensionApiEndpointPath::path($extension->extensionName(), 'demo'),
             'api_v1_endpoint_dispatch',
@@ -152,7 +170,7 @@ final class ExtensionApiContributionGuardTest extends TestCase
         $this->expectException(MessageException::class);
 
         ExtensionApiContributionGuard::assertEndpoint($extension, new ApiEndpointDefinition(
-            'extension',
+            $extension->extensionName(),
             'GET',
             ExtensionApiEndpointPath::path($extension->extensionName(), 'demo'),
             'api_v1_endpoint_dispatch',

@@ -15,6 +15,12 @@ final class ExtensionApiContributionGuard
 {
     public static function assertEndpoint(Extension $extension, ApiEndpointDefinition $definition): void
     {
+        if ($definition->owner() !== $extension->extensionName()) {
+            throw MessageException::invalidArgument(ApiMessageKey::API_ENDPOINT_OWNER_INVALID, [
+                '%owner%' => $definition->owner(),
+            ]);
+        }
+
         $expectedPrefix = ExtensionApiEndpointPath::path($extension->extensionName(), '');
 
         if (!str_starts_with($definition->path(), $expectedPrefix)) {

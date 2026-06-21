@@ -6,6 +6,11 @@ namespace App\Core\Extension;
 
 use App\Core\Message\Message;
 use App\Core\Message\MessageLevel;
+use Twig\Environment;
+use Twig\Error\SyntaxError;
+use Twig\Loader\ArrayLoader;
+use Twig\Source;
+use Twig\Token;
 
 final readonly class ExtensionTemplateReferenceValidator
 {
@@ -58,15 +63,42 @@ final readonly class ExtensionTemplateReferenceValidator
     {
         $references = [];
 
-        foreach ([
-            '/{%\s*(?:extends|include|embed|import|from)\s+[\'"](?P<reference>@(?:root|frontend|backend|provider)\/[^\'"]+)[\'"]/i',
-            '/\b(?:include|source)\s*\(\s*[\'"](?P<reference>@(?:root|frontend|backend|provider)\/[^\'"]+)[\'"]/i',
-        ] as $pattern) {
-            preg_match_all($pattern, $contents, $matches);
-            array_push($references, ...($matches['reference'] ?? []));
+        try {
+            $stream = (new Environment(new ArrayLoader([])))->tokenize(new Source($contents, 'extension-template'));
+
+            while (!$stream->isEOF()) {
+                $token = $stream->next();
+                if (!$token->test(Token::STRING_TYPE)) {
+                    continue;
+                }
+
+                $reference = (string) $token->getValue();
+                if ($this->isScopedTemplateReference($reference)) {
+                    $references[] = $reference;
+                }
+            }
+        } catch (SyntaxError) {
+            foreach ([
+                '/{%\s*(?:extends|include|embed|import|from)\s+[\'"](?P<reference>@(?:root|frontend|backend|provider)\/[^\'"]+)[\'"]/i',
+                '/\b(?:include|source)\s*\(\s*[\'"](?P<reference>@(?:root|frontend|backend|provider)\/[^\'"]+)[\'"]/i',
+            ] as $pattern) {
+                preg_match_all($pattern, $contents, $matches);
+                array_push($references, ...($matches['reference'] ?? []));
+            }
         }
 
         return array_values(array_unique($references));
+    }
+
+    private function isScopedTemplateReference(string $reference): bool
+    {
+        foreach (['@root/', '@frontend/', '@backend/', '@provider/'] as $prefix) {
+            if (str_starts_with($reference, $prefix)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function isAllowedReference(string $file, string $reference): bool

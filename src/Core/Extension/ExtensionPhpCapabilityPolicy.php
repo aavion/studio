@@ -143,6 +143,14 @@ final readonly class ExtensionPhpCapabilityPolicy
         $tokens = token_get_all($contents);
 
         foreach ($tokens as $index => $token) {
+            if (is_string($token)) {
+                if ('(' === $token && $this->isCallableExpressionCall($tokens, $index)) {
+                    $issues[] = $this->issue($candidate, $file, $path, 'callable_expression()', 'dynamic_callable');
+                }
+
+                continue;
+            }
+
             if (!is_array($token)) {
                 continue;
             }
@@ -232,6 +240,70 @@ final readonly class ExtensionPhpCapabilityPolicy
     /**
      * @param array<int, mixed> $tokens
      */
+    private function isCallableExpressionCall(array $tokens, int $index): bool
+    {
+        $previousIndex = $this->previousSignificantTokenIndex($tokens, $index);
+        if (null === $previousIndex) {
+            return false;
+        }
+
+        $previous = $this->significantTokenValue($tokens[$previousIndex]);
+        if (!in_array($previous, [')', ']'], true)) {
+            return false;
+        }
+
+        return ')' !== $previous || !$this->isParenthesizedStringLiteralExpression($tokens, $previousIndex);
+    }
+
+    /**
+     * @param array<int, mixed> $tokens
+     */
+    private function isParenthesizedStringLiteralExpression(array $tokens, int $closeIndex): bool
+    {
+        $openIndex = $this->matchingOpenParenIndex($tokens, $closeIndex);
+        if (null === $openIndex) {
+            return false;
+        }
+
+        $innerIndex = $this->nextSignificantTokenIndex($tokens, $openIndex);
+        if (null === $innerIndex || !is_array($tokens[$innerIndex]) || T_CONSTANT_ENCAPSED_STRING !== $tokens[$innerIndex][0]) {
+            return false;
+        }
+
+        return $this->nextSignificantTokenIndex($tokens, $innerIndex) === $closeIndex;
+    }
+
+    /**
+     * @param array<int, mixed> $tokens
+     */
+    private function matchingOpenParenIndex(array $tokens, int $closeIndex): ?int
+    {
+        $depth = 0;
+
+        for ($i = $closeIndex; $i >= 0; --$i) {
+            $value = $this->significantTokenValue($tokens[$i]);
+
+            if (')' === $value) {
+                ++$depth;
+                continue;
+            }
+
+            if ('(' !== $value) {
+                continue;
+            }
+
+            --$depth;
+            if (0 === $depth) {
+                return $i;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param array<int, mixed> $tokens
+     */
     private function isNewClassName(array $tokens, int $index): bool
     {
         return 'new' === $this->previousSignificantToken($tokens, $index);
@@ -242,11 +314,19 @@ final readonly class ExtensionPhpCapabilityPolicy
      */
     private function previousSignificantToken(array $tokens, int $index): ?string
     {
-        for ($i = $index - 1; $i >= 0; --$i) {
-            $value = $this->significantTokenValue($tokens[$i]);
+        $previousIndex = $this->previousSignificantTokenIndex($tokens, $index);
 
-            if (null !== $value) {
-                return $value;
+        return null === $previousIndex ? null : $this->significantTokenValue($tokens[$previousIndex]);
+    }
+
+    /**
+     * @param array<int, mixed> $tokens
+     */
+    private function previousSignificantTokenIndex(array $tokens, int $index): ?int
+    {
+        for ($i = $index - 1; $i >= 0; --$i) {
+            if (null !== $this->significantTokenValue($tokens[$i])) {
+                return $i;
             }
         }
 

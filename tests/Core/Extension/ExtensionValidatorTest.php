@@ -1155,6 +1155,23 @@ TWIG);
         self::assertSame('@backend/admin.html.twig', $result->firstIssue()?->context()['reference']);
     }
 
+    public function testItRejectsTemplateReferencesInsideTwigArrayExpressions(): void
+    {
+        $this->writeFile('templates/frontend/page.html.twig', <<<'TWIG'
+{% include ['@frontend/demo-module/page.html.twig', '@backend/admin.html.twig'] %}
+{{ include(['@frontend/demo-module/card.html.twig', '@provider/captcha/field.html.twig']) }}
+TWIG);
+
+        $result = (new ExtensionValidator())->validate(
+            $this->candidateWithScope('module'),
+            ExtensionSpec::create()->withInventoryDepth(4),
+        );
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('extension.template_reference_invalid', $result->firstIssue()?->code());
+        self::assertSame('@backend/admin.html.twig', $result->firstIssue()?->context()['reference']);
+    }
+
     public function testItReportsStructuredSyntaxErrors(): void
     {
         $this->writeFile('data/broken.json', '{');
@@ -1455,6 +1472,40 @@ TWIG);
             $policyIssues,
         ));
         self::assertSame(['direct_process', 'direct_filesystem'], array_map(
+            static fn ($issue): string => $issue->context()['reason'],
+            $policyIssues,
+        ));
+    }
+
+    public function testItBlocksCallableExpressionPhpBypassesForInstallableExtensions(): void
+    {
+        $this->writeFile('extension.php', <<<'PHP'
+            <?php
+
+            $reader = 'file_get_contents';
+            ['exec'][0]('whoami');
+            ($reader)('/etc/passwd');
+
+            return [];
+            PHP);
+
+        $result = (new ExtensionValidator())->validate(
+            $this->candidate(),
+            ExtensionSpec::create()->withInventoryDepth(4),
+        );
+
+        self::assertFalse($result->isSuccess());
+
+        $policyIssues = array_values(array_filter(
+            $result->issues(),
+            static fn ($issue): bool => 'extension.policy.blocked_php_capability' === $issue->code(),
+        ));
+
+        self::assertSame(['callable_expression()', 'callable_expression()'], array_map(
+            static fn ($issue): string => $issue->context()['capability'],
+            $policyIssues,
+        ));
+        self::assertSame(['dynamic_callable', 'dynamic_callable'], array_map(
             static fn ($issue): string => $issue->context()['reason'],
             $policyIssues,
         ));

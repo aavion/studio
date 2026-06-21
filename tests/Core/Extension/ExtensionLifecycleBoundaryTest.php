@@ -217,7 +217,7 @@ final class ExtensionLifecycleBoundaryTest extends KernelTestCase
                     'compact',
                 ))
                 ->apiEndpoint(new ApiEndpointDefinition(
-                    'extension',
+                    $extension->extensionName(),
                     'GET',
                     ExtensionApiEndpointPath::path($extension->extensionName(), 'demo'),
                     'api_v1_endpoint_dispatch',

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Extension;
 
+use App\Api\ApiMessageKey;
 use App\Core\Message\MessageException;
 use App\Entity\Extension;
 use App\Live\LiveEndpointDefinition;
@@ -16,6 +17,12 @@ final class ExtensionLiveContributionGuard
 
     public static function assertEndpoint(Extension $extension, LiveEndpointDefinition $definition): void
     {
+        if ($definition->owner() !== $extension->extensionName()) {
+            throw MessageException::invalidArgument(ApiMessageKey::API_ENDPOINT_OWNER_INVALID, [
+                '%owner%' => $definition->owner(),
+            ]);
+        }
+
         $slug = ExtensionLiveEndpointPath::slug($extension->extensionName());
 
         if (in_array($slug, self::RESERVED_SLUGS, true)) {

@@ -28,7 +28,7 @@ final class ExtensionLiveContributionGuardTest extends TestCase
         $extension = $this->extension('captcha-pack');
 
         ExtensionLiveContributionGuard::assertEndpoint($extension, new LiveEndpointDefinition(
-            'extension',
+            $extension->extensionName(),
             Request::METHOD_GET,
             ExtensionLiveEndpointPath::path($extension->extensionName(), 'seed'),
             'api_live_extension_dispatch',
@@ -47,7 +47,7 @@ final class ExtensionLiveContributionGuardTest extends TestCase
         $this->expectException(MessageException::class);
 
         ExtensionLiveContributionGuard::assertEndpoint($extension, new LiveEndpointDefinition(
-            'extension',
+            $extension->extensionName(),
             Request::METHOD_GET,
             ExtensionLiveEndpointPath::path($extension->extensionName(), 'demo'),
             'api_live_extension_dispatch',
@@ -64,7 +64,7 @@ final class ExtensionLiveContributionGuardTest extends TestCase
         $this->expectException(MessageException::class);
 
         ExtensionLiveContributionGuard::assertEndpoint($extension, new LiveEndpointDefinition(
-            'extension',
+            $extension->extensionName(),
             Request::METHOD_GET,
             '/api/live/other-pack/seed',
             'api_live_extension_dispatch',
@@ -81,7 +81,7 @@ final class ExtensionLiveContributionGuardTest extends TestCase
         $this->expectException(MessageException::class);
 
         ExtensionLiveContributionGuard::assertEndpoint($extension, new LiveEndpointDefinition(
-            'extension',
+            $extension->extensionName(),
             Request::METHOD_GET,
             '/api/live/captcha-pack/',
             'api_live_extension_dispatch',
@@ -98,6 +98,23 @@ final class ExtensionLiveContributionGuardTest extends TestCase
         ExtensionLiveEndpointPath::path('captcha-pack', '');
     }
 
+    public function testItRejectsForeignEndpointOwners(): void
+    {
+        $extension = $this->extension('captcha-pack');
+
+        $this->expectException(MessageException::class);
+
+        ExtensionLiveContributionGuard::assertEndpoint($extension, new LiveEndpointDefinition(
+            'system',
+            Request::METHOD_GET,
+            ExtensionLiveEndpointPath::path($extension->extensionName(), 'seed'),
+            'api_live_extension_dispatch',
+            'getCaptchaSeed',
+            'Return a captcha seed.',
+            'extensions.captcha-pack.live.seed',
+        ));
+    }
+
     public function testItRejectsLivePatternsThatEscapeOwnedNamespace(): void
     {
         $extension = $this->extension('captcha-pack');
@@ -105,7 +122,7 @@ final class ExtensionLiveContributionGuardTest extends TestCase
         $this->expectException(MessageException::class);
 
         ExtensionLiveContributionGuard::assertEndpoint($extension, new LiveEndpointDefinition(
-            'extension',
+            $extension->extensionName(),
             Request::METHOD_GET,
             ExtensionLiveEndpointPath::path($extension->extensionName(), 'seed'),
             'api_live_extension_dispatch',
@@ -121,7 +138,7 @@ final class ExtensionLiveContributionGuardTest extends TestCase
         $extension = $this->extension('captcha-pack');
 
         ExtensionLiveContributionGuard::assertEndpoint($extension, new LiveEndpointDefinition(
-            'extension',
+            $extension->extensionName(),
             Request::METHOD_GET,
             ExtensionLiveEndpointPath::path($extension->extensionName(), 'seed'),
             'api_live_extension_dispatch',
@@ -141,7 +158,7 @@ final class ExtensionLiveContributionGuardTest extends TestCase
         $this->expectException(MessageException::class);
 
         ExtensionLiveContributionGuard::assertEndpoint($extension, new LiveEndpointDefinition(
-            'extension',
+            $extension->extensionName(),
             Request::METHOD_GET,
             ExtensionLiveEndpointPath::path($extension->extensionName(), 'seed'),
             'api_live_extension_dispatch',
@@ -157,7 +174,7 @@ final class ExtensionLiveContributionGuardTest extends TestCase
         $this->expectExceptionMessage(ApiMessageKey::API_ENDPOINT_METHOD_INVALID);
 
         new LiveEndpointDefinition(
-            'extension',
+            'captcha-pack',
             Request::METHOD_POST,
             ExtensionLiveEndpointPath::path('captcha-pack', 'seed'),
             'api_live_extension_dispatch',
@@ -172,7 +189,7 @@ final class ExtensionLiveContributionGuardTest extends TestCase
     {
         $extension = $this->extension('captcha-pack');
         $definition = new LiveEndpointDefinition(
-            'extension',
+            $extension->extensionName(),
             Request::METHOD_GET,
             ExtensionLiveEndpointPath::path($extension->extensionName(), 'seed'),
             'api_live_extension_dispatch',

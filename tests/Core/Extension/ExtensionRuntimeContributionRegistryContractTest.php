@@ -79,7 +79,7 @@ final class ExtensionRuntimeContributionRegistryContractTest extends TestCase
         (new ExtensionRuntimeContributionRegistry())->add(
             $this->extension([ExtensionScope::Module]),
             new ApiEndpointDefinition(
-                'extension',
+                'demo-module',
                 'GET',
                 '/api/v1/extensions/demo-module/demo',
                 'api_v1_endpoint_dispatch',
