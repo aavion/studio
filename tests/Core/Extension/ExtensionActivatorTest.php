@@ -116,6 +116,38 @@ PHP);
         self::assertContains('ext11_demo_module_entry', $this->connection->createSchemaManager()->listTableNames());
     }
 
+    public function testItAppliesActivationFactoriesWithoutRunningRuntimeFactories(): void
+    {
+        $this->temporaryProjectDir = $this->createTemporaryDirectory('system-extension-activation-factory');
+        $this->insertExtension('demo-module', ['module', 'database'], 'inactive');
+        $this->writeTestFile($this->temporaryProjectDir, 'extensions/demo-module/extension.php', <<<'PHP'
+<?php
+
+use App\Core\Extension\Database\ExtensionDatabaseColumn;
+use App\Core\Extension\Database\ExtensionDatabaseTable;
+use App\Core\Extension\ExtensionContributionContext;
+use App\Core\Extension\ExtensionContributions;
+
+return ExtensionContributions::create()
+    ->runtime(static function (ExtensionContributionContext $context): array {
+        file_put_contents(dirname($context->path()).'/runtime-ran.txt', 'yes');
+
+        return [];
+    })
+    ->activation(static fn (ExtensionContributionContext $context): array => [
+        ExtensionDatabaseTable::create('entry', [
+            ExtensionDatabaseColumn::string('uid', 36),
+        ], ['uid']),
+    ]);
+PHP);
+
+        $result = $this->activatorWithContributionApplier()->activate('demo-module', 'test', rebuildAssets: false);
+
+        self::assertTrue($result->isSuccess());
+        self::assertContains('ext11_demo_module_entry', $this->connection->createSchemaManager()->listTableNames());
+        self::assertFileDoesNotExist($this->temporaryProjectDir.'/extensions/runtime-ran.txt');
+    }
+
     public function testItDoesNotReloadAlreadyActiveDependenciesWhenApplyingActivationContributions(): void
     {
         $this->temporaryProjectDir = $this->createTemporaryDirectory('system-extension-active-dependency');

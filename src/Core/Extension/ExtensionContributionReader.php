@@ -32,9 +32,42 @@ final readonly class ExtensionContributionReader
             $result = $result($extension);
         }
 
-        $registry->add($extension, $result);
+        $registry->add($extension, $this->activationContributions($extension, $result));
 
         return $registry;
+    }
+
+    /**
+     * @return iterable<mixed>
+     */
+    private function activationContributions(Extension $extension, mixed $contribution): iterable
+    {
+        if (null === $contribution) {
+            return;
+        }
+
+        if ($contribution instanceof ExtensionActivationContributionFactory) {
+            yield from $this->activationContributions(
+                $extension,
+                $contribution->contributions(new ExtensionContributionContext($extension)),
+            );
+
+            return;
+        }
+
+        if ($contribution instanceof ExtensionRuntimeContributionFactory) {
+            return;
+        }
+
+        if (is_iterable($contribution)) {
+            foreach ($contribution as $item) {
+                yield from $this->activationContributions($extension, $item);
+            }
+
+            return;
+        }
+
+        yield $contribution;
     }
 
     private function loaderPath(Extension $extension): ?string

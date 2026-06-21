@@ -8,6 +8,8 @@ use App\Api\Endpoint\ApiEndpointDefinition;
 use App\Core\Extension\Content\ExtensionContentSchemaDefinition;
 use App\Core\Extension\Database\ExtensionDatabaseColumn;
 use App\Core\Extension\Database\ExtensionDatabaseTable;
+use App\Core\Extension\ExtensionContributionContext;
+use App\Core\Extension\ExtensionContributions;
 use App\Core\Extension\ExtensionRuntimeContributionRegistry;
 use App\Core\Extension\ExtensionScope;
 use App\Core\Extension\ExtensionStatus;
@@ -29,6 +31,48 @@ use PHPUnit\Framework\TestCase;
 
 final class ExtensionRuntimeContributionRegistryContractTest extends TestCase
 {
+    public function testItExpandsRuntimeContributionFactoriesWithExtensionContext(): void
+    {
+        $extension = $this->extension([ExtensionScope::Module]);
+        $registry = new ExtensionRuntimeContributionRegistry();
+
+        $registry->add($extension, ExtensionContributions::create()
+            ->runtime(static fn (ExtensionContributionContext $context): array => [
+                new ExtensionSettingDefinition(
+                    $context->extensionName(),
+                    'display.mode',
+                    'extension.demo_module.display_mode.label',
+                    'compact',
+                ),
+            ]));
+
+        self::assertSame('demo-module', $registry->extensionSettings()[0]->extensionName());
+        self::assertSame('display.mode', $registry->extensionSettings()[0]->key());
+    }
+
+    public function testItRejectsActivationFactoriesInRuntimeRegistryWithoutPartialState(): void
+    {
+        $extension = $this->extension([ExtensionScope::Module]);
+        $registry = new ExtensionRuntimeContributionRegistry();
+
+        try {
+            $registry->add($extension, ExtensionContributions::create()
+                ->setting(new ExtensionSettingDefinition(
+                    'demo-module',
+                    'display.mode',
+                    'extension.demo_module.display_mode.label',
+                    'compact',
+                ))
+                ->activation(static fn (): array => []));
+
+            self::fail('Expected activation factories to be rejected by the runtime registry.');
+        } catch (\Throwable $error) {
+            self::assertStringContainsString('message.extension.runtime.contribution_unsupported', $error->getMessage());
+        }
+
+        self::assertSame([], $registry->extensionSettings());
+    }
+
     public function testItAcceptsDatabaseAndContentSchemaContributionsForMatchingScopes(): void
     {
         $extension = $this->extension([ExtensionScope::Module, ExtensionScope::Database, ExtensionScope::ContentSchema]);

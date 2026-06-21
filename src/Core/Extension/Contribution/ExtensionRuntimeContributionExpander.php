@@ -12,7 +12,9 @@ use App\Core\Extension\Content\ExtensionContentSchemaDefinition;
 use App\Core\Extension\Content\ExtensionContentSchemaProviderInterface;
 use App\Core\Extension\Database\ExtensionDatabaseProviderInterface;
 use App\Core\Extension\Database\ExtensionDatabaseTable;
+use App\Core\Extension\ExtensionContributionContext;
 use App\Core\Extension\ExtensionMessageKey;
+use App\Core\Extension\ExtensionRuntimeContributionFactory;
 use App\Core\Extension\Settings\ExtensionSettingDefinition;
 use App\Core\Extension\Settings\ExtensionSettingProviderInterface;
 use App\Core\Message\MessageException;
@@ -46,6 +48,12 @@ final readonly class ExtensionRuntimeContributionExpander
 
         if ($this->isDirectContribution($contribution)) {
             yield $contribution;
+
+            return;
+        }
+
+        if ($contribution instanceof ExtensionRuntimeContributionFactory) {
+            yield from $this->expand($extension, $contribution->contributions(new ExtensionContributionContext($extension)));
 
             return;
         }
