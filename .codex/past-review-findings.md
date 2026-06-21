@@ -280,7 +280,7 @@ When localized content route prefixes are enabled, a request such as /de/... is 
 
 [incomplete]
 
-### feat-security-geoip-observability #104 
+### feat-security-geoip-observability #104
 
 [incomplete]
 
@@ -303,4 +303,3 @@ When localized content route prefixes are enabled, a request such as /de/... is 
 ### feat-security-captcha-contract #110
 
 [incomplete]
-
