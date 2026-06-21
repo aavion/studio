@@ -10,8 +10,8 @@ use App\Core\Config\ConfigValueType;
 use App\Core\Event\PublicEventDispatcher;
 use App\Core\Event\PublicEventHookRegistry;
 use App\Localization\TranslationLanguageCatalog;
-use App\View\PackageMacroRegistry;
-use App\View\SystemPackageMetadataProvider;
+use App\View\ExtensionMacroRegistry;
+use App\View\SystemExtensionMetadataProvider;
 use App\View\ViewContextEvent;
 use App\View\ViewContextProvider;
 use App\Tests\Support\NullWorkflowResultMessageReporter;
@@ -21,24 +21,24 @@ use Symfony\Component\EventDispatcher\EventDispatcher;
 
 final class ViewContextProviderTest extends TestCase
 {
-    public function testItDispatchesViewContextForPackageExtensions(): void
+    public function testItDispatchesViewContextForExtensions(): void
     {
         $dispatcher = new EventDispatcher();
         $dispatcher->addListener(ViewContextEvent::class, static function (ViewContextEvent $event): void {
-            $event->set('package_demo', ['enabled' => true]);
+            $event->set('extension_demo', ['enabled' => true]);
         });
 
         $context = (new ViewContextProvider(
-            new SystemPackageMetadataProvider(dirname(__DIR__, 2)),
-            new PackageMacroRegistry(),
+            new SystemExtensionMetadataProvider(dirname(__DIR__, 2)),
+            new ExtensionMacroRegistry(),
             $this->localization(),
             new PublicEventDispatcher($dispatcher, new PublicEventHookRegistry(), new NullWorkflowResultMessageReporter()),
         ))->context();
 
-        self::assertSame('Studio', $context['system_package']['name']);
+        self::assertSame('Studio', $context['system_extension']['name']);
         self::assertSame('de', $context['default_locale']);
         self::assertSame('@root/macros/core/content.html.twig', $context['macro_namespaces']['core']['content']);
-        self::assertSame(['enabled' => true], $context['package_demo']);
+        self::assertSame(['enabled' => true], $context['extension_demo']);
     }
 
     private function localization(): ContentRouteLocalization

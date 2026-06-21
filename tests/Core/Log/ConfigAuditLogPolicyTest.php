@@ -17,9 +17,9 @@ final class ConfigAuditLogPolicyTest extends TestCase
         $policy = new ConfigAuditLogPolicy(new Config($this->connection()));
 
         self::assertTrue($policy->allows('auth.login_success'));
-        self::assertTrue($policy->allows('backend.action.package_discovery'));
+        self::assertTrue($policy->allows('backend.action.extension_discovery'));
         self::assertTrue($policy->allows('operations.cleanup'));
-        self::assertTrue($policy->allows('package.lifecycle.activate'));
+        self::assertTrue($policy->allows('extension.lifecycle.activate'));
         self::assertTrue($policy->allows('settings.core.save'));
         self::assertTrue($policy->allows('future.audit_event'));
     }
@@ -44,7 +44,7 @@ final class ConfigAuditLogPolicyTest extends TestCase
         $policy = new ConfigAuditLogPolicy($config);
 
         self::assertTrue($policy->allows('settings.core.save'));
-        self::assertFalse($policy->allows('package.lifecycle.activate'));
+        self::assertFalse($policy->allows('extension.lifecycle.activate'));
     }
 
     public function testItPreservesEmptyAuditCategorySelections(): void

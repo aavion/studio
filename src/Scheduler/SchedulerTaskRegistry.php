@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Scheduler;
 
-use App\Core\Package\PackagePhpLoader;
+use App\Core\Extension\ExtensionPhpLoader;
 
 final readonly class SchedulerTaskRegistry
 {
@@ -13,7 +13,7 @@ final readonly class SchedulerTaskRegistry
      */
     public function __construct(
         private iterable $providers,
-        private ?PackagePhpLoader $packagePhpLoader = null,
+        private ?ExtensionPhpLoader $extensionPhpLoader = null,
     ) {
     }
 
@@ -22,7 +22,7 @@ final readonly class SchedulerTaskRegistry
      */
     public function definitions(): array
     {
-        $this->packagePhpLoader?->loadActivePackages();
+        $this->extensionPhpLoader?->loadActiveExtensions();
 
         $definitions = [];
 

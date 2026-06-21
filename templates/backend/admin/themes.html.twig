@@ -25,7 +25,7 @@
                     {% for theme in section.themes %}
                         <article {{ html_attributes({
                             class: theme.immutable ? 'system-backend-theme-card is-immutable' : 'system-backend-theme-card',
-                            'data-package-name': theme.package_name,
+                            'data-extension-name': theme.extension_name,
                             'data-immutable': theme.immutable ? 'true' : null,
                             'data-theme-status': theme.status,
                         }) }}>

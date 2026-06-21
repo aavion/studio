@@ -1,0 +1,8 @@
+EXTENSION_AUTHOR=Aavion Test Fixtures
+EXTENSION_SLUG=demo-theme
+EXTENSION_NAME=Demo Theme
+EXTENSION_DESCRIPTION=Demo frontend theme extension used to exercise scoped assets, template namespaces, settings, and future admin UI flows.
+EXTENSION_VERSION=0.1.0
+EXTENSION_SCOPE=frontend-theme
+EXTENSION_DEPENDENCIES=[]
+EXTENSION_NAMESPACE=DemoTheme

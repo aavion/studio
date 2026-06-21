@@ -84,15 +84,14 @@ final readonly class SetupInitialContentSeeder
         array $description,
         string $now,
     ): string {
-        $definitionJson = json_encode($schemaVersion['definition'], JSON_THROW_ON_ERROR);
         $values = [
             'schema_uid' => $schemaUid,
             'version' => $schemaVersion['version'],
             'title' => json_encode($schemaVersion['title'], JSON_THROW_ON_ERROR),
             'description' => json_encode($description, JSON_THROW_ON_ERROR),
-            'definition' => $definitionJson,
+            'definition' => json_encode($schemaVersion['definition'], JSON_THROW_ON_ERROR),
             'custom_twig' => null,
-            'definition_hash' => hash('sha256', $definitionJson),
+            'definition_hash' => $this->definitionHash($schemaVersion['title'], $description, $schemaVersion['definition'], null),
             'use_min_level' => null,
             'use_group_identifiers' => null,
             'edit_min_level' => null,
@@ -112,6 +111,21 @@ final readonly class SetupInitialContentSeeder
         $connection->insert('content_schema_version', ['uid' => $schemaVersion['uid'], ...$values]);
 
         return $schemaVersion['uid'];
+    }
+
+    /**
+     * @param array<string, string> $title
+     * @param array<string, string> $description
+     * @param array<string, mixed> $definition
+     */
+    private function definitionHash(array $title, array $description, array $definition, ?string $customTwig): string
+    {
+        return hash('sha256', json_encode([
+            'title' => $title,
+            'description' => $description,
+            'definition' => $definition,
+            'custom_twig' => $customTwig,
+        ], JSON_THROW_ON_ERROR));
     }
 
     /**

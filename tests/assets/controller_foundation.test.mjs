@@ -255,7 +255,7 @@ test('operation overlay marks running detail actions as reusable', () => {
     controller.updateOperationAlert({
         status: 'running',
         progress: { index: 1, total: 3 },
-        label: 'Package registry refresh',
+        label: 'Extension registry refresh',
     });
 
     assert.equal(alertPayload.actions[0].event, 'operation-overlay:show');
@@ -263,7 +263,7 @@ test('operation overlay marks running detail actions as reusable', () => {
 
     controller.updateOperationAlert({
         status: 'success',
-        label: 'Package registry refresh',
+        label: 'Extension registry refresh',
     });
 
     assert.equal(alertPayload.actions[0].detail.keepAlert, false);

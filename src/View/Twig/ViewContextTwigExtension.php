@@ -7,7 +7,7 @@ namespace App\View\Twig;
 use App\Core\Event\EventHookDescriptor;
 use App\Core\Event\PublicEventHookRegistry;
 use App\View\MarkdownRenderer;
-use App\View\PackageMacroRegistry;
+use App\View\ExtensionMacroRegistry;
 use App\View\ViewContextProvider;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFilter;
@@ -17,7 +17,7 @@ final class ViewContextTwigExtension extends AbstractExtension
 {
     public function __construct(
         private readonly ViewContextProvider $contextProvider,
-        private readonly PackageMacroRegistry $macroRegistry,
+        private readonly ExtensionMacroRegistry $macroRegistry,
         private readonly MarkdownRenderer $markdownRenderer,
         private readonly PublicEventHookRegistry $eventHookRegistry,
     ) {

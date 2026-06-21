@@ -1,0 +1,124 @@
+{% extends '@backend/admin.html.twig' %}
+
+{% set extensions = extensions() %}
+
+{% block title %}{{ 'admin.extensions.title'|trans }}{% endblock %}
+
+{% block admin_sidebar %}
+    <nav aria-label="{{ 'ui.admin.navigation'|trans }}">
+        {% include '@backend/partials/navigation/_tree.html.twig' with {items: navigation} only %}
+    </nav>
+{% endblock %}
+
+{% block admin_body %}
+    <div data-controller="dialog">
+    {% set extension_lifecycle_visible = admin_feature_visible('admin.extensions') %}
+    {% set extension_lifecycle_mutable = admin_feature_mutable('admin.extensions') %}
+    {% set backend_actions %}
+        <div class="system-backend-button-group">
+            {% if extension_lifecycle_visible %}
+                <button class="system-backend-button system-button-primary" type="button" data-action="dialog#open" data-dialog-id-param="extension-install-dialog"{% if not extension_lifecycle_mutable %} disabled{% endif %}>
+                    {{ 'admin.extensions.install.label'|trans }}
+                </button>
+            {% endif %}
+            {% include '@backend/admin/partials/_backend-actions.html.twig' with {
+                actions: backend_actions(['extension_discovery']),
+                class: 'system-backend-button-group-inline',
+            } only %}
+        </div>
+    {% endset %}
+
+    {% include '@backend/admin/partials/_page-header.html.twig' with {
+        eyebrow: 'ui.admin.area'|trans,
+        title: 'admin.extensions.title'|trans,
+        actions: backend_actions,
+    } only %}
+
+    {% include '@backend/partials/feedback/_message.html.twig' with {message: message} only %}
+
+    {% if extension_lifecycle_visible and extension_lifecycle_mutable %}
+    <dialog id="extension-install-dialog" class="system-dialog" data-dialog-target="dialog" data-action="click->dialog#closeOnBackdrop">
+        <form method="dialog" class="system-dialog-close">
+            <button class="system-backend-button system-button-secondary" type="submit">
+                {{ 'admin.extensions.install.close'|trans }}
+            </button>
+        </form>
+        <h2>{{ 'admin.extensions.install.title'|trans }}</h2>
+        <p class="system-muted">{{ 'admin.extensions.install.text'|trans }}</p>
+        <form
+            method="post"
+            action="{{ path('backend_admin_extension_install') }}"
+            enctype="multipart/form-data"
+            data-controller="operation-overlay"
+            data-action="submit->operation-overlay#submit"
+            data-operation-overlay-enabled-value="true"
+            data-operation-overlay-redirect-on-success-value="/admin/extensions"
+        >
+            <input type="hidden" name="_form_id" value="extension-install">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('extension-install') }}">
+            <label class="system-form-field">
+                <span>{{ 'admin.extensions.install.file'|trans }}</span>
+                <input type="file" name="extension_zip" accept=".zip,application/zip" required>
+            </label>
+            <button class="system-backend-button system-button-primary" type="submit">
+                {{ 'admin.extensions.install.submit'|trans }}
+            </button>
+        </form>
+    </dialog>
+    {% endif %}
+
+    <section class="system-panel">
+        <h2>{{ 'admin.extensions.registry_title'|trans }}</h2>
+        <p class="system-muted">{{ 'admin.extensions.registry_text'|trans }}</p>
+
+        {% if extensions|length > 0 %}
+            <table class="system-table">
+                <thead>
+                    <tr>
+                        <th scope="col">{{ 'admin.extensions.table.extension'|trans }}</th>
+                        <th scope="col">{{ 'admin.extensions.table.status'|trans }}</th>
+                        <th scope="col">{{ 'admin.extensions.table.scopes'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for extension in extensions %}
+                        {% set row_classes = extension.immutable ? 'is-immutable' : '' %}
+                        {% set row_classes = extension.available_version|default(null) ? (row_classes ~ ' has-update')|trim : row_classes %}
+                        <tr {{ html_attributes({
+                            class: row_classes ?: null,
+                            'data-extension-name': extension.extension_name,
+                            'data-extension-status': extension.status,
+                            'data-immutable': extension.immutable ? 'true' : null,
+                        }) }}>
+                            {% set extension_version = extension.installed_version|default(extension.manifest_version|default(null)) %}
+                            <th scope="row">
+                                <strong>
+                                    <a href="{{ extension.detail_path }}">{{ extension.label_key ? extension.label_key|trans : extension.label }}</a>
+                                </strong>
+                                {% if extension_version %}
+                                    <span class="system-muted">{{ extension_version }}</span>
+                                {% endif %}
+                                {% if extension.available_version|default(null) %}
+                                    <strong class="system-badge system-badge-warning">&gt; {{ extension.available_version }}</strong>
+                                {% endif %}
+                            </th>
+                            <td>
+                                <span class="system-badge system-badge-{{ extension.status_tone }}">
+                                    {{ extension.status_label_key|trans }}
+                                </span>
+                            </td>
+                            <td>
+                                {% for scope in extension.scopes %}
+                                    <span class="system-badge system-badge-neutral">{{ scope.label_key|trans }}</span>
+                                {% endfor %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="system-muted">{{ 'admin.extensions.empty'|trans }}</p>
+        {% endif %}
+    </section>
+    </div>
+{% endblock %}

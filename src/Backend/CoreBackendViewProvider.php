@@ -24,15 +24,15 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                 minimumAccessLevel: AccessLevel::ADMIN,
             ),
             new BackendViewDefinition(
-                'backend-admin-packages',
+                'backend-admin-extensions',
                 BackendArea::Admin,
-                'packages',
-                'admin.navigation.packages',
-                '@backend/admin/packages.html.twig',
+                'extensions',
+                'admin.navigation.extensions',
+                '@backend/admin/extensions.html.twig',
                 20,
                 minimumAccessLevel: AccessLevel::ADMIN,
                 context: [
-                    'access_feature' => 'admin.packages',
+                    'access_feature' => 'admin.extensions',
                 ],
             ),
             new BackendViewDefinition(
@@ -44,7 +44,7 @@ final readonly class CoreBackendViewProvider implements BackendViewProviderInter
                 30,
                 minimumAccessLevel: AccessLevel::ADMIN,
                 context: [
-                    'access_feature' => 'admin.packages',
+                    'access_feature' => 'admin.extensions',
                 ],
             ),
             new BackendViewDefinition(

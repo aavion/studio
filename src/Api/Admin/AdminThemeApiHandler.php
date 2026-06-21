@@ -9,7 +9,7 @@ use App\Api\Endpoint\ApiEndpointHandlerInterface;
 use App\Api\Http\ApiResponder;
 use App\Api\Security\ApiAccessGuard;
 use App\Core\Access\AccessLevel;
-use App\Core\Package\ThemeAdminOverview;
+use App\Core\Extension\ThemeAdminOverview;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -35,7 +35,7 @@ final readonly class AdminThemeApiHandler implements ApiEndpointHandlerInterface
             return $denied;
         }
 
-        if ($denied = $this->featureGuard->denyUnlessVisible($request, 'admin.packages', 'listAdminThemes')) {
+        if ($denied = $this->featureGuard->denyUnlessVisible($request, 'admin.extensions', 'listAdminThemes')) {
             return $denied;
         }
 

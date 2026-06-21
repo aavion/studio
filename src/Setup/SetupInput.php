@@ -6,6 +6,7 @@ namespace App\Setup;
 
 use App\Core\Message\MessageException;
 use App\Core\Validation\EmailAddress;
+use App\Core\Validation\IdentifierSpec;
 use App\Entity\UserAccount;
 use App\Localization\LocaleToken;
 
@@ -62,7 +63,7 @@ final readonly class SetupInput
             ]);
         }
 
-        if (null !== $this->databasePrefix && '' !== $this->databasePrefix && 1 !== preg_match('/^[a-z][a-z0-9_]*$/', $this->databasePrefix)) {
+        if (null !== $this->databasePrefix && '' !== $this->databasePrefix && !IdentifierSpec::isDatabasePrefix($this->databasePrefix)) {
             throw MessageException::invalidArgument(SetupMessageKey::SETUP_INPUT_DATABASE_PREFIX_INVALID, [
                 '%prefix%' => $this->databasePrefix,
             ]);

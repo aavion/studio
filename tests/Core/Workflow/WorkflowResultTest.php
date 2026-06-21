@@ -8,8 +8,8 @@ use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
 use App\Core\Message\MessageLevel;
 use App\Core\Operation\OperationMessageKey;
-use App\Core\Package\PackageMessageCode;
-use App\Core\Package\PackageMessageKey;
+use App\Core\Extension\ExtensionMessageCode;
+use App\Core\Extension\ExtensionMessageKey;
 use App\Core\Workflow\WorkflowResult;
 use App\Core\Workflow\WorkflowStatus;
 use InvalidArgumentException;
@@ -19,7 +19,7 @@ final class WorkflowResultTest extends TestCase
 {
     public function testSuccessResultCarriesValueAndContext(): void
     {
-        $message = Message::info(PackageMessageCode::PACKAGE_DISCOVERY_COMPLETED, PackageMessageKey::PACKAGE_DISCOVERY_COMPLETED, [
+        $message = Message::info(ExtensionMessageCode::EXTENSION_DISCOVERY_COMPLETED, ExtensionMessageKey::EXTENSION_DISCOVERY_COMPLETED, [
             '%count%' => 1,
         ]);
         $result = WorkflowResult::success('theme-default', [

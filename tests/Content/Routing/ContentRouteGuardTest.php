@@ -50,7 +50,7 @@ final class ContentRouteGuardTest extends TestCase
             '_profiler',
             'profiler',
             '_wdt',
-            'packages',
+            'extensions',
             'media',
             'files',
         ] as $prefix) {

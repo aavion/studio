@@ -13,7 +13,7 @@ use App\Api\Security\ApiEndpointAccessSubscriber;
 use App\Core\Message\MessageException;
 use App\Core\Output\JsonOutputRenderer;
 use App\Tests\Support\IdentityTranslator;
-use App\View\SystemPackageMetadataProvider;
+use App\View\SystemExtensionMetadataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -81,7 +81,7 @@ final class ApiEndpointAccessSubscriberTest extends TestCase
         return new ApiEndpointAccessSubscriber(
             new ApiEndpointRegistry([$this->provider()]),
             new ApiResponder(new JsonOutputRenderer(), new IdentityTranslator()),
-            new SystemPackageMetadataProvider(dirname(__DIR__, 3)),
+            new SystemExtensionMetadataProvider(dirname(__DIR__, 3)),
         );
     }
 

@@ -6,6 +6,7 @@ namespace App\Live;
 
 use App\Api\ApiMessageKey;
 use App\Core\Access\AccessLevel;
+use App\Core\Validation\IdentifierSpec;
 use App\Core\Message\MessageException;
 use App\Core\Validation\Identifier;
 use Symfony\Component\HttpFoundation\Request;
@@ -117,7 +118,7 @@ final readonly class LiveEndpointDefinition
 
     private function assertOperationId(string $operationId): void
     {
-        if (1 !== preg_match('/^[A-Za-z][A-Za-z0-9_]*$/', $operationId)) {
+        if (!IdentifierSpec::isPascalIdentifier($operationId)) {
             throw MessageException::invalidArgument(ApiMessageKey::API_ENDPOINT_OPERATION_INVALID, [
                 '%operation%' => $operationId,
             ]);
@@ -126,7 +127,7 @@ final readonly class LiveEndpointDefinition
 
     private function assertHandlerKey(string $handlerKey): void
     {
-        if (1 !== preg_match('/^[a-z0-9][a-z0-9_.-]*$/', $handlerKey)) {
+        if (!IdentifierSpec::isHandlerKey($handlerKey)) {
             throw MessageException::invalidArgument(ApiMessageKey::API_ENDPOINT_HANDLER_INVALID, [
                 '%handler%' => $handlerKey,
             ]);

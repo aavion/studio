@@ -21,7 +21,9 @@ final class SuspiciousProbePathMatcherTest extends TestCase
         self::assertTrue($matcher->isProbe('/.env'));
         self::assertTrue($matcher->isProbe('/wp-login.php'));
         self::assertTrue($matcher->isProbe('/backup-2026.sql'));
-        self::assertFalse($matcher->isProbe('/admin/packages/upload'));
+        self::assertTrue($matcher->isProbe('/package-lock.json'));
+        self::assertFalse($matcher->isProbe('/admin/extensions/upload'));
+        self::assertFalse($matcher->isProbe('/extension-lock.json'));
     }
 
     public function testItUsesConfiguredPatternsWhenProvided(): void

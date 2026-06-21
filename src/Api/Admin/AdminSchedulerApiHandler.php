@@ -129,14 +129,14 @@ final readonly class AdminSchedulerApiHandler implements ApiEndpointHandlerInter
             $errors['cron_expression'] = ['admin.scheduler.form.errors.cron_invalid'];
         }
 
-        $confirmPackageActionQueue = true === ($payload['confirm_package_action_queue'] ?? false);
+        $confirmExtensionActionQueue = true === ($payload['confirm_extension_action_queue'] ?? false);
         if (
             true === $enabled
             && !$task->trusted()
             && SchedulerTaskType::ActionQueue === $task->type()
-            && !$confirmPackageActionQueue
+            && !$confirmExtensionActionQueue
         ) {
-            $errors['confirm_package_action_queue'] = ['admin.scheduler.form.errors.package_action_queue_confirmation_required'];
+            $errors['confirm_extension_action_queue'] = ['admin.scheduler.form.errors.extension_action_queue_confirmation_required'];
         }
 
         if ([] !== $errors) {

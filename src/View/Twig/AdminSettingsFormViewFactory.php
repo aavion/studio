@@ -9,8 +9,8 @@ use App\Core\AdminAcl\AdminFeatureAccessPolicy;
 use App\Core\Config\Config;
 use App\Core\Config\Settings\CoreSettingDefinition;
 use App\Core\Config\Settings\CoreSettingsRegistry;
-use App\Core\Package\Settings\PackageSettingRegistry;
-use App\Core\Package\Settings\PackageSettings;
+use App\Core\Extension\Settings\ExtensionSettingRegistry;
+use App\Core\Extension\Settings\ExtensionSettings;
 use App\Entity\UserAccount;
 use App\Form\FormBuilder;
 use App\Form\FormFieldDefinition;
@@ -24,8 +24,8 @@ final readonly class AdminSettingsFormViewFactory
         private Config $config,
         private CoreSettingsRegistry $coreSettingsRegistry,
         private FormBuilder $formBuilder,
-        private PackageSettings $packageSettings,
-        private PackageSettingRegistry $packageSettingRegistry,
+        private ExtensionSettings $extensionSettings,
+        private ExtensionSettingRegistry $extensionSettingRegistry,
         private Security $security,
         private RequestStack $requestStack,
         private ?AdminFeatureAccessPolicy $adminAcl = null,
@@ -73,29 +73,29 @@ final readonly class AdminSettingsFormViewFactory
     /**
      * @return list<array<string, mixed>>
      */
-    public function packageSettings(string $packageName): array
+    public function extensionSettings(string $extensionName): array
     {
-        if (!$this->packageFeatureVisible($packageName)) {
+        if (!$this->extensionFeatureVisible($extensionName)) {
             return [];
         }
 
-        return $this->packageSettings->viewRows($packageName, $this->packageSettingRegistry);
+        return $this->extensionSettings->viewRows($extensionName, $this->extensionSettingRegistry);
     }
 
-    public function packageSetting(string $packageName, string $key, mixed $default = null): mixed
+    public function extensionSetting(string $extensionName, string $key, mixed $default = null): mixed
     {
-        return $this->packageSettings->get($packageName, $key, $default);
+        return $this->extensionSettings->get($extensionName, $key, $default);
     }
 
     /**
      * @return array<string, mixed>
      */
-    public function packageSettingsForm(string $packageName): array
+    public function extensionSettingsForm(string $extensionName): array
     {
         $request = $this->requestStack->getCurrentRequest();
         $errors = $this->requestFormErrors($request);
-        $fields = $this->packageSettings->formFields($packageName, $this->packageSettingRegistry);
-        $mutable = $this->packageFeatureMutable($packageName);
+        $fields = $this->extensionSettings->formFields($extensionName, $this->extensionSettingRegistry);
+        $mutable = $this->extensionFeatureMutable($extensionName);
         $sensitiveKeys = $this->sensitiveFieldKeys($fields);
         $values = array_replace(
             array_fill_keys($sensitiveKeys, ''),
@@ -103,8 +103,8 @@ final readonly class AdminSettingsFormViewFactory
         );
 
         $form = $this->formBuilder->build(
-            'package-settings-'.preg_replace('/[^a-z0-9_]+/', '_', strtolower($packageName)),
-            $packageName,
+            'extension-settings-'.preg_replace('/[^a-z0-9_]+/', '_', strtolower($extensionName)),
+            $extensionName,
             $fields,
             $values,
             $errors,
@@ -127,26 +127,26 @@ final readonly class AdminSettingsFormViewFactory
     }
 
     /**
-     * @return list<array{package_name: string, label: string, description: string|null, path: string}>
+     * @return list<array{extension_name: string, label: string, description: string|null, path: string}>
      */
-    public function packageSettingPackages(): array
+    public function extensionSettingExtensions(): array
     {
-        $packages = [];
+        $extensions = [];
 
-        foreach ($this->packageSettingRegistry->packagesWithDefinitions() as $packageName => $metadata) {
-            if (!$this->packageFeatureVisible($packageName)) {
+        foreach ($this->extensionSettingRegistry->extensionsWithDefinitions() as $extensionName => $metadata) {
+            if (!$this->extensionFeatureVisible($extensionName)) {
                 continue;
             }
 
-            $packages[] = [
-                'package_name' => $packageName,
+            $extensions[] = [
+                'extension_name' => $extensionName,
                 'label' => $metadata['label'],
                 'description' => $metadata['description'],
                 'path' => $metadata['path'],
             ];
         }
 
-        return $packages;
+        return $extensions;
     }
 
     /**
@@ -203,14 +203,14 @@ final readonly class AdminSettingsFormViewFactory
         return $definition->allows($actor);
     }
 
-    private function packageFeatureVisible(string $packageName): bool
+    private function extensionFeatureVisible(string $extensionName): bool
     {
-        return null === $this->adminAcl || $this->adminAcl->isVisible('admin.settings.packages.'.$packageName, $this->actor());
+        return null === $this->adminAcl || $this->adminAcl->isVisible('admin.settings.extensions.'.$extensionName, $this->actor());
     }
 
-    private function packageFeatureMutable(string $packageName): bool
+    private function extensionFeatureMutable(string $extensionName): bool
     {
-        return null === $this->adminAcl || $this->adminAcl->isMutable('admin.settings.packages.'.$packageName, $this->actor());
+        return null === $this->adminAcl || $this->adminAcl->isMutable('admin.settings.extensions.'.$extensionName, $this->actor());
     }
 
     private function actor(): AccessActor

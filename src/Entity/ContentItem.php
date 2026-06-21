@@ -66,6 +66,11 @@ class ContentItem
         return $this->status;
     }
 
+    public function restoreStatus(ContentStatus $status): void
+    {
+        $this->status = $status;
+    }
+
     public function publish(): void
     {
         $this->status = ContentStatus::Published;

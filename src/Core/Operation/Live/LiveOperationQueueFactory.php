@@ -13,11 +13,11 @@ use App\Core\Workflow\WorkflowResult;
 final readonly class LiveOperationQueueFactory
 {
     public const BACKEND_CACHE_CLEAR = 'backend.cache_clear';
-    public const PACKAGE_DISCOVERY = 'package.discovery';
-    public const PACKAGE_ASSET_REBUILD = 'package.asset_rebuild';
-    public const PACKAGE_LIFECYCLE = 'package.lifecycle';
-    public const PACKAGE_INSTALL_VERIFY = 'package.install.verify';
-    public const PACKAGE_INSTALL_APPLY = 'package.install.apply';
+    public const EXTENSION_DISCOVERY = 'extension.discovery';
+    public const EXTENSION_ASSET_REBUILD = 'extension.asset_rebuild';
+    public const EXTENSION_LIFECYCLE = 'extension.lifecycle';
+    public const EXTENSION_INSTALL_VERIFY = 'extension.install.verify';
+    public const EXTENSION_INSTALL_APPLY = 'extension.install.apply';
     public const ACL_GROUP_APPLY = 'acl.group.apply';
     public const SETUP_APPLY = 'setup.apply';
     public const GEOIP_DATABASE_UPDATE = 'geoip.database_update';

@@ -66,7 +66,7 @@ Codex may create local commits for this branch when each commit has a clear them
 ## Non-goals
 
 - No newsletter, CRM, or campaign tooling.
-- No third-party transactional mail provider package.
+- No third-party transactional mail provider extension.
 
 ## Acceptance criteria
 

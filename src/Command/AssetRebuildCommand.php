@@ -11,8 +11,8 @@ use App\Core\Message\Message;
 use App\Core\Message\MessageLevel;
 use App\Core\Operation\OperationActionInterface;
 use App\Core\Operation\OperationExecutor;
-use App\Core\Package\ActivePackageAssetProviderInterface;
-use App\Core\Package\PackageAssetRebuildDispatcher;
+use App\Core\Extension\ActiveExtensionAssetProviderInterface;
+use App\Core\Extension\ExtensionAssetRebuildDispatcher;
 use App\Core\Workflow\WorkflowResult;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -31,10 +31,10 @@ final class AssetRebuildCommand extends Command
 {
     public function __construct(
         private readonly KernelInterface $kernel,
-        private readonly ActivePackageAssetProviderInterface $packageProvider,
+        private readonly ActiveExtensionAssetProviderInterface $extensionProvider,
         private readonly AssetRebuildQueueFactory $queueFactory,
         private readonly OperationExecutor $operationExecutor,
-        private readonly PackageAssetRebuildDispatcher $rebuildDispatcher,
+        private readonly ExtensionAssetRebuildDispatcher $rebuildDispatcher,
         private readonly ConsoleResultRenderer $resultRenderer,
     ) {
         parent::__construct();
@@ -56,7 +56,7 @@ final class AssetRebuildCommand extends Command
         $dryRun = (bool) $input->getOption('dry-run');
         $queue = (bool) $input->getOption('queue');
         $trigger = (string) $input->getOption('trigger');
-        $packageProviderError = null;
+        $extensionProviderError = null;
 
         if ($queue) {
             $result = $this->rebuildDispatcher->dispatch($this->kernel->getEnvironment(), $trigger);
@@ -73,7 +73,7 @@ final class AssetRebuildCommand extends Command
         }
 
         try {
-            $packages = $this->packageProvider->packages();
+            $extensions = $this->extensionProvider->extensions();
         } catch (Throwable $error) {
             if (!$dryRun) {
                 $this->writeProviderFailure($io, $output, $json, $error);
@@ -81,29 +81,29 @@ final class AssetRebuildCommand extends Command
                 return Command::FAILURE;
             }
 
-            $packages = [];
-            $packageProviderError = [
+            $extensions = [];
+            $extensionProviderError = [
                 'exception' => $error::class,
                 'message' => $error->getMessage(),
             ];
         }
 
-        $queue = $this->queueFactory->create($this->kernel->getEnvironment(), $packages, $trigger, !$dryRun);
+        $queue = $this->queueFactory->create($this->kernel->getEnvironment(), $extensions, $trigger, !$dryRun);
 
         if ($dryRun) {
             $plan = $this->operationExecutor->planQueue($queue);
             $payload = $plan->toArray();
 
-            if (null !== $packageProviderError) {
-                $payload['context']['package_provider_error'] = $packageProviderError;
+            if (null !== $extensionProviderError) {
+                $payload['context']['extension_provider_error'] = $extensionProviderError;
             }
 
             if ($json) {
                 $this->resultRenderer->writeJsonPayload($output, $payload, true);
             } else {
                 $io->title('Asset rebuild dry-run');
-                if (null !== $packageProviderError) {
-                    $io->warning('Active packages could not be loaded. The dry-run plan assumes no active packages.');
+                if (null !== $extensionProviderError) {
+                    $io->warning('Active extensions could not be loaded. The dry-run plan assumes no active extensions.');
                 }
 
                 $this->writeDryRun($io, $payload['actions']);
@@ -177,7 +177,7 @@ final class AssetRebuildCommand extends Command
         $payload = [
             'status' => 'failed',
             'error' => [
-                'code' => 'package.asset_provider_failed',
+                'code' => 'extension.asset_provider_failed',
                 'exception' => $error::class,
                 'message' => $error->getMessage(),
             ],
@@ -188,6 +188,6 @@ final class AssetRebuildCommand extends Command
             return;
         }
 
-        $io->error('Active packages could not be loaded; asset rebuild was not started.');
+        $io->error('Active extensions could not be loaded; asset rebuild was not started.');
     }
 }

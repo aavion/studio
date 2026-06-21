@@ -22,6 +22,7 @@ final class TestSuiteLifecycle
 
     public static function cleanup(): void
     {
+        self::stopMercureHub(dirname(__DIR__, 2));
         self::removeDirectory(self::temporaryRoot());
     }
 
@@ -130,6 +131,18 @@ final class TestSuiteLifecycle
 
         if (0 !== $exitCode) {
             throw new RuntimeException(trim($output.PHP_EOL.$errorOutput));
+        }
+    }
+
+    private static function stopMercureHub(string $projectRoot): void
+    {
+        try {
+            self::runConsoleCommand($projectRoot, [
+                'mercure:stop',
+                '--env=test',
+            ]);
+        } catch (RuntimeException) {
+            return;
         }
     }
 

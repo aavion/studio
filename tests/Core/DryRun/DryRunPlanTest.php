@@ -54,30 +54,30 @@ final class DryRunPlanTest extends TestCase
     public function testItCarriesKeyValueDiffs(): void
     {
         $diff = DryRunDiff::keyValue('manifest', [
-            'PACKAGE_NAME' => 'Old',
-            'PACKAGE_VERSION' => '1.0.0',
+            'EXTENSION_NAME' => 'Old',
+            'EXTENSION_VERSION' => '1.0.0',
         ], [
-            'PACKAGE_NAME' => 'New',
-            'PACKAGE_VERSION' => '1.0.0',
-            'PACKAGE_AUTHOR' => 'Studio',
+            'EXTENSION_NAME' => 'New',
+            'EXTENSION_VERSION' => '1.0.0',
+            'EXTENSION_AUTHOR' => 'Studio',
         ]);
 
         self::assertSame(DryRunDiffType::KeyValue, $diff->type());
-        self::assertSame(['PACKAGE_AUTHOR', 'PACKAGE_NAME'], $diff->payload()['changed_keys']);
+        self::assertSame(['EXTENSION_AUTHOR', 'EXTENSION_NAME'], $diff->payload()['changed_keys']);
         self::assertSame('added', $diff->payload()['changes'][0]['type']);
         self::assertSame('changed', $diff->payload()['changes'][1]['type']);
     }
 
     public function testItExportsToActionLog(): void
     {
-        $plan = DryRunPlan::create('package import')
+        $plan = DryRunPlan::create('extension import')
             ->add(DryRunAction::create(
                 'write_file',
-                'Write package manifest',
+                'Write extension manifest',
                 DryRunRisk::Medium,
                 ['.manifest'],
-                [DryRunDiff::keyValue('manifest', [], ['PACKAGE_NAME' => 'Demo'])],
-                ['package' => 'demo'],
+                [DryRunDiff::keyValue('manifest', [], ['EXTENSION_NAME' => 'Demo'])],
+                ['extension' => 'demo'],
             ));
 
         $log = $plan->toActionLog();
@@ -86,33 +86,33 @@ final class DryRunPlanTest extends TestCase
         self::assertSame(ActionLogStatus::Skipped, $log->entries()[0]->status());
         self::assertSame('medium', $log->entries()[0]->context()['risk']);
         self::assertSame(['.manifest'], $log->entries()[0]->context()['paths']);
-        self::assertSame('demo', $log->entries()[0]->context()['package']);
+        self::assertSame('demo', $log->entries()[0]->context()['extension']);
         self::assertSame('key_value', $log->entries()[0]->context()['diffs'][0]['type']);
     }
 
     public function testItExportsStructuredPayload(): void
     {
-        $plan = DryRunPlan::create('package import', ['package' => 'demo'])
+        $plan = DryRunPlan::create('extension import', ['extension' => 'demo'])
             ->add(DryRunAction::create(
                 'write_file',
-                'Write package manifest',
+                'Write extension manifest',
                 DryRunRisk::Medium,
                 ['.manifest'],
-                [DryRunDiff::keyValue('manifest', [], ['PACKAGE_NAME' => 'Demo'])],
+                [DryRunDiff::keyValue('manifest', [], ['EXTENSION_NAME' => 'Demo'])],
                 ['target' => '.manifest'],
             ));
 
         $payload = $plan->toArray();
 
-        self::assertSame('package import', $payload['name']);
+        self::assertSame('extension import', $payload['name']);
         self::assertSame(['write_file' => 1], $payload['action_counts']);
         self::assertSame(['.manifest'], $payload['affected_paths']);
         self::assertSame('medium', $payload['highest_risk']);
         self::assertTrue($payload['has_diffs']);
-        self::assertSame(['package' => 'demo'], $payload['context']);
+        self::assertSame(['extension' => 'demo'], $payload['context']);
         self::assertSame([
             'type' => 'write_file',
-            'label' => 'Write package manifest',
+            'label' => 'Write extension manifest',
             'risk' => 'medium',
             'paths' => ['.manifest'],
             'diffs' => [[

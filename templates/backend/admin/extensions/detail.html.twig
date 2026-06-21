@@ -1,0 +1,135 @@
+{% extends '@backend/admin.html.twig' %}
+
+{% block title %}{{ extension.label }}{% endblock %}
+
+{% block admin_sidebar %}
+    <nav aria-label="{{ 'ui.admin.navigation'|trans }}">
+        {% include '@backend/partials/navigation/_tree.html.twig' with {items: navigation} only %}
+    </nav>
+{% endblock %}
+
+{% block admin_body %}
+    {% set extension_actions %}
+        {% if extension.actions is not empty %}
+            <div class="system-backend-button-group">
+                {% for action in extension.actions %}
+                    {% if action.disabled|default(false) %}
+                        <button class="system-backend-button system-button-{{ action.variant }}" type="button" disabled>
+                            {{ action.label_key|trans }}
+                        </button>
+                    {% else %}
+                        <a class="system-backend-button system-button-{{ action.variant }}" href="{{ action.path }}">
+                            {{ action.label_key|trans }}
+                        </a>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endset %}
+
+    {% include '@backend/admin/partials/_page-header.html.twig' with {
+        eyebrow: 'admin.extensions.title'|trans,
+        title: extension.label,
+        actions: extension_actions,
+    } only %}
+
+    {% if extension.preview_image %}
+        <figure class="system-backend-extension-hero">
+            <img src="{{ extension.preview_image }}" alt="">
+        </figure>
+    {% endif %}
+
+    <section class="system-panel">
+        <h2>{{ 'admin.extensions.detail.overview_title'|trans }}</h2>
+        <table class="system-table">
+            <tbody>
+                <tr>
+                    <th scope="row">{{ 'admin.extensions.table.status'|trans }}</th>
+                    <td>
+                        <span class="system-badge system-badge-{{ extension.status_tone }}">{{ extension.status_label_key|trans }}</span>
+                        {% if extension.immutable %}
+                            <span class="system-badge system-badge-info">{{ 'admin.extensions.detail.immutable'|trans }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">{{ 'admin.extensions.table.scopes'|trans }}</th>
+                    <td>
+                        {% for scope in extension.scopes %}
+                            <span class="system-badge system-badge-neutral">{{ scope.label_key|trans }}</span>
+                        {% endfor %}
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">{{ 'admin.extensions.table.version'|trans }}</th>
+                    <td>{{ extension.installed_version|default(extension.manifest_version|default('admin.extensions.unknown_value'|trans)) }}</td>
+                </tr>
+                <tr>
+                    <th scope="row">{{ 'admin.extensions.table.path'|trans }}</th>
+                    <td><code>{{ extension.path }}</code></td>
+                </tr>
+                {% if extension.description %}
+                    <tr>
+                        <th scope="row">{{ 'admin.extensions.detail.description'|trans }}</th>
+                        <td>{{ extension.description }}</td>
+                    </tr>
+                {% endif %}
+                {% if extension.author %}
+                    <tr>
+                        <th scope="row">{{ 'admin.extensions.detail.author'|trans }}</th>
+                        <td>{{ extension.author }}</td>
+                    </tr>
+                {% endif %}
+                {% if extension.license %}
+                    <tr>
+                        <th scope="row">{{ 'admin.extensions.detail.license'|trans }}</th>
+                        <td>{{ extension.license }}</td>
+                    </tr>
+                {% endif %}
+                <tr>
+                    <th scope="row">{{ 'admin.extensions.detail.dependencies'|trans }}</th>
+                    <td>
+                        {% if extension.dependencies is not empty %}
+                            {% for dependency in extension.dependencies %}
+                                <span class="system-badge system-badge-neutral">{{ dependency }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <span class="system-muted">{{ 'admin.extensions.detail.dependencies_empty'|trans }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% if extension.homepage %}
+                    <tr>
+                        <th scope="row">{{ 'admin.extensions.detail.homepage'|trans }}</th>
+                        <td>
+                            {% if extension.homepage_url|default(null) %}
+                                <a href="{{ extension.homepage_url }}" rel="noreferrer noopener">{{ extension.homepage }}</a>
+                            {% else %}
+                                {{ extension.homepage }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endif %}
+                {% if extension.source %}
+                    <tr>
+                        <th scope="row">{{ 'admin.extensions.detail.source'|trans }}</th>
+                        <td>
+                            {% if extension.source_url|default(null) %}
+                                <a href="{{ extension.source_url }}" rel="noreferrer noopener">{{ extension.source_url }}</a>
+                            {% else %}
+                                {{ extension.source }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </section>
+
+    {% if extension.readme %}
+        <section class="system-panel system-markdown">
+            <h2>{{ 'admin.extensions.detail.readme_title'|trans }}</h2>
+            {{ extension.readme|render_markdown('readme')|raw }}
+        </section>
+    {% endif %}
+{% endblock %}

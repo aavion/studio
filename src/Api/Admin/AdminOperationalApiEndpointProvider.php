@@ -139,7 +139,7 @@ final readonly class AdminOperationalApiEndpointProvider implements ApiEndpointP
             'properties' => [
                 'enabled' => ['type' => 'boolean'],
                 'cron_expression' => ['type' => 'string'],
-                'confirm_package_action_queue' => ['type' => 'boolean'],
+                'confirm_extension_action_queue' => ['type' => 'boolean'],
             ],
         ];
     }

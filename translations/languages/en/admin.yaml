@@ -16,7 +16,7 @@ admin:
     users: 'Users'
     user_groups: 'ACL groups'
     user_reviews: 'Reviews'
-    packages: 'Packages'
+    extensions: 'Extensions'
     themes: 'Themes'
     scheduler: 'Scheduler'
     backups: 'Backups'
@@ -30,14 +30,14 @@ admin:
     mail_settings: 'Mail'
     security_settings: 'Security'
     logging_settings: 'Logs'
-    package_settings: 'Packages'
+    extension_settings: 'Extensions'
     statistics_settings: 'Statistics'
     api_settings: 'API'
     acl_settings: 'ACL'
     scheduler_settings: 'Scheduler'
     system_info: 'System information'
   actions:
-    package_discovery:
+    extension_discovery:
       label: 'Update registry'
     asset_rebuild:
       label: 'Rebuild assets'
@@ -49,16 +49,16 @@ admin:
     title: 'Admin dashboard'
     foundation_title: 'Backend foundation'
     foundation_text: 'Administrative routes are now resolved through the native backend router. Functional pages can attach here once authentication, navigation, and access checks are ready.'
-  packages:
-    title: 'Package management'
-    foundation_title: 'Package view foundation'
-    foundation_text: 'Package management will attach here once install, update, activation, and cleanup workflows are wired.'
-    registry_title: 'Registered packages'
-    registry_text: 'Packages discovered in the registry are listed here. Lifecycle actions will attach once operation flows are wired.'
-    empty: 'No packages are registered yet.'
+  extensions:
+    title: 'Extension management'
+    foundation_title: 'Extension view foundation'
+    foundation_text: 'Extension management will attach here once install, update, activation, and cleanup workflows are wired.'
+    registry_title: 'Registered extensions'
+    registry_text: 'Extensions discovered in the registry are listed here. Lifecycle actions will attach once operation flows are wired.'
+    empty: 'No extensions are registered yet.'
     unknown_value: 'Unknown'
     table:
-      package: 'Package'
+      extension: 'Extension'
       status: 'Status'
       scopes: 'Scopes'
       version: 'Version'
@@ -82,59 +82,59 @@ admin:
       none: 'No actions'
     install:
       label: 'Install'
-      title: 'Install package'
-      text: 'Upload a package ZIP. The package manifest is verified first and the final installation waits for confirmation in the ActionLog.'
-      file: 'Package ZIP'
-      submit: 'Verify package'
+      title: 'Install extension'
+      text: 'Upload an extension ZIP. The extension manifest is verified first and the final installation waits for confirmation in the ActionLog.'
+      file: 'Extension ZIP'
+      submit: 'Verify extension'
       close: 'Close'
     meta:
       author: 'By %author%'
     detail:
-      overview_title: 'Package overview'
+      overview_title: 'Extension overview'
       immutable: 'Immutable'
       description: 'Description'
       author: 'Author'
       license: 'License'
       dependencies: 'Dependencies'
-      dependencies_empty: 'No package dependencies'
+      dependencies_empty: 'No extension dependencies'
       homepage: 'Homepage'
       source: 'Source'
       readme_title: 'README'
     lifecycle:
       review_title: 'Review changes'
-      immutable: 'This system package is immutable and cannot change lifecycle state.'
+      immutable: 'This system extension is immutable and cannot change lifecycle state.'
       unavailable: 'This lifecycle action is not available.'
-      no_changes: 'This action does not need to change package state.'
+      no_changes: 'This action does not need to change extension state.'
       cancel: 'Cancel'
       table:
         action: 'Action'
       activate:
         label: 'Activate'
-        title: 'Activate %package%'
-        text: 'Review dependency and conflict changes before activating this package.'
-        submit: 'Activate package'
+        title: 'Activate %extension%'
+        text: 'Review dependency and conflict changes before activating this extension.'
+        submit: 'Activate extension'
       deactivate:
         label: 'Deactivate'
-        title: 'Deactivate %package%'
-        text: 'Review the planned state change before deactivating this package.'
-        submit: 'Deactivate package'
+        title: 'Deactivate %extension%'
+        text: 'Review the planned state change before deactivating this extension.'
+        submit: 'Deactivate extension'
       reset_fault:
         label: 'Reset fault'
-        title: 'Reset fault for %package%'
-        text: 'The package will be validated again and returned to inactive if recovery succeeds.'
+        title: 'Reset fault for %extension%'
+        text: 'The extension will be validated again and returned to inactive if recovery succeeds.'
         submit: 'Reset fault'
       purge:
         label: 'Delete data'
-        title: 'Delete data for %package%'
-        text: 'Review package-owned data cleanup before resetting this package registration.'
-        warning: 'This step is irreversible. Package-owned settings and future package-owned data cleanup targets will be deleted.'
+        title: 'Delete data for %extension%'
+        text: 'Review extension-owned data cleanup before resetting this extension registration.'
+        warning: 'This step is irreversible. Extension-owned settings and future extension-owned data cleanup targets will be deleted.'
         submit: 'Delete data'
       delete:
-        label: 'Delete package'
-        title: 'Delete %package%'
-        text: 'Review the filesystem removal before deleting this package from disk.'
-        warning: 'This step is irreversible. The package files will be deleted and the registry row will stay as removed until data is deleted separately.'
-        submit: 'Delete package'
+        label: 'Delete extension'
+        title: 'Delete %extension%'
+        text: 'Review the filesystem removal before deleting this extension from disk.'
+        warning: 'This step is irreversible. The extension files will be deleted and the registry row will stay as removed until data is deleted separately.'
+        submit: 'Delete extension'
   themes:
     title: 'Theme management'
     foundation_title: 'Theme management foundation'
@@ -149,7 +149,7 @@ admin:
         text: 'Administration and editor shell themes plus the native system fallback are listed here.'
     type:
       system: 'System'
-      package: 'Package'
+      extension: 'Extension'
     quick:
       use: 'Use'
       active: 'Active'
@@ -476,9 +476,9 @@ admin:
       ui_alert_inbox_cleanup:
         label: 'UI alert inbox cleanup'
         description: 'Removes queued UI alerts after their delivery retention expires.'
-      package_discovery:
-        label: 'Package discovery'
-        description: 'Discovers packages and updates the package registry.'
+      extension_discovery:
+        label: 'Extension discovery'
+        description: 'Discovers extensions and updates the extension registry.'
       statistics_snapshot:
         label: 'Statistics snapshot'
         description: 'Refreshes the stored access statistics snapshot when statistics are enabled.'
@@ -518,17 +518,17 @@ admin:
       failure_count: 'Consecutive failures'
       run_url: 'Direct run URL'
       run_now_inactive: 'Activate this job before running it manually.'
-      package_action_queue_warning: 'This package job can run an ActionQueue and is controlled by the package ActionQueue scheduler setting.'
+      extension_action_queue_warning: 'This extension job can run an ActionQueue and is controlled by the extension ActionQueue scheduler setting.'
     form:
       title: 'Job settings'
       enabled: 'Run this job automatically'
       cron_expression: 'Cron expression'
-      confirm_package_action_queue: 'I understand that this package job can run an ActionQueue.'
+      confirm_extension_action_queue: 'I understand that this extension job can run an ActionQueue.'
       saved: 'Scheduler job saved.'
       errors:
         invalid_csrf: 'The scheduler form expired. Please try again.'
         cron_invalid: 'Enter a valid cron expression.'
-        package_action_queue_confirmation_required: 'Confirm the package ActionQueue warning before enabling this job.'
+        extension_action_queue_confirmation_required: 'Confirm the extension ActionQueue warning before enabling this job.'
     runs:
       title: 'Recent runs'
       empty: 'This job has not run yet.'
@@ -597,7 +597,7 @@ admin:
   logs:
     title: 'Logs'
     foundation_title: 'Log and audit foundation'
-    foundation_text: 'Operational logs, audit views, package diagnostics, and security-relevant events will attach here.'
+    foundation_text: 'Operational logs, audit views, extension diagnostics, and security-relevant events will attach here.'
     empty_value: 'n/a'
     sources:
       label: 'Log sources'
@@ -714,7 +714,7 @@ admin:
       foundation_title: 'ACL matrix'
       foundation_text: 'Owner-controlled feature permissions for administrative, editor, and future frontend surfaces.'
     redirect_title: 'Settings sections'
-    redirect_text: 'General settings are the first built-in settings section. Active packages with simple setting definitions appear under package settings.'
+    redirect_text: 'General settings are the first built-in settings section. Active extensions with simple setting definitions appear under extension settings.'
     general:
       title: 'General settings'
       foundation_title: 'General configuration foundation'
@@ -761,14 +761,14 @@ admin:
       title: 'API settings'
       foundation_title: 'API availability'
       foundation_text: 'API access can be disabled for normal users while owners keep key management available for operational integrations such as scheduler activation.'
-    packages:
-      title: 'Package settings'
-      foundation_title: 'Packages with settings'
-      empty: 'No active package exposes settings yet.'
-    package:
-      title: '%package% settings'
-      foundation_title: 'Package settings'
-      empty: 'This package does not expose configurable settings.'
+    extensions:
+      title: 'Extension settings'
+      foundation_title: 'Extensions with settings'
+      empty: 'No active extension exposes settings yet.'
+    extension:
+      title: '%extension% settings'
+      foundation_title: 'Extension settings'
+      empty: 'This extension does not expose configurable settings.'
       options: '%count% option(s)'
       validation: '%count% validation rule(s)'
     scheduler:
@@ -847,7 +847,7 @@ admin:
         authentication: 'Authentication events'
         backend_actions: 'Backend maintenance actions'
         operations: 'Operations maintenance actions'
-        packages: 'Package lifecycle actions'
+        extensions: 'Extension lifecycle actions'
         settings: 'Settings changes'
         other: 'Other future audit events'
   acl:
@@ -856,8 +856,8 @@ admin:
     categories:
       diagnostics: 'Diagnostics'
       operations: 'Operations'
-      packages: 'Packages'
-      package_settings: 'Package settings'
+      extensions: 'Extensions'
+      extension_settings: 'Extension settings'
       settings: 'Settings'
       system: 'System'
       users: 'Users'
@@ -902,21 +902,21 @@ admin:
         description: 'Global API availability and CORS expansion settings.'
       admin_settings_scheduler:
         label: 'Scheduler settings'
-        description: 'Scheduler enablement, web triggering, GET authentication, and package action queues.'
-      admin_settings_packages:
-        label: 'Package settings'
-        description: 'Core package-update settings and package-owned settings pages.'
-      admin_settings_package:
-        description: 'Package-owned settings page for an active package.'
+        description: 'Scheduler enablement, web triggering, GET authentication, and extension action queues.'
+      admin_settings_extensions:
+        label: 'Extension settings'
+        description: 'Core extension-update settings and extension-owned settings pages.'
+      admin_settings_extension:
+        description: 'Extension-owned settings page for an active extension.'
       admin_logs:
         label: 'Logs'
         description: 'Administrative log review surfaces.'
-      admin_packages:
-        label: 'Packages and themes'
-        description: 'Package and theme management, including install, activation, deactivation, repair, deletion, and purge workflows.'
-      admin_packages_self_update:
-        label: 'System package self-update'
-        description: 'Owner-only system package self-update workflows.'
+      admin_extensions:
+        label: 'Extensions and themes'
+        description: 'Extension and theme management, including install, activation, deactivation, repair, deletion, and purge workflows.'
+      admin_extensions_self_update:
+        label: 'System extension self-update'
+        description: 'Owner-only system extension self-update workflows.'
       admin_backup_restore:
         label: 'Backup, export, and restore'
         description: 'Full-data backup, export, download, and restore workflows.'
@@ -1046,25 +1046,25 @@ admin:
       api_cors_allowed_origins:
         label: 'Allowed API CORS origins'
         help: 'JSON array of exact origins such as ["https://client.example"]. The wildcard "*" should only be used intentionally.'
-      package_update_interval:
+      extension_update_interval:
         label: 'Update check interval'
-      package_auto_updates:
-        label: 'Allow automatic package updates'
+      extension_auto_updates:
+        label: 'Allow automatic extension updates'
       scheduler_enabled:
         label: 'Enable scheduler'
       scheduler_get_auth_enabled:
         label: 'Allow GET authentication for /cron/run'
         help: 'Bearer authentication remains preferred. Enable GET authentication only for hosting schedulers that cannot send headers.'
-      scheduler_package_action_queues_enabled:
-        label: 'Allow package scheduler action queues'
-        help: 'Package action queues may run filesystem or process operations. Core scheduler queues are trusted separately.'
+      scheduler_extension_action_queues_enabled:
+        label: 'Allow extension scheduler action queues'
+        help: 'Extension action queues may run filesystem or process operations. Core scheduler queues are trusted separately.'
       scheduler_web_trigger_enabled:
         label: 'Run scheduler from web traffic'
         help: 'Starts a detached scheduler run after eligible page requests at most once per minute. Use a real cron job when available.'
     options:
       dashboard:
         system_status: 'System status'
-        packages: 'Package status'
+        extensions: 'Extension status'
         recent_activity: 'Recent activity'
         setup_warnings: 'Setup warnings'
       captcha:
@@ -1083,7 +1083,7 @@ admin:
         authentication: 'Authentication events'
         backend_actions: 'Backend maintenance actions'
         operations: 'Operations maintenance actions'
-        packages: 'Package lifecycle actions'
+        extensions: 'Extension lifecycle actions'
         settings: 'Settings changes'
         other: 'Other future audit events'
       registration:

@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Core\Access\AccessActor;
 use App\Core\Access\AccessLevel;
+use App\Core\Extension\ExtensionIdentity;
 use App\Core\Output\JsonOutputRenderer;
 use App\Entity\UserAccount;
 use App\Live\LiveEndpointHandlerRegistry;
@@ -27,7 +28,7 @@ final readonly class LiveEndpointController
     ) {
     }
 
-    #[Route('/api/live/{packageSlug}/{resourcePath}', name: 'api_live_package_dispatch', requirements: ['packageSlug' => '[a-z0-9]+(?:-[a-z0-9]+)*', 'resourcePath' => '.+'], methods: ['GET'], priority: -100)]
+    #[Route('/api/live/{extensionSlug}/{resourcePath}', name: 'api_live_extension_dispatch', requirements: ['extensionSlug' => ExtensionIdentity::EXTENSION_NAME_PATTERN, 'resourcePath' => '.+'], methods: ['GET'], priority: -100)]
     public function dispatch(Request $request): Response
     {
         $endpoint = $this->endpoints->endpointForRequest($request);
@@ -73,8 +74,8 @@ final readonly class LiveEndpointController
 
     private function endpointMatchesRouteSlug(Request $request, string $endpointPath): bool
     {
-        $slug = (string) $request->attributes->get('packageSlug', '');
-        if ('' === $slug && 1 === preg_match('#^/api/live/([a-z0-9]+(?:-[a-z0-9]+)*)/#', $request->getPathInfo(), $matches)) {
+        $slug = (string) $request->attributes->get('extensionSlug', '');
+        if ('' === $slug && 1 === preg_match('#^/api/live/('.ExtensionIdentity::EXTENSION_NAME_PATTERN.')/#', $request->getPathInfo(), $matches)) {
             $slug = $matches[1];
         }
 

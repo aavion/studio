@@ -114,7 +114,7 @@ final class SetupRunnerTest extends TestCase
             ['composer', 'dump-env', 'test'],
             [PHP_BINARY, $this->root.'/bin/console', 'doctrine:migrations:migrate', '--no-interaction', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'cache:clear', '--env=test'],
-            [PHP_BINARY, $this->root.'/bin/console', 'packages:discover', '--run-now', '--trigger=setup', '--env=test'],
+            [PHP_BINARY, $this->root.'/bin/console', 'extensions:discover', '--run-now', '--trigger=setup', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'assets:rebuild', '--trigger=setup', '--env=test', '--json'],
             [PHP_BINARY, $this->root.'/bin/console', 'mercure:stop', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'mercure:health', '--env=test'],
@@ -518,7 +518,7 @@ final class SetupRunnerTest extends TestCase
             ['composer', 'dump-env', 'test'],
             [PHP_BINARY, $this->root.'/bin/console', 'doctrine:migrations:migrate', '--no-interaction', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'cache:clear', '--env=test'],
-            [PHP_BINARY, $this->root.'/bin/console', 'packages:discover', '--run-now', '--trigger=setup', '--env=test'],
+            [PHP_BINARY, $this->root.'/bin/console', 'extensions:discover', '--run-now', '--trigger=setup', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'assets:rebuild', '--trigger=setup', '--env=test', '--json'],
             [PHP_BINARY, $this->root.'/bin/console', 'mercure:stop', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'mercure:health', '--env=test'],
@@ -567,8 +567,8 @@ final class SetupRunnerTest extends TestCase
         self::assertSame($seed->contentSchema()['identifier'], $entries[6]['context']['schema']);
         self::assertSame('clear_cache', $entries[7]['name']);
         self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'cache:clear', '--env=test'], $entries[7]['context']['command']);
-        self::assertSame('run_package_discovery', $entries[8]['name']);
-        self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'packages:discover', '--run-now', '--trigger=setup', '--env=test'], $entries[8]['context']['command']);
+        self::assertSame('run_extension_discovery', $entries[8]['name']);
+        self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'extensions:discover', '--run-now', '--trigger=setup', '--env=test'], $entries[8]['context']['command']);
         self::assertSame('run_asset_rebuild', $entries[9]['name']);
         self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'assets:rebuild', '--trigger=setup', '--env=test', '--json'], $entries[9]['context']['command']);
         self::assertSame('run_mercure_health', $entries[10]['name']);

@@ -27,8 +27,8 @@ final class LogFileBrowserTest extends TestCase
     public function testItReadsAndFiltersSelectedLogFiles(): void
     {
         $this->writeTestFile($this->logDir, 'test/message-2099-01-01.log', implode(PHP_EOL, [
-            '[2099-01-01T10:00:00.000000+00:00] message.INFO: message.package.discovery_completed {"code":"package.discovery_completed"} []',
-            '[2099-01-01T10:01:00.000000+00:00] message.ERROR: message.process.command_failed {"code":"process.command_failed","package":"demo-module"} []',
+            '[2099-01-01T10:00:00.000000+00:00] message.INFO: message.extension.discovery_completed {"code":"extension.discovery_completed"} []',
+            '[2099-01-01T10:01:00.000000+00:00] message.ERROR: message.process.command_failed {"code":"process.command_failed","extension":"demo-module"} []',
             '',
         ]));
 

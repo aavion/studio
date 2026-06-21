@@ -20,7 +20,7 @@ use App\Security\Abuse\SuspiciousProbePathMatcher;
 use App\Security\AutoBan\AutoBanPolicy;
 use App\Security\RateLimit\RateLimitPolicyCatalogue;
 use App\Security\RateLimit\RateLimitProfile;
-use App\View\SystemPackageMetadataProvider;
+use App\View\SystemExtensionMetadataProvider;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\ORM\EntityManagerInterface;
@@ -176,7 +176,7 @@ final class CoreSettingsFormHandlerTest extends TestCase
     {
         $projectDir = dirname(__DIR__, 3);
 
-        return new CoreSettingsRegistry(new TranslationLanguageCatalog($projectDir), new SystemPackageMetadataProvider($projectDir));
+        return new CoreSettingsRegistry(new TranslationLanguageCatalog($projectDir), new SystemExtensionMetadataProvider($projectDir));
     }
 
     private function connection(): Connection

@@ -23,7 +23,7 @@ final class LinterTest extends TestCase
     {
         yield 'php' => [new PhpLinter(), '<?php class ValidLintSource {}'];
         yield 'twig' => [new TwigLinter(), '<main>{{ title }}</main>'];
-        yield 'twig extensions' => [new TwigLinter(), '<a href="{{ path("demo_route") }}">{{ "pkg.demo-module.title"|trans }}</a>{% if item is studio_visible %}{{ package_settings("demo-module")|length }}{% endif %}'];
+        yield 'twig extensions' => [new TwigLinter(), '<a href="{{ path("demo_route") }}">{{ "ext.demo-module.title"|trans }}</a>{% if item is studio_visible %}{{ extension_settings("demo-module")|length }}{% endif %}'];
         yield 'json' => [new JsonLinter(), '{"enabled": true}'];
         yield 'yaml' => [new YamlLinter(), 'enabled: true'];
         yield 'css' => [new CssLinter(), 'body { color: red; }'];
@@ -66,8 +66,8 @@ final class LinterTest extends TestCase
     public function testCssLinterAcceptsCommentOnlyRegistryStubs(): void
     {
         $result = (new CssLinter())->lint(<<<'CSS'
-/* Generated CSS package asset registry. */
-/* Package lifecycle owns this file after activation changes. */
+/* Generated CSS extension asset registry. */
+/* Extension lifecycle owns this file after activation changes. */
 CSS);
 
         self::assertTrue($result->isSuccess());

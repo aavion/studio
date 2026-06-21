@@ -20,7 +20,7 @@ Required Apache modules:
 
 ### Native asset build binaries
 
-Studio can rebuild Tailwind assets automatically from setup and package maintenance flows. This uses the Tailwind standalone binary through Symfony Process. Some Linux systemd hardening profiles for Apache block native binaries with `MemoryDenyWriteExecute=yes`; setup then continues, but reports a warning and asks the operator to run `php bin/console tailwind:build` through CLI, SSH, or a terminal.
+Studio can rebuild Tailwind assets automatically from setup and extension maintenance flows. This uses the Tailwind standalone binary through Symfony Process. Some Linux systemd hardening profiles for Apache block native binaries with `MemoryDenyWriteExecute=yes`; setup then continues, but reports a warning and asks the operator to run `php bin/console tailwind:build` through CLI, SSH, or a terminal.
 
 If automatic web-triggered Tailwind rebuilds are required, add a service override for the web server and restart it:
 

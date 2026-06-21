@@ -219,18 +219,18 @@ final class ApiAdminOperationalControllerTest extends WebTestCase
         self::assertInstanceOf(LiveOperationRunStore::class, $store);
         $overrides = self::getContainer()->get(AdminFeatureOverrideStore::class);
         self::assertInstanceOf(AdminFeatureOverrideStore::class, $overrides);
-        $run = $store->create('package.install.verify', [], 'Install package');
+        $run = $store->create('extension.install.verify', [], 'Install extension');
         $result = WorkflowResult::requiresReview(null, [
             Message::info(
                 OperationMessageCode::OPERATION_ACTION_REQUIRED,
                 OperationMessageKey::OPERATION_ACTION_REQUIRED,
-                ['%operation%' => 'Install package'],
+                ['%operation%' => 'Install extension'],
             ),
         ], [
             'live_operation_continuation' => [
-                'operation' => 'package.install.apply',
-                'payload' => ['install_id' => 'aaaaaaaaaaaaaaaaaaaaaaaa', 'package' => 'demo-module'],
-                'label' => 'Install package',
+                'operation' => 'extension.install.apply',
+                'payload' => ['install_id' => 'aaaaaaaaaaaaaaaaaaaaaaaa', 'extension' => 'demo-module'],
+                'label' => 'Install extension',
             ],
         ]);
         $store->finish($run['operation_id'], false, $result->toArray());
@@ -240,7 +240,7 @@ final class ApiAdminOperationalControllerTest extends WebTestCase
                 'state' => AdminPermissionState::Mutable->value,
                 'groups' => [],
             ],
-            'admin.packages' => [
+            'admin.extensions' => [
                 'state' => AdminPermissionState::Visible->value,
                 'groups' => [],
             ],
@@ -284,7 +284,7 @@ final class ApiAdminOperationalControllerTest extends WebTestCase
 
             self::assertResponseStatusCodeSame(403);
             $payload = $this->jsonPayload($client->getResponse()->getContent());
-            self::assertSame('admin.packages', $payload['error']['context']['feature']);
+            self::assertSame('admin.extensions', $payload['error']['context']['feature']);
             self::assertSame('feature_read_only', $payload['error']['context']['reason']);
         } finally {
             $overrides->save($overrides->defaultOverrides(), 'test');
@@ -417,7 +417,7 @@ final class ApiAdminOperationalControllerTest extends WebTestCase
         }
     }
 
-    public function testTrustedPackageDiscoverySchedulerRunUsesSchedulerAclRatherThanPackageAcl(): void
+    public function testTrustedExtensionDiscoverySchedulerRunUsesSchedulerAclRatherThanExtensionAcl(): void
     {
         $client = self::createClient();
         $plainKey = $this->createPlainApiKey('apiopsschedpkg', ApiKeyStatus::ReadWrite);
@@ -429,14 +429,14 @@ final class ApiAdminOperationalControllerTest extends WebTestCase
                 'state' => AdminPermissionState::Mutable->value,
                 'groups' => [],
             ],
-            'admin.packages' => [
+            'admin.extensions' => [
                 'state' => AdminPermissionState::Denied->value,
                 'groups' => [],
             ],
         ], 'test');
 
         try {
-            $client->request('PATCH', '/api/v1/admin/scheduler/system.package_discovery', server: [
+            $client->request('PATCH', '/api/v1/admin/scheduler/system.extension_discovery', server: [
                 'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
                 'CONTENT_TYPE' => 'application/json',
             ], content: json_encode([
@@ -446,14 +446,14 @@ final class ApiAdminOperationalControllerTest extends WebTestCase
 
             self::assertResponseIsSuccessful();
 
-            $client->request('POST', '/api/v1/admin/scheduler/system.package_discovery/run', server: [
+            $client->request('POST', '/api/v1/admin/scheduler/system.extension_discovery/run', server: [
                 'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
             ]);
 
             self::assertResponseIsSuccessful();
             $payload = $this->jsonPayload($client->getResponse()->getContent());
             self::assertSame('scheduler_run', $payload['data']['type']);
-            self::assertSame('/api/v1/admin/scheduler/system.package_discovery', $payload['data']['links']['task']);
+            self::assertSame('/api/v1/admin/scheduler/system.extension_discovery', $payload['data']['links']['task']);
         } finally {
             $store->save($store->defaultOverrides(), 'test');
         }

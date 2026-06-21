@@ -66,13 +66,13 @@ final class MercureUiAlertPublisherTest extends TestCase
         $hub = new RecordingHub();
         $publisher = $this->publisher($hub);
 
-        $publisher->publishToSession('session-id', Message::success('message.package.discovery_completed', ['%package%' => 'Demo']));
+        $publisher->publishToSession('session-id', Message::success('message.extension.discovery_completed', ['%extension%' => 'Demo']));
 
         $payload = json_decode($hub->update?->getData() ?? '{}', true, 512, JSON_THROW_ON_ERROR);
-        self::assertSame('message.package.discovery_completed', $payload['message']);
+        self::assertSame('message.extension.discovery_completed', $payload['message']);
         self::assertSame('success', $payload['level']);
         self::assertSame(CommonMessageCode::SUCCESS, $payload['code']);
-        self::assertSame('message.package.discovery_completed', $payload['translation_key']);
+        self::assertSame('message.extension.discovery_completed', $payload['translation_key']);
         self::assertArrayNotHasKey('context', $payload);
     }
 

@@ -16,7 +16,7 @@ admin:
     users: 'Benutzer'
     user_groups: 'ACL-Gruppen'
     user_reviews: 'Reviews'
-    packages: 'Packages'
+    extensions: 'Extensions'
     themes: 'Themes'
     scheduler: 'Scheduler'
     backups: 'Backups'
@@ -30,14 +30,14 @@ admin:
     mail_settings: 'Mail'
     security_settings: 'Sicherheit'
     logging_settings: 'Logs'
-    package_settings: 'Pakete'
+    extension_settings: 'Extensions'
     statistics_settings: 'Statistiken'
     api_settings: 'API'
     acl_settings: 'ACL'
     scheduler_settings: 'Scheduler'
     system_info: 'System-Info'
   actions:
-    package_discovery:
+    extension_discovery:
       label: 'Registry aktualisieren'
     asset_rebuild:
       label: 'Assets neu bauen'
@@ -49,16 +49,16 @@ admin:
     title: 'Admin-Dashboard'
     foundation_title: 'Backend-Fundament'
     foundation_text: 'Administrative Routen werden jetzt durch den nativen Backend-Router aufgelöst. Funktionale Seiten können hier andocken, sobald Authentifizierung, Navigation und Zugriffsprüfungen bereit sind.'
-  packages:
-    title: 'Paketverwaltung'
-    foundation_title: 'Paket-View-Fundament'
-    foundation_text: 'Die Paketverwaltung dockt hier an, sobald Installations-, Update-, Aktivierungs- und Cleanup-Workflows verdrahtet sind.'
-    registry_title: 'Registrierte Pakete'
-    registry_text: 'In der Registry gefundene Pakete werden hier aufgelistet. Lifecycle-Aktionen docken an, sobald Operation-Flows verdrahtet sind.'
-    empty: 'Noch sind keine Pakete registriert.'
+  extensions:
+    title: 'Extensionverwaltung'
+    foundation_title: 'Extension-View-Fundament'
+    foundation_text: 'Die Extensionverwaltung dockt hier an, sobald Installations-, Update-, Aktivierungs- und Cleanup-Workflows verdrahtet sind.'
+    registry_title: 'Registrierte Extensions'
+    registry_text: 'In der Registry gefundene Extensions werden hier aufgelistet. Lifecycle-Aktionen docken an, sobald Operation-Flows verdrahtet sind.'
+    empty: 'Noch sind keine Extensions registriert.'
     unknown_value: 'Unbekannt'
     table:
-      package: 'Paket'
+      extension: 'Extension'
       status: 'Status'
       scopes: 'Scopes'
       version: 'Version'
@@ -82,59 +82,59 @@ admin:
       none: 'Keine Aktionen'
     install:
       label: 'Installieren'
-      title: 'Paket installieren'
-      text: 'Lade ein Paket-ZIP hoch. Das Paket-Manifest wird zuerst geprüft und die finale Installation wartet im ActionLog auf Bestätigung.'
-      file: 'Paket-ZIP'
-      submit: 'Paket prüfen'
+      title: 'Extension installieren'
+      text: 'Lade ein Extension-ZIP hoch. Das Extension-Manifest wird zuerst geprüft und die finale Installation wartet im ActionLog auf Bestätigung.'
+      file: 'Extension-ZIP'
+      submit: 'Extension prüfen'
       close: 'Schließen'
     meta:
       author: 'Von %author%'
     detail:
-      overview_title: 'Paketübersicht'
+      overview_title: 'Extensionübersicht'
       immutable: 'Unveränderlich'
       description: 'Beschreibung'
       author: 'Autor'
       license: 'Lizenz'
       dependencies: 'Abhängigkeiten'
-      dependencies_empty: 'Keine Paketabhängigkeiten'
+      dependencies_empty: 'Keine Extensionabhängigkeiten'
       homepage: 'Homepage'
       source: 'Quelle'
       readme_title: 'README'
     lifecycle:
       review_title: 'Änderungen prüfen'
-      immutable: 'Dieses Systempaket ist unveränderlich und kann seinen Lifecycle-State nicht ändern.'
+      immutable: 'Diese System-Extension ist unveränderlich und kann ihren Lifecycle-State nicht ändern.'
       unavailable: 'Diese Lifecycle-Aktion ist nicht verfügbar.'
-      no_changes: 'Diese Aktion muss keinen Paketstatus ändern.'
+      no_changes: 'Diese Aktion muss keinen Extension-Status ändern.'
       cancel: 'Abbrechen'
       table:
         action: 'Aktion'
       activate:
         label: 'Aktivieren'
-        title: '%package% aktivieren'
-        text: 'Prüfe Abhängigkeiten und Konflikte, bevor dieses Paket aktiviert wird.'
-        submit: 'Paket aktivieren'
+        title: '%extension% aktivieren'
+        text: 'Prüfe Abhängigkeiten und Konflikte, bevor diese Extension aktiviert wird.'
+        submit: 'Extension aktivieren'
       deactivate:
         label: 'Deaktivieren'
-        title: '%package% deaktivieren'
-        text: 'Prüfe die geplante Statusänderung, bevor dieses Paket deaktiviert wird.'
-        submit: 'Paket deaktivieren'
+        title: '%extension% deaktivieren'
+        text: 'Prüfe die geplante Statusänderung, bevor diese Extension deaktiviert wird.'
+        submit: 'Extension deaktivieren'
       reset_fault:
         label: 'Fehler zurücksetzen'
-        title: 'Fehler für %package% zurücksetzen'
-        text: 'Das Paket wird erneut validiert und bei erfolgreicher Wiederherstellung auf inaktiv gesetzt.'
+        title: 'Fehler für %extension% zurücksetzen'
+        text: 'Die Extension wird erneut validiert und bei erfolgreicher Wiederherstellung auf inaktiv gesetzt.'
         submit: 'Fehler zurücksetzen'
       purge:
         label: 'Daten löschen'
-        title: 'Daten für %package% löschen'
-        text: 'Prüfe den Cleanup paketbezogener Daten, bevor diese Paketregistrierung zurückgesetzt wird.'
-        warning: 'Dieser Schritt ist irreversibel. Paketeigene Einstellungen und spätere paketeigene Cleanup-Ziele werden gelöscht.'
+        title: 'Daten für %extension% löschen'
+        text: 'Prüfe den Cleanup extensionbezogener Daten, bevor diese Extension-Registrierung zurückgesetzt wird.'
+        warning: 'Dieser Schritt ist irreversibel. Extension-eigene Einstellungen und spätere extension-eigene Cleanup-Ziele werden gelöscht.'
         submit: 'Daten löschen'
       delete:
-        label: 'Paket löschen'
-        title: '%package% löschen'
-        text: 'Prüfe die Dateisystem-Entfernung, bevor dieses Paket von der Festplatte gelöscht wird.'
-        warning: 'Dieser Schritt ist irreversibel. Die Paketdateien werden gelöscht und der Registry-Eintrag bleibt als entfernt bestehen, bis Daten separat gelöscht werden.'
-        submit: 'Paket löschen'
+        label: 'Extension löschen'
+        title: '%extension% löschen'
+        text: 'Prüfe die Dateisystem-Entfernung, bevor diese Extension von der Festplatte gelöscht wird.'
+        warning: 'Dieser Schritt ist irreversibel. Die Extension-Dateien werden gelöscht und der Registry-Eintrag bleibt als entfernt bestehen, bis Daten separat gelöscht werden.'
+        submit: 'Extension löschen'
   themes:
     title: 'Theme-Verwaltung'
     foundation_title: 'Theme-Verwaltungsfundament'
@@ -149,7 +149,7 @@ admin:
         text: 'Themes für Administrations- und Editor-Shells sowie der native System-Fallback werden hier aufgelistet.'
     type:
       system: 'System'
-      package: 'Paket'
+      extension: 'Extension'
     quick:
       use: 'Verwenden'
       active: 'Aktiv'
@@ -476,9 +476,9 @@ admin:
       ui_alert_inbox_cleanup:
         label: 'UI-Alert-Inbox-Cleanup'
         description: 'Entfernt zwischengespeicherte Benachrichtigungen nach Ablauf ihrer Zustell-Aufbewahrung.'
-      package_discovery:
-        label: 'Paket-Discovery'
-        description: 'Findet Pakete und aktualisiert die Paket-Registry.'
+      extension_discovery:
+        label: 'Extension-Discovery'
+        description: 'Findet Extensions und aktualisiert die Extension-Registry.'
       statistics_snapshot:
         label: 'Statistik-Snapshot'
         description: 'Aktualisiert den gespeicherten Zugriffsstatistik-Snapshot, wenn Statistiken aktiviert sind.'
@@ -518,17 +518,17 @@ admin:
       failure_count: 'Fehler in Folge'
       run_url: 'Direkte Ausführungs-URL'
       run_now_inactive: 'Aktiviere diesen Job, bevor du ihn manuell ausführst.'
-      package_action_queue_warning: 'Dieser Paket-Job kann eine ActionQueue ausführen und wird über die Scheduler-Einstellung für Paket-ActionQueues gesteuert.'
+      extension_action_queue_warning: 'Dieser Extension-Job kann eine ActionQueue ausführen und wird über die Scheduler-Einstellung für Extension-ActionQueues gesteuert.'
     form:
       title: 'Job-Einstellungen'
       enabled: 'Diesen Job automatisch ausführen'
       cron_expression: 'Cron-Ausdruck'
-      confirm_package_action_queue: 'Ich verstehe, dass dieser Paket-Job eine ActionQueue ausführen kann.'
+      confirm_extension_action_queue: 'Ich verstehe, dass dieser Extension-Job eine ActionQueue ausführen kann.'
       saved: 'Scheduler-Job gespeichert.'
       errors:
         invalid_csrf: 'Das Scheduler-Formular ist abgelaufen. Bitte versuche es erneut.'
         cron_invalid: 'Gib einen gültigen Cron-Ausdruck ein.'
-        package_action_queue_confirmation_required: 'Bestätige den Paket-ActionQueue-Hinweis, bevor du diesen Job aktivierst.'
+        extension_action_queue_confirmation_required: 'Bestätige den Extension-ActionQueue-Hinweis, bevor du diesen Job aktivierst.'
     runs:
       title: 'Letzte Läufe'
       empty: 'Dieser Job wurde noch nicht ausgeführt.'
@@ -597,7 +597,7 @@ admin:
   logs:
     title: 'Logs'
     foundation_title: 'Log- und Audit-Fundament'
-    foundation_text: 'Operations-Logs, Audit-Ansichten, Paketdiagnostik und sicherheitsrelevante Ereignisse docken hier an.'
+    foundation_text: 'Operations-Logs, Audit-Ansichten, Extensiondiagnostik und sicherheitsrelevante Ereignisse docken hier an.'
     empty_value: 'n/a'
     sources:
       label: 'Logquellen'
@@ -714,7 +714,7 @@ admin:
       foundation_title: 'ACL-Matrix'
       foundation_text: 'Owner-gesteuerte Feature-Berechtigungen für Admin-, Editor- und zukünftige Frontend-Surfaces.'
     redirect_title: 'Einstellungsbereiche'
-    redirect_text: 'Allgemeine Einstellungen sind der erste eingebaute Einstellungsbereich. Aktive Pakete mit einfachen Setting-Definitionen erscheinen unter den Paket-Einstellungen.'
+    redirect_text: 'Allgemeine Einstellungen sind der erste eingebaute Einstellungsbereich. Aktive Extensions mit einfachen Setting-Definitionen erscheinen unter den Extension-Einstellungen.'
     general:
       title: 'Allgemeine Einstellungen'
       foundation_title: 'Allgemeines Konfigurationsfundament'
@@ -761,14 +761,14 @@ admin:
       title: 'API-Einstellungen'
       foundation_title: 'API-Verfügbarkeit'
       foundation_text: 'API-Zugriff kann für normale Nutzer deaktiviert werden, während Owner das Key-Management für operative Integrationen wie Scheduler-Aktivierung behalten.'
-    packages:
-      title: 'Paket-Einstellungen'
-      foundation_title: 'Pakete mit Einstellungen'
-      empty: 'Noch kein aktives Paket stellt Einstellungen bereit.'
-    package:
-      title: 'Einstellungen für %package%'
-      foundation_title: 'Paket-Einstellungen'
-      empty: 'Dieses Paket stellt keine konfigurierbaren Einstellungen bereit.'
+    extensions:
+      title: 'Extension-Einstellungen'
+      foundation_title: 'Extensions mit Einstellungen'
+      empty: 'Noch keine aktive Extension stellt Einstellungen bereit.'
+    extension:
+      title: 'Einstellungen für %extension%'
+      foundation_title: 'Extension-Einstellungen'
+      empty: 'Diese Extension stellt keine konfigurierbaren Einstellungen bereit.'
       options: '%count% Option(en)'
       validation: '%count% Validierungsregel(n)'
     scheduler:
@@ -847,7 +847,7 @@ admin:
         authentication: 'Authentifizierungsereignisse'
         backend_actions: 'Backend-Wartungsaktionen'
         operations: 'Operations-Wartungsaktionen'
-        packages: 'Paket-Lifecycle-Aktionen'
+        extensions: 'Extension-Lifecycle-Aktionen'
         settings: 'Einstellungsänderungen'
         other: 'Weitere zukünftige Audit-Ereignisse'
   acl:
@@ -856,8 +856,8 @@ admin:
     categories:
       diagnostics: 'Diagnostik'
       operations: 'Operationen'
-      packages: 'Pakete'
-      package_settings: 'Paket-Einstellungen'
+      extensions: 'Extensions'
+      extension_settings: 'Extension-Einstellungen'
       settings: 'Einstellungen'
       system: 'System'
       users: 'Benutzer'
@@ -902,21 +902,21 @@ admin:
         description: 'Globale API-Verfügbarkeit und CORS-Erweiterungen.'
       admin_settings_scheduler:
         label: 'Scheduler-Einstellungen'
-        description: 'Scheduler-Aktivierung, Web-Triggering, GET-Authentifizierung und Package-Action-Queues.'
-      admin_settings_packages:
-        label: 'Paket-Einstellungen'
-        description: 'Core-Einstellungen für Paket-Updates und paket-eigene Einstellungsseiten.'
-      admin_settings_package:
-        description: 'Paket-eigene Einstellungsseite für ein aktives Paket.'
+        description: 'Scheduler-Aktivierung, Web-Triggering, GET-Authentifizierung und Extension-Action-Queues.'
+      admin_settings_extensions:
+        label: 'Extension-Einstellungen'
+        description: 'Core-Einstellungen für Extension-Updates und extension-eigene Einstellungsseiten.'
+      admin_settings_extension:
+        description: 'Extension-eigene Einstellungsseite für eine aktive Extension.'
       admin_logs:
         label: 'Logs'
         description: 'Administrative Log-Review-Flächen.'
-      admin_packages:
-        label: 'Pakete und Themes'
-        description: 'Paket- und Themeverwaltung inklusive Installation, Aktivierung, Deaktivierung, Reparatur, Löschung und Purge-Workflows.'
-      admin_packages_self_update:
-        label: 'System-Paket-Self-Update'
-        description: 'Owner-only Self-Update-Workflows für das System-Paket.'
+      admin_extensions:
+        label: 'Extensions und Themes'
+        description: 'Extension- und Themeverwaltung inklusive Installation, Aktivierung, Deaktivierung, Reparatur, Löschung und Purge-Workflows.'
+      admin_extensions_self_update:
+        label: 'System-Extension-Self-Update'
+        description: 'Owner-only Self-Update-Workflows für die System-Extension.'
       admin_backup_restore:
         label: 'Backup, Export und Restore'
         description: 'Full-Data-Backup, Export, Download und Restore-Workflows.'
@@ -1046,25 +1046,25 @@ admin:
       api_cors_allowed_origins:
         label: 'Erlaubte API-CORS-Origins'
         help: 'JSON-Array exakter Origins wie ["https://client.example"]. Der Wildcard "*" sollte nur bewusst verwendet werden.'
-      package_update_interval:
+      extension_update_interval:
         label: 'Update-Check-Intervall'
-      package_auto_updates:
-        label: 'Automatische Paket-Updates erlauben'
+      extension_auto_updates:
+        label: 'Automatische Extension-Updates erlauben'
       scheduler_enabled:
         label: 'Scheduler aktivieren'
       scheduler_get_auth_enabled:
         label: 'GET-Authentifizierung für /cron/run erlauben'
         help: 'Bearer-Authentifizierung bleibt bevorzugt. Aktiviere GET-Authentifizierung nur für Hosting-Scheduler, die keine Header senden können.'
-      scheduler_package_action_queues_enabled:
-        label: 'Scheduler-Action-Queues aus Paketen erlauben'
-        help: 'Action-Queues aus Paketen können Datei- oder Prozessoperationen ausführen. Core-Scheduler-Queues gelten separat als vertrauenswürdig.'
+      scheduler_extension_action_queues_enabled:
+        label: 'Scheduler-Action-Queues aus Extensions erlauben'
+        help: 'Action-Queues aus Extensions können Datei- oder Prozessoperationen ausführen. Core-Scheduler-Queues gelten separat als vertrauenswürdig.'
       scheduler_web_trigger_enabled:
         label: 'Scheduler durch Seitenaufrufe starten'
         help: 'Startet nach geeigneten Seitenaufrufen höchstens einmal pro Minute einen losgelösten Scheduler-Lauf. Nutze einen echten Cronjob, wenn verfügbar.'
     options:
       dashboard:
         system_status: 'Systemstatus'
-        packages: 'Paketstatus'
+        extensions: 'Extension-Status'
         recent_activity: 'Letzte Aktivität'
         setup_warnings: 'Setup-Warnungen'
       captcha:
@@ -1083,7 +1083,7 @@ admin:
         authentication: 'Authentifizierungsereignisse'
         backend_actions: 'Backend-Wartungsaktionen'
         operations: 'Operations-Wartungsaktionen'
-        packages: 'Paket-Lifecycle-Aktionen'
+        extensions: 'Extension-Lifecycle-Aktionen'
         settings: 'Einstellungsänderungen'
         other: 'Weitere zukünftige Audit-Ereignisse'
       registration:

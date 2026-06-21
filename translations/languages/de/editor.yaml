@@ -10,6 +10,6 @@ editor:
     title: 'Editor-Dashboard'
     status: 'Content-Arbeitsbereich'
     foundation_title: 'Editor-Fundament'
-    foundation_text: 'Content-Routen können an diese Shell andocken, sobald Editor-Workflows, Schema-Werkzeuge und Package-Beiträge verdrahtet sind.'
+    foundation_text: 'Content-Routen können an diese Shell andocken, sobald Editor-Workflows, Schema-Werkzeuge und Extension-Beiträge verdrahtet sind.'
   message:
     title: 'Editor-Route'

@@ -17,7 +17,7 @@ use App\Setup\SetupWizardDatabaseTester;
 use App\Setup\SetupWizardFlow;
 use App\Setup\SetupWizardStateStore;
 use App\View\Http\HttpErrorRenderer;
-use App\View\SystemPackageMetadataProvider;
+use App\View\SystemExtensionMetadataProvider;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -44,7 +44,7 @@ final class SetupController extends AbstractController
         private readonly CsrfTokenManagerInterface $csrfTokenManager,
         private readonly LocaleSwitcher $localeSwitcher,
         private readonly HttpErrorRenderer $httpError,
-        private readonly SystemPackageMetadataProvider $systemPackageMetadata,
+        private readonly SystemExtensionMetadataProvider $systemExtensionMetadata,
     ) {
     }
 
@@ -151,7 +151,7 @@ final class SetupController extends AbstractController
             'setup_database_test' => $databaseTest,
             'setup_previous_step' => $this->wizardFlow->previousStep($step),
             'setup_next_step' => $this->wizardFlow->nextStep($step),
-            'setup_app_name' => $this->systemPackageMetadata->metadata()['name'],
+            'setup_app_name' => $this->systemExtensionMetadata->metadata()['name'],
             'setup_min_app_secret_length' => SetupWebInputFactory::MIN_APP_SECRET_LENGTH,
         ]);
     }

@@ -17,9 +17,9 @@ final class WorkflowResultAlertSelectorTest extends TestCase
     {
         $selector = new WorkflowResultAlertSelector();
         $message = Message::debug(
-            'package.dependency.resolved',
-            'message.package.dependency.resolved',
-            ['%package%' => 'demo'],
+            'extension.dependency.resolved',
+            'message.extension.dependency.resolved',
+            ['%extension%' => 'demo'],
             ['internal' => true],
         );
 
@@ -27,16 +27,16 @@ final class WorkflowResultAlertSelectorTest extends TestCase
 
         self::assertSame(MessageLevel::Success, $alert->level());
         self::assertSame(CommonMessageCode::SUCCESS, $alert->code());
-        self::assertSame('message.package.dependency.resolved', $alert->translationKey());
-        self::assertSame(['%package%' => 'demo'], $alert->parameters());
+        self::assertSame('message.extension.dependency.resolved', $alert->translationKey());
+        self::assertSame(['%extension%' => 'demo'], $alert->parameters());
         self::assertSame([], $alert->context());
     }
 
     public function testItPrefersExplicitSuccessMessages(): void
     {
         $selector = new WorkflowResultAlertSelector();
-        $debug = Message::debug('package.dependency.resolved', 'message.package.dependency.resolved');
-        $success = Message::success('message.package.lifecycle.activated', ['%package%' => 'demo']);
+        $debug = Message::debug('extension.dependency.resolved', 'message.extension.dependency.resolved');
+        $success = Message::success('message.extension.lifecycle.activated', ['%extension%' => 'demo']);
 
         $alert = $selector->fromResult(WorkflowResult::success(messages: [$debug, $success]));
 
@@ -46,7 +46,7 @@ final class WorkflowResultAlertSelectorTest extends TestCase
     public function testItUsesFirstIssueForFailedResults(): void
     {
         $selector = new WorkflowResultAlertSelector();
-        $issue = Message::error('package.lifecycle.not_found', 'message.package.lifecycle.not_found');
+        $issue = Message::error('extension.lifecycle.not_found', 'message.extension.lifecycle.not_found');
 
         $alert = $selector->fromResult(WorkflowResult::failed([$issue]));
 

@@ -9,10 +9,10 @@ use App\Core\Access\AccessActor;
 use App\Core\AdminAcl\AdminFeatureAccessPolicy;
 use App\Core\AdminAcl\AdminPermissionState;
 use App\Core\Config\Config;
-use App\Core\Package\PackageAdminOverview;
-use App\Core\Package\ThemeAdminOverview;
+use App\Core\Extension\ExtensionAdminOverview;
+use App\Core\Extension\ThemeAdminOverview;
 use App\Entity\UserAccount;
-use App\View\SystemPackageMetadataProvider;
+use App\View\SystemExtensionMetadataProvider;
 use Symfony\Bundle\SecurityBundle\Security;
 use Throwable;
 use Twig\Extension\AbstractExtension;
@@ -24,9 +24,9 @@ final class AdminViewTwigExtension extends AbstractExtension
         private readonly Config $config,
         private readonly AdminSettingsFormViewFactory $settingsForms,
         private readonly BackendActions $backendActions,
-        private readonly PackageAdminOverview $packageAdminOverview,
+        private readonly ExtensionAdminOverview $extensionAdminOverview,
         private readonly ThemeAdminOverview $themeAdminOverview,
-        private readonly SystemPackageMetadataProvider $systemPackageMetadata,
+        private readonly SystemExtensionMetadataProvider $systemExtensionMetadata,
         private readonly Security $security,
         private readonly ?AdminFeatureAccessPolicy $adminAcl = null,
     ) {
@@ -41,12 +41,12 @@ final class AdminViewTwigExtension extends AbstractExtension
             new TwigFunction('core_settings_form', $this->coreSettingsForm(...)),
             new TwigFunction('backend_actions', $this->backendActions(...)),
             new TwigFunction('footer_copyright', $this->footerCopyright(...)),
-            new TwigFunction('extension_packages', $this->extensionPackages(...)),
+            new TwigFunction('extensions', $this->extensions(...)),
             new TwigFunction('themes', $this->themes(...)),
-            new TwigFunction('package_setting', $this->packageSetting(...)),
-            new TwigFunction('package_settings', $this->packageSettings(...)),
-            new TwigFunction('package_settings_form', $this->packageSettingsForm(...)),
-            new TwigFunction('package_setting_packages', $this->packageSettingPackages(...)),
+            new TwigFunction('extension_setting', $this->extensionSetting(...)),
+            new TwigFunction('extension_settings', $this->extensionSettings(...)),
+            new TwigFunction('extension_settings_form', $this->extensionSettingsForm(...)),
+            new TwigFunction('extension_setting_extensions', $this->extensionSettingExtensions(...)),
             new TwigFunction('admin_feature_state', $this->adminFeatureState(...)),
             new TwigFunction('admin_feature_visible', $this->adminFeatureVisible(...)),
             new TwigFunction('admin_feature_mutable', $this->adminFeatureMutable(...)),
@@ -56,9 +56,9 @@ final class AdminViewTwigExtension extends AbstractExtension
     /**
      * @return list<array<string, mixed>>
      */
-    public function extensionPackages(): array
+    public function extensions(): array
     {
-        return $this->packageAdminOverview->packages();
+        return $this->extensionAdminOverview->extensions();
     }
 
     /**
@@ -109,14 +109,14 @@ final class AdminViewTwigExtension extends AbstractExtension
     /**
      * @return list<array<string, mixed>>
      */
-    public function packageSettings(string $packageName): array
+    public function extensionSettings(string $extensionName): array
     {
-        return $this->settingsForms->packageSettings($packageName);
+        return $this->settingsForms->extensionSettings($extensionName);
     }
 
-    public function packageSetting(string $packageName, string $key, mixed $default = null): mixed
+    public function extensionSetting(string $extensionName, string $key, mixed $default = null): mixed
     {
-        return $this->settingsForms->packageSetting($packageName, $key, $default);
+        return $this->settingsForms->extensionSetting($extensionName, $key, $default);
     }
 
     public function footerCopyright(string $area = 'frontend'): string
@@ -147,22 +147,22 @@ final class AdminViewTwigExtension extends AbstractExtension
     /**
      * @return array<string, mixed>
      */
-    public function packageSettingsForm(string $packageName): array
+    public function extensionSettingsForm(string $extensionName): array
     {
-        return $this->settingsForms->packageSettingsForm($packageName);
+        return $this->settingsForms->extensionSettingsForm($extensionName);
     }
 
     /**
-     * @return list<array{package_name: string, label: string, description: string|null, path: string}>
+     * @return list<array{extension_name: string, label: string, description: string|null, path: string}>
      */
-    public function packageSettingPackages(): array
+    public function extensionSettingExtensions(): array
     {
-        return $this->settingsForms->packageSettingPackages();
+        return $this->settingsForms->extensionSettingExtensions();
     }
 
     private function defaultFooterCopyright(): string
     {
-        $metadata = $this->systemPackageMetadata->metadata();
+        $metadata = $this->systemExtensionMetadata->metadata();
         $name = trim((string) ($metadata['name'] ?? 'Studio'));
         $version = trim((string) ($metadata['version'] ?? ''));
         $homepage = trim((string) ($metadata['homepage'] ?? ''));

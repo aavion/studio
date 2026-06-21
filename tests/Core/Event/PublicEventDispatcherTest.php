@@ -42,7 +42,7 @@ final class PublicEventDispatcherTest extends TestCase
         $event = new ViewContextEvent([]);
         $result = (new PublicEventDispatcher($dispatcher, new PublicEventHookRegistry(), new NullWorkflowResultMessageReporter()))->dispatch($event, [
             'operation' => 'test',
-        ], 'demo-package');
+        ], 'demo-extension');
 
         self::assertFalse($result->isSuccess());
         self::assertSame('event.hook_listener_failed', $result->firstIssue()?->code());
@@ -52,7 +52,7 @@ final class PublicEventDispatcherTest extends TestCase
         self::assertSame($event, $reported->hookEvent());
         self::assertSame(ViewContextEvent::class, $reported->hook()->eventClass());
         self::assertSame('test', $reported->context()['operation']);
-        self::assertSame('demo-package', $reported->package());
+        self::assertSame('demo-extension', $reported->extension());
     }
 
     public function testFailureReportListenerCannotHideOriginalHookFailure(): void

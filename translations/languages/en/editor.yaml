@@ -10,6 +10,6 @@ editor:
     title: 'Editor dashboard'
     status: 'Content workspace'
     foundation_title: 'Editor foundation'
-    foundation_text: 'Content routes can attach to this shell once editor workflows, schema tools, and package contributions are wired.'
+    foundation_text: 'Content routes can attach to this shell once editor workflows, schema tools, and extension contributions are wired.'
   message:
     title: 'Editor route'

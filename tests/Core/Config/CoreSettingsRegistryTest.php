@@ -21,7 +21,7 @@ use App\Security\AutoBan\AutoBanPolicy;
 use App\Security\RateLimit\RateLimitPolicyCatalogue;
 use App\Security\RateLimit\RateLimitProfile;
 use App\Security\UserFlowConfig;
-use App\View\SystemPackageMetadataProvider;
+use App\View\SystemExtensionMetadataProvider;
 use PHPUnit\Framework\TestCase;
 
 final class CoreSettingsRegistryTest extends TestCase
@@ -189,6 +189,6 @@ final class CoreSettingsRegistryTest extends TestCase
     {
         $projectDir = dirname(__DIR__, 3);
 
-        return new CoreSettingsRegistry(new TranslationLanguageCatalog($projectDir), new SystemPackageMetadataProvider($projectDir));
+        return new CoreSettingsRegistry(new TranslationLanguageCatalog($projectDir), new SystemExtensionMetadataProvider($projectDir));
     }
 }

@@ -25,7 +25,7 @@ final class CoreTranslationBootstrapperTest extends TestCase
         $this->removeDirectory($this->root);
     }
 
-    public function testItGeneratesCoreMessagesCataloguesWithoutPackageLookup(): void
+    public function testItGeneratesCoreMessagesCataloguesWithoutExtensionLookup(): void
     {
         $this->writeTestFile($this->root, 'translations/languages/en/message.yaml', "message:\n  setup:\n    ok: Ready\n");
         $this->writeTestFile($this->root, 'translations/languages/en/ui.yaml', "ui:\n  app:\n    name: Studio\n");

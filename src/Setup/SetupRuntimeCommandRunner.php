@@ -88,7 +88,7 @@ final readonly class SetupRuntimeCommandRunner
      *
      * @return array<string, mixed>
      */
-    public function runPackageDiscovery(
+    public function runExtensionDiscovery(
         string $projectDir,
         SetupInput $input,
         array $environment,
@@ -97,7 +97,7 @@ final readonly class SetupRuntimeCommandRunner
         $command = [
             ...$this->phpCliCommandPrefix($projectDir, $input, $environment, true),
             $projectDir.'/bin/console',
-            'packages:discover',
+            'extensions:discover',
             '--run-now',
             '--trigger=setup',
             '--env='.$input->appEnv(),

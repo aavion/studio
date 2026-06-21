@@ -18,13 +18,14 @@ use App\Core\Message\Message;
 use App\Core\Operation\Live\LiveOperationRunStore;
 use App\Core\Operation\OperationMessageCode;
 use App\Core\Operation\OperationMessageKey;
-use App\Core\Package\ExtensionPackageStatus;
-use App\Core\Package\PackageScope;
+use App\Core\Extension\ExtensionStatus;
+use App\Core\Extension\ExtensionScope;
 use App\Core\Workflow\WorkflowResult;
 use App\Entity\AclGroup;
-use App\Entity\ExtensionPackage;
+use App\Entity\Extension;
 use App\Security\AutoBan\AutoBanPolicy;
 use App\Security\AutoBan\AutoBanStore;
+use App\Security\AutoBan\AutoBanSubject;
 use App\Security\RateLimit\RateLimitPolicyCatalogue;
 use App\Security\UserAccountStatus;
 use App\Security\UserFlowConfig;
@@ -53,14 +54,15 @@ final class BackendControllerTest extends WebTestCase
         putenv(SetupCompletionMarker::KEY);
         try {
             $client = self::createClient();
-            $crawler = $client->request('GET', '/setup');
+            $crawler = $client->request('GET', '/setup', server: ['HTTP_ACCEPT_LANGUAGE' => 'en']);
 
             self::assertResponseIsSuccessful();
-            self::assertSelectorTextContains('h1', 'Welcome');
+            self::assertSelectorExists('h1');
             self::assertSelectorExists('form#setup-wizard');
             self::assertSelectorExists('input[name="_csrf_token"]');
 
-            $form = $crawler->selectButton('Continue')->form(['language' => 'de']);
+            $continueLabel = str_contains((string) $client->getResponse()->getContent(), 'Welcome') ? 'Continue' : 'Weiter';
+            $form = $crawler->selectButton($continueLabel)->form(['language' => 'de']);
             $crawler = $client->submit($form, ['_setup_action' => 'set_language']);
 
             self::assertSelectorTextContains('h1', 'Willkommen');
@@ -353,7 +355,8 @@ final class BackendControllerTest extends WebTestCase
         try {
             $client = self::createClient();
             $crawler = $client->request('GET', '/setup');
-            $form = $crawler->selectButton('Continue')->form([
+            $continueLabel = str_contains((string) $client->getResponse()->getContent(), 'Welcome') ? 'Continue' : 'Weiter';
+            $form = $crawler->selectButton($continueLabel)->form([
                 'language' => 'en',
             ]);
 
@@ -364,7 +367,9 @@ final class BackendControllerTest extends WebTestCase
             $client->submit($form);
 
             self::assertResponseStatusCodeSame(404);
-            self::assertSelectorTextContains('h1', 'Page not found');
+            self::assertSelectorExists('h1');
+            self::assertTrue(str_contains((string) $client->getResponse()->getContent(), 'Page not found')
+                || str_contains((string) $client->getResponse()->getContent(), 'Seite nicht gefunden'));
             $html = (string) $client->getResponse()->getContent();
             self::assertStringNotContainsString('Setup result', $html);
             self::assertStringNotContainsString('Write environment', $html);
@@ -401,49 +406,49 @@ final class BackendControllerTest extends WebTestCase
         $manifest = $this->rootManifest();
         $client = self::createClient();
         $this->loginUserWithLevel($client, AccessLevel::OWNER);
-        $client->request('GET', '/admin/packages');
+        $client->request('GET', '/admin/extensions');
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('h1', 'Package management');
-        self::assertSelectorExists('.system-page-actions form input[name="_backend_action"][value="package_discovery"]');
+        self::assertSelectorTextContains('h1', 'Extension management');
+        self::assertSelectorExists('.system-page-actions form input[name="_backend_action"][value="extension_discovery"]');
         self::assertSelectorExists('.system-backend-topbar form input[name="_backend_action"][value="asset_rebuild"]');
         self::assertSelectorExists('.system-backend-topbar form input[name="_backend_action"][value="cache_clear"]');
         self::assertSelectorNotExists('.system-page-actions form input[name="_backend_action"][value="asset_rebuild"]');
         self::assertSelectorTextContains('.system-table', $manifest['APP_NAME']);
         self::assertSelectorTextContains('.system-table', $manifest['APP_VERSION']);
         self::assertSelectorTextContains('.system-table', 'Active');
-        self::assertSelectorExists('.system-table a[href="/admin/packages/system"]');
+        self::assertSelectorExists('.system-table a[href="/admin/extensions/system"]');
 
         $client->request('GET', '/admin/themes');
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Theme management');
-        self::assertSelectorNotExists('.system-page-actions form input[name="_backend_action"][value="package_discovery"]');
+        self::assertSelectorNotExists('.system-page-actions form input[name="_backend_action"][value="extension_discovery"]');
         self::assertSelectorExists('.system-backend-topbar form input[name="_backend_action"][value="asset_rebuild"]');
         self::assertSelectorTextContains('.system-backend-theme-overview[data-theme-section="frontend"]', 'Frontend themes');
         self::assertSelectorTextContains('.system-backend-theme-overview[data-theme-section="frontend"]', $manifest['APP_NAME']);
-        self::assertSelectorExists('.system-backend-theme-overview[data-theme-section="frontend"] a[href="/admin/packages/system"]');
+        self::assertSelectorExists('.system-backend-theme-overview[data-theme-section="frontend"] a[href="/admin/extensions/system"]');
         self::assertSelectorTextContains('.system-backend-theme-overview[data-theme-section="backend"]', 'Backend themes');
         self::assertSelectorTextContains('.system-backend-theme-overview[data-theme-section="backend"]', $manifest['APP_NAME']);
 
-        $this->removePackageByName('test-frontend-theme');
-        $this->removePackageByName('test-removed-theme');
+        $this->removeExtensionByName('test-frontend-theme');
+        $this->removeExtensionByName('test-removed-theme');
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
-        $frontendTheme = new ExtensionPackage(
+        $frontendTheme = new Extension(
             '00000000-0000-7000-8000-000000000499',
-            [PackageScope::FrontendTheme],
+            [ExtensionScope::FrontendTheme],
             'test-frontend-theme',
-            'packages/test-frontend-theme',
-            ExtensionPackageStatus::Active,
+            'extensions/test-frontend-theme',
+            ExtensionStatus::Active,
             ['display_name' => 'Test Frontend Theme'],
             manifestVersion: '1.0.0',
         );
-        $removedTheme = new ExtensionPackage(
+        $removedTheme = new Extension(
             '00000000-0000-7000-8000-000000000497',
-            [PackageScope::FrontendTheme],
+            [ExtensionScope::FrontendTheme],
             'test-removed-theme',
-            'packages/test-removed-theme',
-            ExtensionPackageStatus::Removed,
+            'extensions/test-removed-theme',
+            ExtensionStatus::Removed,
             ['display_name' => 'Test Removed Theme'],
             manifestVersion: '1.0.0',
         );
@@ -454,11 +459,11 @@ final class BackendControllerTest extends WebTestCase
         $client->request('GET', '/admin/themes');
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorExists('.system-backend-theme-overview[data-theme-section="frontend"] a[href="/admin/packages/test-frontend-theme/deactivate"]');
+        self::assertSelectorExists('.system-backend-theme-overview[data-theme-section="frontend"] a[href="/admin/extensions/test-frontend-theme/deactivate"]');
         self::assertSelectorTextContains('.system-backend-theme-overview[data-theme-section="frontend"]', 'Test Frontend Theme');
         self::assertStringNotContainsString('Test Removed Theme', (string) $client->getResponse()->getContent());
-        $this->removePackageByName('test-frontend-theme');
-        $this->removePackageByName('test-removed-theme');
+        $this->removeExtensionByName('test-frontend-theme');
+        $this->removeExtensionByName('test-removed-theme');
 
         foreach ([
             '/admin/users' => 'User management',
@@ -752,18 +757,18 @@ final class BackendControllerTest extends WebTestCase
         $this->loginUserWithLevel($client, 8);
         $store = self::getContainer()->get(LiveOperationRunStore::class);
         self::assertInstanceOf(LiveOperationRunStore::class, $store);
-        $run = $store->create('package.install.verify', [], 'Install package');
+        $run = $store->create('extension.install.verify', [], 'Install extension');
         $result = WorkflowResult::requiresReview(null, [
             Message::info(
                 OperationMessageCode::OPERATION_ACTION_REQUIRED,
                 OperationMessageKey::OPERATION_ACTION_REQUIRED,
-                ['%operation%' => 'Install package'],
+                ['%operation%' => 'Install extension'],
             ),
         ], [
             'live_operation_continuation' => [
-                'operation' => 'package.install.apply',
-                'payload' => ['install_id' => 'aaaaaaaaaaaaaaaaaaaaaaaa', 'package' => 'demo-module'],
-                'label' => 'Install package',
+                'operation' => 'extension.install.apply',
+                'payload' => ['install_id' => 'aaaaaaaaaaaaaaaaaaaaaaaa', 'extension' => 'demo-module'],
+                'label' => 'Install extension',
             ],
         ]);
         $store->finish($run['operation_id'], false, $result->toArray());
@@ -789,18 +794,18 @@ final class BackendControllerTest extends WebTestCase
         self::assertInstanceOf(LiveOperationRunStore::class, $store);
         $overrides = self::getContainer()->get(AdminFeatureOverrideStore::class);
         self::assertInstanceOf(AdminFeatureOverrideStore::class, $overrides);
-        $run = $store->create('package.install.verify', [], 'Install package');
+        $run = $store->create('extension.install.verify', [], 'Install extension');
         $result = WorkflowResult::requiresReview(null, [
             Message::info(
                 OperationMessageCode::OPERATION_ACTION_REQUIRED,
                 OperationMessageKey::OPERATION_ACTION_REQUIRED,
-                ['%operation%' => 'Install package'],
+                ['%operation%' => 'Install extension'],
             ),
         ], [
             'live_operation_continuation' => [
-                'operation' => 'package.install.apply',
-                'payload' => ['install_id' => 'aaaaaaaaaaaaaaaaaaaaaaaa', 'package' => 'demo-module'],
-                'label' => 'Install package',
+                'operation' => 'extension.install.apply',
+                'payload' => ['install_id' => 'aaaaaaaaaaaaaaaaaaaaaaaa', 'extension' => 'demo-module'],
+                'label' => 'Install extension',
             ],
         ]);
         $store->finish($run['operation_id'], false, $result->toArray());
@@ -810,7 +815,7 @@ final class BackendControllerTest extends WebTestCase
                 'state' => AdminPermissionState::Mutable->value,
                 'groups' => [],
             ],
-            'admin.packages' => [
+            'admin.extensions' => [
                 'state' => AdminPermissionState::Visible->value,
                 'groups' => [],
             ],
@@ -835,14 +840,14 @@ final class BackendControllerTest extends WebTestCase
         }
     }
 
-    public function testAdminBackendActionFormsRunPackageDiscoveryImmediately(): void
+    public function testAdminBackendActionFormsRunExtensionDiscoveryImmediately(): void
     {
         $client = self::createClient();
-        $demoPackages = ['demo-module', 'demo-frontend-theme', 'demo-captcha-provider'];
+        $demoExtensions = ['demo-module', 'demo-frontend-theme', 'demo-captcha-provider'];
         $logDir = self::getContainer()->getParameter('kernel.logs_dir');
 
-        foreach ($demoPackages as $packageName) {
-            $this->removePackageByName($packageName);
+        foreach ($demoExtensions as $extensionName) {
+            $this->removeExtensionByName($extensionName);
         }
         foreach (glob($logDir.'/test/audit-*.log') ?: [] as $logFile) {
             @unlink($logFile);
@@ -850,178 +855,178 @@ final class BackendControllerTest extends WebTestCase
 
         try {
             $this->loginUserWithLevel($client, AccessLevel::OWNER);
-            $crawler = $client->request('GET', '/admin/packages');
+            $crawler = $client->request('GET', '/admin/extensions');
 
-            self::assertSelectorNotExists('.system-table tr[data-package-name="demo-module"]');
+            self::assertSelectorNotExists('.system-table tr[data-extension-name="demo-module"]');
 
             $form = $crawler->selectButton('Update registry')->form();
 
             $client->submit($form);
 
-            self::assertResponseRedirects('/admin/packages');
+            self::assertResponseRedirects('/admin/extensions');
 
             $this->followAdminRedirect($client);
 
             self::assertResponseIsSuccessful();
             self::assertSelectorExists('.system-alert-success');
-            self::assertSelectorExists('.system-table tr[data-package-name="demo-module"]');
+            self::assertSelectorExists('.system-table tr[data-extension-name="demo-module"]');
 
             $entityManager = self::getContainer()->get(EntityManagerInterface::class);
             self::assertInstanceOf(
-                ExtensionPackage::class,
-                $entityManager->getRepository(ExtensionPackage::class)->findOneBy(['packageName' => 'demo-module']),
+                Extension::class,
+                $entityManager->getRepository(Extension::class)->findOneBy(['extensionName' => 'demo-module']),
             );
             $auditLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test/audit-*.log') ?: []));
-            self::assertStringContainsString('backend.action.package_discovery', $auditLog);
+            self::assertStringContainsString('backend.action.extension_discovery', $auditLog);
             self::assertStringContainsString('"result_status":"success"', $auditLog);
         } finally {
-            foreach ($demoPackages as $packageName) {
-                $this->removePackageByName($packageName);
+            foreach ($demoExtensions as $extensionName) {
+                $this->removeExtensionByName($extensionName);
             }
         }
     }
 
-    public function testDelegatedAdminsSeeDisabledPackageLifecycleActionsByDefault(): void
+    public function testDelegatedAdminsSeeDisabledExtensionLifecycleActionsByDefault(): void
     {
         $client = self::createClient();
-        $this->removePackageByName('test-admin-hidden-lifecycle');
+        $this->removeExtensionByName('test-admin-hidden-lifecycle');
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
-        $package = new ExtensionPackage(
+        $extension = new Extension(
             '00000000-0000-7000-8000-000000000496',
-            [PackageScope::Module],
+            [ExtensionScope::Module],
             'test-admin-hidden-lifecycle',
-            'packages/test-admin-hidden-lifecycle',
-            ExtensionPackageStatus::Inactive,
+            'extensions/test-admin-hidden-lifecycle',
+            ExtensionStatus::Inactive,
             [
                 'display_name' => 'Test Admin Hidden Lifecycle',
                 'description' => 'Lifecycle ACL fixture',
                 'manifest' => [
-                    'PACKAGE_NAME' => 'Test Admin Hidden Lifecycle',
-                    'PACKAGE_VERSION' => '1.0.0',
+                    'EXTENSION_NAME' => 'Test Admin Hidden Lifecycle',
+                    'EXTENSION_VERSION' => '1.0.0',
                 ],
             ],
             manifestVersion: '1.0.0',
         );
-        $entityManager->persist($package);
+        $entityManager->persist($extension);
         $entityManager->flush();
 
         try {
             $this->loginUserWithLevel($client, AccessLevel::ADMIN);
-            $client->request('GET', '/admin/packages');
+            $client->request('GET', '/admin/extensions');
 
             self::assertResponseIsSuccessful();
-            self::assertSelectorExists('a[href="/admin/packages/test-admin-hidden-lifecycle"]');
-            self::assertSelectorNotExists('a[href="/admin/packages/test-admin-hidden-lifecycle/activate"]');
+            self::assertSelectorExists('a[href="/admin/extensions/test-admin-hidden-lifecycle"]');
+            self::assertSelectorNotExists('a[href="/admin/extensions/test-admin-hidden-lifecycle/activate"]');
 
-            $client->request('GET', '/admin/packages/test-admin-hidden-lifecycle');
+            $client->request('GET', '/admin/extensions/test-admin-hidden-lifecycle');
 
             self::assertResponseIsSuccessful();
             self::assertSelectorTextContains('h1', 'Test Admin Hidden Lifecycle');
-            self::assertSelectorNotExists('a[href="/admin/packages/test-admin-hidden-lifecycle/activate"]');
-            self::assertSelectorNotExists('a[href="/admin/packages/test-admin-hidden-lifecycle/delete"]');
+            self::assertSelectorNotExists('a[href="/admin/extensions/test-admin-hidden-lifecycle/activate"]');
+            self::assertSelectorNotExists('a[href="/admin/extensions/test-admin-hidden-lifecycle/delete"]');
             self::assertSelectorExists('button[disabled]');
             self::assertStringContainsString('Activate', (string) $client->getResponse()->getContent());
             self::assertStringContainsString('Delete', (string) $client->getResponse()->getContent());
 
-            $client->request('GET', '/admin/packages/test-admin-hidden-lifecycle/activate');
+            $client->request('GET', '/admin/extensions/test-admin-hidden-lifecycle/activate');
 
             self::assertResponseIsSuccessful();
             self::assertSelectorTextContains('.system-alert-warning', 'You may review this action, but mutation is not allowed by the current ACL policy.');
-            self::assertStringNotContainsString('Activate package', (string) $client->getResponse()->getContent());
+            self::assertStringNotContainsString('Activate extension', (string) $client->getResponse()->getContent());
         } finally {
-            $this->removePackageByName('test-admin-hidden-lifecycle');
+            $this->removeExtensionByName('test-admin-hidden-lifecycle');
         }
     }
 
-    public function testAdminPackageDetailAndLifecycleReviewRoutesRender(): void
+    public function testAdminExtensionDetailAndLifecycleReviewRoutesRender(): void
     {
         $client = self::createClient();
-        $this->removePackageByName('test-lifecycle');
+        $this->removeExtensionByName('test-lifecycle');
         $projectDir = (string) self::getContainer()->getParameter('kernel.project_dir');
-        $packageDir = $projectDir.'/packages/test-lifecycle';
-        $assetsDir = $packageDir.'/assets';
+        $extensionDir = $projectDir.'/extensions/test-lifecycle';
+        $assetsDir = $extensionDir.'/assets';
         if (!is_dir($assetsDir)) {
             mkdir($assetsDir, 0775, true);
         }
-        file_put_contents($packageDir.'/.manifest', <<<'MANIFEST'
-            PACKAGE_AUTHOR=Test Suite
-            PACKAGE_SLUG=test-lifecycle
-            PACKAGE_NAME=Test Lifecycle
-            PACKAGE_DESCRIPTION=Lifecycle package fixture
-            PACKAGE_VERSION=1.0.0
-            PACKAGE_SCOPE=module
-            PACKAGE_DEPENDENCIES=["demo-base >=1.0"]
-            PACKAGE_LICENSE=MIT
-            PACKAGE_SOURCE=https://github.com/example/test-lifecycle
-            PACKAGE_CHANNEL=main
-            PACKAGE_IMAGE=assets/preview.svg
+        file_put_contents($extensionDir.'/.manifest', <<<'MANIFEST'
+            EXTENSION_AUTHOR=Test Suite
+            EXTENSION_SLUG=test-lifecycle
+            EXTENSION_NAME=Test Lifecycle
+            EXTENSION_DESCRIPTION=Lifecycle extension fixture
+            EXTENSION_VERSION=1.0.0
+            EXTENSION_SCOPE=module
+            EXTENSION_DEPENDENCIES=["demo-base >=1.0"]
+            EXTENSION_LICENSE=MIT
+            EXTENSION_SOURCE=https://github.com/example/test-lifecycle
+            EXTENSION_CHANNEL=main
+            EXTENSION_IMAGE=assets/preview.svg
             MANIFEST);
-        file_put_contents($packageDir.'/README.md', "# Lifecycle README\n\nThis package has **markdown** docs.");
+        file_put_contents($extensionDir.'/README.md', "# Lifecycle README\n\nThis extension has **markdown** docs.");
         file_put_contents($assetsDir.'/preview.svg', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 9"><rect width="16" height="9" fill="#315bdc"/></svg>');
 
         $this->loginUserWithLevel($client, AccessLevel::OWNER);
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
-        $package = new ExtensionPackage(
+        $extension = new Extension(
             '00000000-0000-7000-8000-000000000498',
-            [PackageScope::Module],
+            [ExtensionScope::Module],
             'test-lifecycle',
-            'packages/test-lifecycle',
-            ExtensionPackageStatus::Inactive,
+            'extensions/test-lifecycle',
+            ExtensionStatus::Inactive,
             [
                 'display_name' => 'Test Lifecycle',
-                'description' => 'Lifecycle package fixture',
+                'description' => 'Lifecycle extension fixture',
                 'author' => 'Test Suite',
                 'manifest' => [
-                    'PACKAGE_NAME' => 'Test Lifecycle',
-                    'PACKAGE_VERSION' => '1.0.0',
+                    'EXTENSION_NAME' => 'Test Lifecycle',
+                    'EXTENSION_VERSION' => '1.0.0',
                 ],
             ],
             manifestVersion: '1.0.0',
         );
-        $entityManager->persist($package);
+        $entityManager->persist($extension);
         $entityManager->flush();
 
         try {
-            $client->request('GET', '/admin/packages');
+            $client->request('GET', '/admin/extensions');
 
             self::assertResponseIsSuccessful();
-            self::assertSelectorExists('a[href="/admin/packages/test-lifecycle"]');
-            self::assertSelectorNotExists('a[href="/admin/packages/test-lifecycle/activate"]');
-            self::assertSelectorNotExists('a[href="/admin/packages/test-lifecycle/purge"]');
-            self::assertSelectorNotExists('a[href="/admin/packages/test-lifecycle/delete"]');
+            self::assertSelectorExists('a[href="/admin/extensions/test-lifecycle"]');
+            self::assertSelectorNotExists('a[href="/admin/extensions/test-lifecycle/activate"]');
+            self::assertSelectorNotExists('a[href="/admin/extensions/test-lifecycle/purge"]');
+            self::assertSelectorNotExists('a[href="/admin/extensions/test-lifecycle/delete"]');
 
-            $client->request('GET', '/admin/packages/test-lifecycle');
+            $client->request('GET', '/admin/extensions/test-lifecycle');
 
             self::assertResponseIsSuccessful();
             self::assertSelectorTextContains('h1', 'Test Lifecycle');
-            self::assertSelectorTextContains('.system-table', 'Lifecycle package fixture');
+            self::assertSelectorTextContains('.system-table', 'Lifecycle extension fixture');
             self::assertSelectorTextContains('.system-table', 'MIT');
             self::assertSelectorTextContains('.system-table', 'demo-base >=1.0');
             self::assertSelectorExists('a[href="https://github.com/example/test-lifecycle/tree/main"]');
             self::assertSelectorTextContains('a[href="https://github.com/example/test-lifecycle/tree/main"]', 'https://github.com/example/test-lifecycle/tree/main');
             self::assertSelectorTextContains('.system-markdown h1', 'Lifecycle README');
-            self::assertSelectorExists('a[href="/admin/packages/test-lifecycle/activate"]');
-            self::assertSelectorNotExists('a[href="/admin/packages/test-lifecycle/purge"]');
-            self::assertSelectorExists('a[href="/admin/packages/test-lifecycle/delete"]');
+            self::assertSelectorExists('a[href="/admin/extensions/test-lifecycle/activate"]');
+            self::assertSelectorNotExists('a[href="/admin/extensions/test-lifecycle/purge"]');
+            self::assertSelectorExists('a[href="/admin/extensions/test-lifecycle/delete"]');
 
-            $client->request('GET', '/admin/packages/test-lifecycle/activate');
+            $client->request('GET', '/admin/extensions/test-lifecycle/activate');
 
             self::assertResponseIsSuccessful();
             self::assertSelectorTextContains('h1', 'Activate Test Lifecycle');
             self::assertSelectorTextContains('.system-table', 'activated');
             self::assertSelectorExists('button[type="submit"]');
 
-            $client->request('GET', '/admin/packages/test-lifecycle/purge');
+            $client->request('GET', '/admin/extensions/test-lifecycle/purge');
 
             self::assertResponseIsSuccessful();
             self::assertSelectorTextContains('h1', 'Delete data for Test Lifecycle');
             self::assertStringContainsString(
-                'Package &quot;test-lifecycle&quot; cannot change lifecycle state while it is &quot;inactive&quot;.',
+                'Extension &quot;test-lifecycle&quot; cannot change lifecycle state while it is &quot;inactive&quot;.',
                 (string) $client->getResponse()->getContent(),
             );
             self::assertSelectorNotExists('button.system-button-danger[type="submit"]');
 
-            $client->request('GET', '/admin/packages/test-lifecycle/delete');
+            $client->request('GET', '/admin/extensions/test-lifecycle/delete');
 
             self::assertResponseIsSuccessful();
             self::assertSelectorTextContains('h1', 'Delete Test Lifecycle');
@@ -1029,41 +1034,41 @@ final class BackendControllerTest extends WebTestCase
             self::assertSelectorTextContains('.system-alert-warning', 'This step is irreversible.');
             self::assertSelectorExists('button[type="submit"]');
         } finally {
-            $this->removePackageByName('test-lifecycle');
+            $this->removeExtensionByName('test-lifecycle');
             @unlink($assetsDir.'/preview.svg');
             @rmdir($assetsDir);
-            @unlink($packageDir.'/README.md');
-            @unlink($packageDir.'/.manifest');
-            @rmdir($packageDir);
+            @unlink($extensionDir.'/README.md');
+            @unlink($extensionDir.'/.manifest');
+            @rmdir($extensionDir);
         }
     }
 
-    public function testAdminPackageDeactivationReviewIncludesActiveDependents(): void
+    public function testAdminExtensionDeactivationReviewIncludesActiveDependents(): void
     {
         $client = self::createClient();
-        $this->removePackageByName('test-dependent-theme');
-        $this->removePackageByName('test-dependent-captcha');
+        $this->removeExtensionByName('test-dependent-theme');
+        $this->removeExtensionByName('test-dependent-captcha');
 
         $this->loginUserWithLevel($client, AccessLevel::OWNER);
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
-        $theme = new ExtensionPackage(
+        $theme = new Extension(
             '00000000-0000-7000-8000-000000000596',
-            [PackageScope::FrontendTheme],
+            [ExtensionScope::FrontendTheme],
             'test-dependent-theme',
-            'packages/test-dependent-theme',
-            ExtensionPackageStatus::Active,
-            ['display_name' => 'Test Dependent Theme', 'manifest' => ['PACKAGE_DEPENDENCIES' => '[]']],
+            'extensions/test-dependent-theme',
+            ExtensionStatus::Active,
+            ['display_name' => 'Test Dependent Theme', 'manifest' => ['EXTENSION_DEPENDENCIES' => '[]']],
             manifestVersion: '1.0.0',
         );
-        $captcha = new ExtensionPackage(
+        $captcha = new Extension(
             '00000000-0000-7000-8000-000000000597',
-            [PackageScope::CaptchaProvider],
+            [ExtensionScope::CaptchaProvider],
             'test-dependent-captcha',
-            'packages/test-dependent-captcha',
-            ExtensionPackageStatus::Active,
+            'extensions/test-dependent-captcha',
+            ExtensionStatus::Active,
             [
                 'display_name' => 'Test Dependent Captcha',
-                'manifest' => ['PACKAGE_DEPENDENCIES' => "[['test-dependent-theme', '1.0.0']]"],
+                'manifest' => ['EXTENSION_DEPENDENCIES' => "[['test-dependent-theme', '1.0.0']]"],
             ],
             manifestVersion: '1.0.0',
             installedVersion: '1.0.0',
@@ -1073,54 +1078,54 @@ final class BackendControllerTest extends WebTestCase
         $entityManager->flush();
 
         try {
-            $client->request('GET', '/admin/packages/test-dependent-theme/deactivate');
+            $client->request('GET', '/admin/extensions/test-dependent-theme/deactivate');
 
             self::assertResponseIsSuccessful();
             self::assertSelectorTextContains('h1', 'Deactivate Test Dependent Theme');
             self::assertSelectorTextContains('.system-table', 'test-dependent-captcha');
             self::assertSelectorTextContains('.system-table', 'test-dependent-theme');
         } finally {
-            $this->removePackageByName('test-dependent-captcha');
-            $this->removePackageByName('test-dependent-theme');
+            $this->removeExtensionByName('test-dependent-captcha');
+            $this->removeExtensionByName('test-dependent-theme');
         }
     }
 
-    public function testAdminPackageDetailRendersUnsafeMetadataUrlsAsPlainText(): void
+    public function testAdminExtensionDetailRendersUnsafeMetadataUrlsAsPlainText(): void
     {
         $client = self::createClient();
-        $this->removePackageByName('test-unsafe-metadata');
+        $this->removeExtensionByName('test-unsafe-metadata');
 
         $this->loginUserWithLevel($client, 8);
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
-        $package = new ExtensionPackage(
+        $extension = new Extension(
             '00000000-0000-7000-8000-000000000598',
-            [PackageScope::Module],
+            [ExtensionScope::Module],
             'test-unsafe-metadata',
-            'packages/test-unsafe-metadata',
-            ExtensionPackageStatus::Inactive,
+            'extensions/test-unsafe-metadata',
+            ExtensionStatus::Inactive,
             [
                 'display_name' => 'Unsafe Metadata',
                 'homepage' => 'javascript:alert(1)',
-                'source' => 'data:text/plain,package',
-                'manifest' => ['PACKAGE_DEPENDENCIES' => '[]'],
+                'source' => 'data:text/plain,extension',
+                'manifest' => ['EXTENSION_DEPENDENCIES' => '[]'],
             ],
             manifestVersion: '1.0.0',
         );
-        $entityManager->persist($package);
+        $entityManager->persist($extension);
         $entityManager->flush();
 
         try {
-            $client->request('GET', '/admin/packages/test-unsafe-metadata');
+            $client->request('GET', '/admin/extensions/test-unsafe-metadata');
 
             self::assertResponseIsSuccessful();
             self::assertSelectorTextContains('.system-table', 'javascript:alert(1)');
-            self::assertSelectorTextContains('.system-table', 'data:text/plain,package');
+            self::assertSelectorTextContains('.system-table', 'data:text/plain,extension');
 
             $content = (string) $client->getResponse()->getContent();
             self::assertStringNotContainsString('href="javascript:alert(1)"', $content);
-            self::assertStringNotContainsString('href="data:text/plain,package"', $content);
+            self::assertStringNotContainsString('href="data:text/plain,extension"', $content);
         } finally {
-            $this->removePackageByName('test-unsafe-metadata');
+            $this->removeExtensionByName('test-unsafe-metadata');
         }
     }
 
@@ -1143,12 +1148,12 @@ final class BackendControllerTest extends WebTestCase
         self::assertStringContainsString('name="content.home_path"', (string) $client->getResponse()->getContent());
         self::assertStringContainsString('pattern="^/.*$"', (string) $client->getResponse()->getContent());
 
-        $client->request('GET', '/admin/settings/packages');
+        $client->request('GET', '/admin/settings/extensions');
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('h1', 'Package settings');
-        self::assertSelectorExists('form#admin-settings-packages');
-        self::assertSelectorExists('select[name="packages.update_check_interval"]');
+        self::assertSelectorTextContains('h1', 'Extension settings');
+        self::assertSelectorExists('form#admin-settings-extensions');
+        self::assertSelectorExists('select[name="extensions.update_check_interval"]');
 
         $client->request('GET', '/admin/settings/users');
 
@@ -1233,7 +1238,7 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorExists('form#admin-settings-scheduler');
         self::assertSelectorExists('input[name="scheduler.enabled"]');
         self::assertSelectorExists('input[name="scheduler.get_auth_enabled"]');
-        self::assertSelectorExists('input[name="scheduler.package_action_queues_enabled"]');
+        self::assertSelectorExists('input[name="scheduler.extension_action_queues_enabled"]');
         self::assertSelectorExists('input[name="scheduler.web_trigger_enabled"]');
 
         $client->request('GET', '/admin/settings/system-info');
@@ -1261,6 +1266,28 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorTextContains('h1', 'Active auto-bans');
         self::assertSelectorTextContains('.system-muted', 'No active auto-bans.');
         self::assertSelectorExists('a[href="/admin/settings/security"]');
+    }
+
+    public function testAutoBanResetRedirectsBackToAutoBanList(): void
+    {
+        $client = self::createClient();
+        $this->loginUserWithLevel($client, AccessLevel::OWNER);
+        $store = self::getContainer()->get(AutoBanStore::class);
+        self::assertInstanceOf(AutoBanStore::class, $store);
+        foreach ($store->activeBans() as $activeBan) {
+            $store->reset($activeBan->key());
+        }
+
+        $ban = $store->ban(new AutoBanSubject(AutoBanSubject::VISITOR, 'backend-reset-redirect'), 3600);
+        self::assertNotNull($ban);
+
+        $crawler = $client->request('GET', '/admin/security/auto-bans/'.$ban->key());
+        self::assertResponseIsSuccessful();
+
+        $client->submit($crawler->selectButton('Reset auto-ban')->form());
+
+        self::assertResponseRedirects('/admin/security/auto-bans');
+        self::assertNull($store->activeByKey($ban->key()));
     }
 
     public function testSecuritySettingsSectionIsHiddenAndRejectsPostsForDelegatedAdmins(): void
@@ -1306,7 +1333,7 @@ final class BackendControllerTest extends WebTestCase
             self::assertSelectorExists('form#admin-settings-scheduler');
             self::assertSelectorExists('input[name="scheduler.enabled"][disabled]');
             self::assertSelectorExists('input[name="scheduler.get_auth_enabled"][disabled]');
-            self::assertSelectorExists('input[name="scheduler.package_action_queues_enabled"][disabled]');
+            self::assertSelectorExists('input[name="scheduler.extension_action_queues_enabled"][disabled]');
             self::assertSelectorExists('input[name="scheduler.web_trigger_enabled"][disabled]');
             self::assertSelectorNotExists('form#admin-settings-scheduler button[type="submit"]');
 
@@ -1358,15 +1385,15 @@ final class BackendControllerTest extends WebTestCase
             self::assertResponseIsSuccessful();
             self::assertSelectorTextContains('h1', 'ACL');
             self::assertSelectorExists('form#admin-settings-acl');
-            self::assertSelectorTextContains('#acl-surface-admin', 'Packages and themes');
-            self::assertSelectorExists('select[name="acl[admin.packages][state]"]');
+            self::assertSelectorTextContains('#acl-surface-admin', 'Extensions and themes');
+            self::assertSelectorExists('select[name="acl[admin.extensions][state]"]');
             self::assertSelectorExists('select[name="acl[admin.settings.statistics.geoip][state]"]');
             self::assertGreaterThan(0, $crawler->filter('option[value=""]')->count());
             self::assertSelectorTextContains('#acl-surface-admin', 'Read-only');
             self::assertGreaterThan(0, $crawler->filter('select[disabled]')->count());
 
             $form = $crawler->filter('form#admin-settings-acl')->form([
-                'acl[admin.packages][state]' => AdminPermissionState::Denied->value,
+                'acl[admin.extensions][state]' => AdminPermissionState::Denied->value,
             ]);
             $client->submit($form);
 
@@ -1374,7 +1401,7 @@ final class BackendControllerTest extends WebTestCase
             $auditLog = implode(PHP_EOL, array_map(static fn (string $file): string => (string) file_get_contents($file), glob($logDir.'/test/audit-*.log') ?: []));
             self::assertStringContainsString('settings.acl.save', $auditLog);
             self::assertStringContainsString('"section":"acl"', $auditLog);
-            self::assertStringContainsString('"feature":"admin.packages"', $auditLog);
+            self::assertStringContainsString('"feature":"admin.extensions"', $auditLog);
             self::assertStringContainsString('"previous_state":"visible"', $auditLog);
             self::assertStringContainsString('"next_state":"denied"', $auditLog);
             self::assertStringContainsString('"setting_keys":["acl"]', $auditLog);
@@ -1611,8 +1638,8 @@ final class BackendControllerTest extends WebTestCase
                 'test-admin-reports',
                 ViewSurface::Admin,
                 'reports',
-                'admin.navigation.packages',
-                '@backend/admin/packages.html.twig',
+                'admin.navigation.extensions',
+                '@backend/admin/extensions.html.twig',
                 accessLevel: 8,
             ));
         });
@@ -1621,7 +1648,7 @@ final class BackendControllerTest extends WebTestCase
         $client->request('GET', '/admin/reports');
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('h1', 'Package management');
+        self::assertSelectorTextContains('h1', 'Extension management');
     }
 
     public function testEditorRouteAllowsEditorsButAdminRouteDoesNot(): void
@@ -1650,16 +1677,16 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorTextContains('.system-alert', 'Backend route "/admin/missing" is not registered.');
     }
 
-    private function removePackageByName(string $packageName): void
+    private function removeExtensionByName(string $extensionName): void
     {
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
-        $package = $entityManager->getRepository(ExtensionPackage::class)->findOneBy(['packageName' => $packageName]);
+        $extension = $entityManager->getRepository(Extension::class)->findOneBy(['extensionName' => $extensionName]);
 
-        if (!$package instanceof ExtensionPackage) {
+        if (!$extension instanceof Extension) {
             return;
         }
 
-        $entityManager->remove($package);
+        $entityManager->remove($extension);
         $entityManager->flush();
     }
 

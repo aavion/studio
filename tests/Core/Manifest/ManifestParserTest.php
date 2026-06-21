@@ -68,7 +68,7 @@ final class ManifestParserTest extends TestCase
     {
         $result = (new ManifestParser())->parse(<<<'MANIFEST'
             APP_VERSION=0.1.0
-            APP_VERSION=0.2.5
+            APP_VERSION=0.2.6
             MANIFEST);
 
         self::assertFalse($result->isSuccess());

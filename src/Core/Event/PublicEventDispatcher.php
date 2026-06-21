@@ -27,22 +27,22 @@ final readonly class PublicEventDispatcher
     /**
      * @param array<string, mixed> $context
      */
-    public function __invoke(PublicEventInterface $event, array $context = [], ?string $package = null): PublicEventDispatchResult
+    public function __invoke(PublicEventInterface $event, array $context = [], ?string $extension = null): PublicEventDispatchResult
     {
-        return $this->dispatch($event, $context, $package);
+        return $this->dispatch($event, $context, $extension);
     }
 
     /**
      * @param array<string, mixed> $context
      */
-    public function dispatch(PublicEventInterface $event, array $context = [], ?string $package = null): PublicEventDispatchResult
+    public function dispatch(PublicEventInterface $event, array $context = [], ?string $extension = null): PublicEventDispatchResult
     {
         $eventClass = $event::class;
 
         try {
             $registeredHooks = $this->hookRegistry->byEventClass();
         } catch (Throwable $error) {
-            $this->debugCollector?->recordHook($eventClass, 'unknown', 'unknown', false, 'registry_failed', $context, $package, 1);
+            $this->debugCollector?->recordHook($eventClass, 'unknown', 'unknown', false, 'registry_failed', $context, $extension, 1);
 
             $issues = [
                 Message::exception(EventMessageCode::EVENT_HOOK_INVALID, EventMessageKey::EVENT_HOOK_INVALID, [
@@ -54,13 +54,13 @@ final readonly class PublicEventDispatcher
                 ]),
             ];
 
-            $this->reportFailure($issues, $eventClass, $context, $package);
+            $this->reportFailure($issues, $eventClass, $context, $extension);
 
             return PublicEventDispatchResult::failed($event, $issues);
         }
 
         if (!isset($registeredHooks[$eventClass])) {
-            $this->debugCollector?->recordHook($eventClass, 'unknown', 'unknown', false, 'unregistered', $context, $package, 1);
+            $this->debugCollector?->recordHook($eventClass, 'unknown', 'unknown', false, 'unregistered', $context, $extension, 1);
 
             $issues = [
                 Message::create(EventMessageCode::EVENT_HOOK_UNREGISTERED, EventMessageKey::EVENT_HOOK_UNREGISTERED, [
@@ -68,11 +68,11 @@ final readonly class PublicEventDispatcher
                 ], [
                     'event' => $eventClass,
                     'context' => $context,
-                    'package' => $package,
+                    'extension' => $extension,
                 ], MessageLevel::Error),
             ];
 
-            $this->reportFailure($issues, $eventClass, $context, $package);
+            $this->reportFailure($issues, $eventClass, $context, $extension);
 
             return PublicEventDispatchResult::failed($event, $issues);
         }
@@ -87,7 +87,7 @@ final readonly class PublicEventDispatcher
                 $registeredHooks[$eventClass]->mutable(),
                 'failed',
                 $context,
-                $package,
+                $extension,
                 1,
             );
 
@@ -99,11 +99,11 @@ final readonly class PublicEventDispatcher
                 'exception' => $error::class,
                 'message' => $error->getMessage(),
                 'context' => $context,
-                'package' => $package,
+                'extension' => $extension,
             ]);
 
-            $this->reportHookFailure($event, $registeredHooks[$eventClass], $issue, $error, $context, $package);
-            $this->reportFailure([$issue], $eventClass, $context, $package);
+            $this->reportHookFailure($event, $registeredHooks[$eventClass], $issue, $error, $context, $extension);
+            $this->reportFailure([$issue], $eventClass, $context, $extension);
 
             return PublicEventDispatchResult::failed($event, [$issue]);
         }
@@ -115,7 +115,7 @@ final readonly class PublicEventDispatcher
             $registeredHooks[$eventClass]->mutable(),
             'success',
             $context,
-            $package,
+            $extension,
         );
 
         return PublicEventDispatchResult::success($event);
@@ -130,7 +130,7 @@ final readonly class PublicEventDispatcher
         Message $issue,
         Throwable $exception,
         array $context,
-        ?string $package,
+        ?string $extension,
     ): void {
         try {
             $this->eventDispatcher->dispatch(new PublicHookFailedEvent(
@@ -139,7 +139,7 @@ final readonly class PublicEventDispatcher
                 $issue,
                 $exception,
                 $context,
-                $package,
+                $extension,
             ));
         } catch (Throwable) {
             // Failure reporting must never hide the original hook failure.
@@ -150,13 +150,13 @@ final readonly class PublicEventDispatcher
      * @param list<Message> $issues
      * @param array<string, mixed> $context
      */
-    private function reportFailure(array $issues, string $eventClass, array $context, ?string $package): void
+    private function reportFailure(array $issues, string $eventClass, array $context, ?string $extension): void
     {
         $this->messageReporter->report(WorkflowResult::failed($issues), [
             'operation' => 'event.dispatch',
             'event' => $eventClass,
             'context' => $context,
-            'package' => $package,
+            'extension' => $extension,
         ]);
     }
 }

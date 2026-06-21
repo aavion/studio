@@ -55,7 +55,7 @@ final class RequestIntentClassifierTest extends TestCase
             RequestIntent::AdminOperation,
         ];
         yield 'localized admin api-like content path is form submit' => [
-            self::localizedRequest('/de/api/v1/admin/packages/demo/reset-fault', 'POST', 'de'),
+            self::localizedRequest('/de/api/v1/admin/extensions/demo/reset-fault', 'POST', 'de'),
             RequestFamily::Browser,
             RequestIntent::FormSubmit,
         ];
@@ -74,8 +74,8 @@ final class RequestIntentClassifierTest extends TestCase
             RequestFamily::Admin,
             RequestIntent::SettingsMutation,
         ];
-        yield 'admin package upload uses upload archive bucket before broad package bucket' => [
-            Request::create('/admin/packages/upload', 'POST'),
+        yield 'admin extension upload uses upload archive bucket before broad extension bucket' => [
+            Request::create('/admin/extensions/upload', 'POST'),
             RequestFamily::Admin,
             RequestIntent::UploadArchiveValidation,
         ];
@@ -99,7 +99,7 @@ final class RequestIntentClassifierTest extends TestCase
             RequestFamily::Browser,
             RequestIntent::FormSubmit,
         ];
-        yield 'future public package form post gets website form intent' => [
+        yield 'future public extension form post gets website form intent' => [
             self::contentRequest('/forum/thread/welcome', 'POST'),
             RequestFamily::Browser,
             RequestIntent::FormSubmit,
@@ -244,10 +244,10 @@ final class RequestIntentClassifierTest extends TestCase
             RequestFamily::Admin,
             RequestIntent::UserAclMutation,
         ];
-        yield 'admin package reset fault is package mutation' => [
-            Request::create('/admin/packages/demo/reset-fault', 'POST'),
+        yield 'admin extension reset fault is extension mutation' => [
+            Request::create('/admin/extensions/demo/reset-fault', 'POST'),
             RequestFamily::Admin,
-            RequestIntent::PackageAdminOperation,
+            RequestIntent::ExtensionAdminOperation,
         ];
         yield 'admin operation post is generic admin mutation' => [
             Request::create('/admin/operations', 'POST'),
@@ -326,7 +326,7 @@ final class RequestIntentClassifierTest extends TestCase
 
     public function testItClassifiesOrdinaryUploadRoutesAsUploadArchiveValidation(): void
     {
-        $profile = (new RequestIntentClassifier())->classify(Request::create('/admin/packages/upload', 'POST'));
+        $profile = (new RequestIntentClassifier())->classify(Request::create('/admin/extensions/upload', 'POST'));
 
         self::assertSame(RequestIntent::UploadArchiveValidation, $profile->intent());
         self::assertFalse($profile->suspiciousProbe());

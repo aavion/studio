@@ -56,7 +56,7 @@ final class SystemDebugCollector implements EventSubscriberInterface
         bool $mutable,
         string $status,
         array $context = [],
-        ?string $package = null,
+        ?string $extension = null,
         int $issues = 0,
     ): void {
         if (!$this->debug) {
@@ -70,7 +70,7 @@ final class SystemDebugCollector implements EventSubscriberInterface
             'mutable' => $mutable,
             'status' => $status,
             'context' => $this->normalize($context),
-            'package' => $package,
+            'extension' => $extension,
             'issues' => $issues,
         ];
     }

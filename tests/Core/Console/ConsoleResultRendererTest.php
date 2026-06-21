@@ -46,14 +46,14 @@ final class ConsoleResultRendererTest extends TestCase
 
         $exitCode = (new ConsoleResultRenderer())->writePayload($output, [
             'status' => 'success',
-            'path' => 'packages/demo',
+            'path' => 'extensions/demo',
             'label' => 'Overview',
         ], pretty: true);
         $display = $output->fetch();
 
         self::assertSame(Command::SUCCESS, $exitCode);
         self::assertJson($display);
-        self::assertStringContainsString('"path": "packages/demo"', $display);
+        self::assertStringContainsString('"path": "extensions/demo"', $display);
     }
 
     public function testItMapsStatusExitCodes(): void

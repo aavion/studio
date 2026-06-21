@@ -7,7 +7,7 @@ namespace App\Core\Translation;
 use App\Core\Filesystem\PathGuard;
 use App\Core\Message\Message;
 use App\Core\Message\MessageLevel;
-use App\Core\Package\PackageAssetSyncPackage;
+use App\Core\Extension\ExtensionAssetSyncTarget;
 use App\Core\Translation\TranslationMessageCode;
 use App\Core\Translation\TranslationMessageKey;
 use App\Core\Workflow\WorkflowResult;
@@ -35,14 +35,14 @@ final readonly class TranslationCatalogueAggregator
     }
 
     /**
-     * @param iterable<PackageAssetSyncPackage> $packages
+     * @param iterable<ExtensionAssetSyncTarget> $extensions
      *
-     * @return WorkflowResult<array{packages: int, locales: int, files: int, targets: list<string>}>
+     * @return WorkflowResult<array{extensions: int, locales: int, files: int, targets: list<string>}>
      */
-    public function aggregate(iterable $packages): WorkflowResult
+    public function aggregate(iterable $extensions): WorkflowResult
     {
         try {
-            return $this->doAggregate($packages);
+            return $this->doAggregate($extensions);
         } catch (Throwable $error) {
             $context = [
                 'exception' => $error::class,
@@ -59,11 +59,11 @@ final readonly class TranslationCatalogueAggregator
     }
 
     /**
-     * @param iterable<PackageAssetSyncPackage> $packages
+     * @param iterable<ExtensionAssetSyncTarget> $extensions
      */
-    public function sourceHash(iterable $packages): string
+    public function sourceHash(iterable $extensions): string
     {
-        $sources = $this->sourceCollector->sources($this->sourceCollector->sortedPackages($packages));
+        $sources = $this->sourceCollector->sources($this->sourceCollector->sortedExtensions($extensions));
         $fingerprints = [];
 
         foreach ($sources as $source) {
@@ -78,20 +78,20 @@ final readonly class TranslationCatalogueAggregator
     }
 
     /**
-     * @param iterable<PackageAssetSyncPackage> $packages
+     * @param iterable<ExtensionAssetSyncTarget> $extensions
      *
-     * @return WorkflowResult<array{packages: int, locales: int, files: int, targets: list<string>}>
+     * @return WorkflowResult<array{extensions: int, locales: int, files: int, targets: list<string>}>
      */
-    private function doAggregate(iterable $packages): WorkflowResult
+    private function doAggregate(iterable $extensions): WorkflowResult
     {
-        $packages = $this->sourceCollector->sortedPackages($packages);
+        $extensions = $this->sourceCollector->sortedExtensions($extensions);
         ['catalogues' => $catalogues, 'files' => $files] = $this->catalogueMerger->mergeSources(
-            $this->sourceCollector->sources($packages),
+            $this->sourceCollector->sources($extensions),
         );
         $targets = $this->runtimeWriter->write($catalogues);
 
         $context = [
-            'packages' => count($packages),
+            'extensions' => count($extensions),
             'locales' => count($catalogues),
             'files' => $files,
             'targets' => $targets,
@@ -101,7 +101,7 @@ final readonly class TranslationCatalogueAggregator
             Message::create(TranslationMessageCode::TRANSLATION_AGGREGATE_COMPLETED, TranslationMessageKey::TRANSLATION_AGGREGATE_COMPLETED, [
                 '%files%' => (string) $files,
                 '%locales%' => (string) count($catalogues),
-                '%packages%' => (string) count($packages),
+                '%extensions%' => (string) count($extensions),
             ], $context, MessageLevel::Success),
         ]);
     }

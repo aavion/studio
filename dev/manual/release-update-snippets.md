@@ -3,18 +3,18 @@
 > **Status**: Draft  
 > **Updated**: 2026-05-23  
 > **Owner**: Core  
-> **Purpose:** Capture package update, release, checksum, rollback, and compatibility notes before the self-update workflow is implemented.  
+> **Purpose:** Capture extension update, release, checksum, rollback, and compatibility notes before the self-update workflow is implemented.  
 
 ## Overview
 
-Release and update behavior is intentionally deferred. These notes exist so early package, checksum, dry-run, and action-log primitives remain compatible with future updater needs.
+Release and update behavior is intentionally deferred. These notes exist so early extension, checksum, dry-run, and action-log primitives remain compatible with future updater needs.
 
-## Package integrity notes
+## Extension integrity notes
 
 Future release packages should likely include:
 
-- package manifest;
-- package type;
+- extension manifest;
+- extension type;
 - version;
 - required core version;
 - checksum map;
@@ -26,7 +26,7 @@ Future release packages should likely include:
 ## Update flow sketch
 
 ```text
-download or receive package
+download or receive extension
   -> verify signature
   -> verify checksums
   -> inspect manifest
@@ -47,7 +47,7 @@ Rollback scope needs a concrete policy:
 - files plus database migrations;
 - config changes;
 - assets/cache;
-- package-owned data.
+- extension-owned data.
 
 Avoid promising rollback until each operation type has an inverse action or snapshot strategy.
 
@@ -66,6 +66,6 @@ Compatibility checks may include:
 
 ## References
 
-- [Package lifecycle snippets](package-lifecycle-snippets.md)
+- [Extension lifecycle snippets](extension-lifecycle-snippets.md)
 - [Security guard snippets](security-guard-snippets.md)
 - [Self-update and release workflow draft](../draft/0.5.x-SelfUpdateReleaseWorkflow.md)

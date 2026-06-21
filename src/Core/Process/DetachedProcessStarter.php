@@ -12,8 +12,14 @@ final readonly class DetachedProcessStarter
      * @param list<string> $command
      * @param array<string, string|false> $environment
      */
-    public function start(array $command, string $cwd, string $outputPath, string $pidPath, array $environment = []): bool
-    {
+    public function start(
+        array $command,
+        string $cwd,
+        string $outputPath,
+        string $pidPath,
+        array $environment = [],
+        bool $closeInheritedFileDescriptors = false,
+    ): bool {
         $outputDirectory = dirname($outputPath);
         $pidDirectory = dirname($pidPath);
 
@@ -29,7 +35,8 @@ final readonly class DetachedProcessStarter
             return $this->startWindows($command, $cwd, $outputPath, $pidPath, $environment);
         }
 
-        $shellCommand = 'nohup '.implode(' ', array_map('escapeshellarg', $command))
+        $shellCommand = ($closeInheritedFileDescriptors ? $this->closeInheritedDescriptorsCommand() : '')
+            .'nohup '.implode(' ', array_map('escapeshellarg', $command))
             .' > '.escapeshellarg($outputPath).' 2>&1 < /dev/null & echo $! > '.escapeshellarg($pidPath);
 
         return $this->runShellCommand($shellCommand, $cwd, $environment);
@@ -72,5 +79,10 @@ final readonly class DetachedProcessStarter
     private function windowsArgument(string $argument): string
     {
         return '"'.str_replace('"', '\"', $argument).'"';
+    }
+
+    private function closeInheritedDescriptorsCommand(): string
+    {
+        return 'i=3; while [ "$i" -le 1024 ]; do eval "exec $i>&-"; i=$((i + 1)); done; ';
     }
 }

@@ -1,0 +1,90 @@
+{% extends '@backend/admin.html.twig' %}
+
+{% set extension = review.extension %}
+{% set action_key = review.action_key %}
+{% set plan = review.plan %}
+
+{% block title %}{{ ('admin.extensions.lifecycle.' ~ action_key ~ '.title')|trans({'%extension%': extension.label}) }}{% endblock %}
+
+{% block admin_sidebar %}
+    <nav aria-label="{{ 'ui.admin.navigation'|trans }}">
+        {% include '@backend/partials/navigation/_tree.html.twig' with {items: navigation} only %}
+    </nav>
+{% endblock %}
+
+{% block admin_body %}
+    {% include '@backend/admin/partials/_page-header.html.twig' with {
+        eyebrow: 'admin.extensions.title'|trans,
+        title: ('admin.extensions.lifecycle.' ~ action_key ~ '.title')|trans({'%extension%': extension.label}),
+    } only %}
+
+    <section class="system-panel">
+        <h2>{{ 'admin.extensions.lifecycle.review_title'|trans }}</h2>
+        <p class="system-muted">{{ ('admin.extensions.lifecycle.' ~ action_key ~ '.text')|trans({'%extension%': extension.label}) }}</p>
+        {% if action_key in ['purge', 'delete'] %}
+            <p class="system-alert system-alert-warning">{{ ('admin.extensions.lifecycle.' ~ action_key ~ '.warning')|trans({'%extension%': extension.label}) }}</p>
+        {% endif %}
+
+        {% if extension.immutable %}
+            <p class="system-alert system-alert-warning">{{ 'admin.extensions.lifecycle.immutable'|trans }}</p>
+        {% elseif plan and plan.success %}
+            {% set changes = plan.value.changes|default([]) %}
+            {% if changes is not empty %}
+                <table class="system-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">{{ 'admin.extensions.table.extension'|trans }}</th>
+                            <th scope="col">{{ 'admin.extensions.lifecycle.table.action'|trans }}</th>
+                            <th scope="col">{{ 'admin.extensions.table.status'|trans }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for change in changes %}
+                            <tr>
+                                <td><code>{{ change.extension }}</code></td>
+                                <td>{{ change.action }}</td>
+                                <td>{{ change.status }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="system-muted">{{ 'admin.extensions.lifecycle.no_changes'|trans }}</p>
+            {% endif %}
+
+            {% if lifecycle_mutable|default(false) %}
+                <form
+                    method="post"
+                    action="{{ app.request.pathInfo }}"
+                    data-controller="operation-overlay"
+                    data-action="submit->operation-overlay#submit"
+                    data-operation-overlay-enabled-value="true"
+                    data-operation-overlay-redirect-on-success-value="{{ action_key == 'purge' ? '/admin/extensions' : '/admin/extensions/' ~ (extension.extension_name|url_encode) }}"
+                >
+                    <input type="hidden" name="_form_id" value="extension-lifecycle-{{ review.action }}-{{ extension.extension_name }}">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('extension-lifecycle-' ~ review.action ~ '-' ~ extension.extension_name) }}">
+                    <button class="system-backend-button system-button-{{ action_key in ['purge', 'delete'] ? 'danger' : 'primary' }}" type="submit">
+                        {{ ('admin.extensions.lifecycle.' ~ action_key ~ '.submit')|trans }}
+                    </button>
+                    <a class="system-backend-button system-button-secondary" href="/admin/extensions/{{ extension.extension_name }}">
+                        {{ 'admin.extensions.lifecycle.cancel'|trans }}
+                    </a>
+                </form>
+            {% else %}
+                <p class="system-alert system-alert-warning">{{ 'admin.acl.read_only_action'|trans }}</p>
+                <a class="system-backend-button system-button-secondary" href="/admin/extensions/{{ extension.extension_name }}">
+                    {{ 'admin.extensions.lifecycle.cancel'|trans }}
+                </a>
+            {% endif %}
+        {% else %}
+            {% for issue in plan.issues|default([]) %}
+                <p class="system-alert system-alert-warning">{{ issue.translation_key|trans(issue.parameters) }}</p>
+            {% else %}
+                <p class="system-alert system-alert-warning">{{ 'admin.extensions.lifecycle.unavailable'|trans }}</p>
+            {% endfor %}
+            <a class="system-backend-button system-button-secondary" href="/admin/extensions/{{ extension.extension_name }}">
+                {{ 'admin.extensions.lifecycle.cancel'|trans }}
+            </a>
+        {% endif %}
+    </section>
+{% endblock %}

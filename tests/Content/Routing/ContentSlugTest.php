@@ -20,6 +20,13 @@ final class ContentSlugTest extends TestCase
         self::assertSame('project-42', (string) $slug);
     }
 
+    public function testItAcceptsDigitPrefixedContentSlugs(): void
+    {
+        $slug = ContentSlug::fromString('2026-report');
+
+        self::assertSame('2026-report', $slug->value());
+    }
+
     /**
      * @return iterable<string, array{string}>
      */
@@ -33,6 +40,7 @@ final class ContentSlugTest extends TestCase
         yield 'double hyphen' => ['project--page'];
         yield 'space' => ['project page'];
         yield 'umlaut' => ['über'];
+        yield 'too long' => [str_repeat('a', 61)];
     }
 
     #[DataProvider('invalidSlugs')]

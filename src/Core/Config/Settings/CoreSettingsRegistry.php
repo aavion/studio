@@ -18,13 +18,13 @@ use App\Security\AutoBan\AutoBanPolicy;
 use App\Security\RateLimit\RateLimitPolicyCatalogue;
 use App\Security\RateLimit\RateLimitProfile;
 use App\Security\UserFlowConfig;
-use App\View\SystemPackageMetadataProvider;
+use App\View\SystemExtensionMetadataProvider;
 
 final readonly class CoreSettingsRegistry
 {
     public function __construct(
         private TranslationLanguageCatalog $languages,
-        private SystemPackageMetadataProvider $systemPackageMetadata,
+        private SystemExtensionMetadataProvider $systemExtensionMetadata,
     ) {
     }
 
@@ -52,9 +52,9 @@ final readonly class CoreSettingsRegistry
             new CoreSettingDefinition('general', 'content.home_path', 'admin.settings.fields.home_path.label', '/home', ConfigValueType::String, validation: ['required' => true, 'pattern' => '^/.*$'], sortOrder: 50),
             new CoreSettingDefinition('general', 'site.footer_copyright', 'admin.settings.fields.footer_copyright.label', '', ConfigValueType::String, FormInputType::Textarea, help: 'admin.settings.fields.footer_copyright.help', validation: ['max_length' => 500], sortOrder: 60),
 
-            new CoreSettingDefinition('dashboard', 'admin.dashboard.widgets', 'admin.settings.fields.dashboard_widgets.label', ['system_status', 'packages', 'recent_activity'], ConfigValueType::Json, FormInputType::MultiSelect, options: [
+            new CoreSettingDefinition('dashboard', 'admin.dashboard.widgets', 'admin.settings.fields.dashboard_widgets.label', ['system_status', 'extensions', 'recent_activity'], ConfigValueType::Json, FormInputType::MultiSelect, options: [
                 'system_status' => 'admin.settings.options.dashboard.system_status',
-                'packages' => 'admin.settings.options.dashboard.packages',
+                'extensions' => 'admin.settings.options.dashboard.extensions',
                 'recent_activity' => 'admin.settings.options.dashboard.recent_activity',
                 'setup_warnings' => 'admin.settings.options.dashboard.setup_warnings',
             ], sortOrder: 10),
@@ -128,7 +128,7 @@ final readonly class CoreSettingsRegistry
                 ConfigAuditLogPolicy::CATEGORY_AUTHENTICATION => 'admin.settings.options.audit.authentication',
                 ConfigAuditLogPolicy::CATEGORY_BACKEND_ACTIONS => 'admin.settings.options.audit.backend_actions',
                 ConfigAuditLogPolicy::CATEGORY_OPERATIONS => 'admin.settings.options.audit.operations',
-                ConfigAuditLogPolicy::CATEGORY_PACKAGES => 'admin.settings.options.audit.packages',
+                ConfigAuditLogPolicy::CATEGORY_EXTENSIONS => 'admin.settings.options.audit.extensions',
                 ConfigAuditLogPolicy::CATEGORY_SETTINGS => 'admin.settings.options.audit.settings',
                 ConfigAuditLogPolicy::CATEGORY_OTHER => 'admin.settings.options.audit.other',
             ], metadata: [
@@ -187,15 +187,15 @@ final readonly class CoreSettingsRegistry
                 'access_feature' => 'admin.settings.api',
             ], sortOrder: 30),
 
-            new CoreSettingDefinition('packages', 'packages.update_check_interval', 'admin.settings.fields.package_update_interval.label', 'daily', ConfigValueType::String, FormInputType::Select, options: [
+            new CoreSettingDefinition('extensions', 'extensions.update_check_interval', 'admin.settings.fields.extension_update_interval.label', 'daily', ConfigValueType::String, FormInputType::Select, options: [
                 'manual' => 'admin.settings.options.interval.manual',
                 'daily' => 'admin.settings.options.interval.daily',
                 'weekly' => 'admin.settings.options.interval.weekly',
             ], validation: ['required' => true], metadata: [
-                'access_feature' => 'admin.settings.packages',
+                'access_feature' => 'admin.settings.extensions',
             ], sortOrder: 10),
-            new CoreSettingDefinition('packages', 'packages.auto_updates.enabled', 'admin.settings.fields.package_auto_updates.label', false, ConfigValueType::Boolean, metadata: [
-                'access_feature' => 'admin.settings.packages',
+            new CoreSettingDefinition('extensions', 'extensions.auto_updates.enabled', 'admin.settings.fields.extension_auto_updates.label', false, ConfigValueType::Boolean, metadata: [
+                'access_feature' => 'admin.settings.extensions',
             ], sortOrder: 20),
 
             new CoreSettingDefinition('scheduler', 'scheduler.enabled', 'admin.settings.fields.scheduler_enabled.label', true, ConfigValueType::Boolean, metadata: [
@@ -204,7 +204,7 @@ final readonly class CoreSettingsRegistry
             new CoreSettingDefinition('scheduler', 'scheduler.get_auth_enabled', 'admin.settings.fields.scheduler_get_auth_enabled.label', false, ConfigValueType::Boolean, help: 'admin.settings.fields.scheduler_get_auth_enabled.help', metadata: [
                 'access_feature' => 'admin.settings.scheduler',
             ], sortOrder: 20),
-            new CoreSettingDefinition('scheduler', 'scheduler.package_action_queues_enabled', 'admin.settings.fields.scheduler_package_action_queues_enabled.label', false, ConfigValueType::Boolean, help: 'admin.settings.fields.scheduler_package_action_queues_enabled.help', metadata: [
+            new CoreSettingDefinition('scheduler', 'scheduler.extension_action_queues_enabled', 'admin.settings.fields.scheduler_extension_action_queues_enabled.label', false, ConfigValueType::Boolean, help: 'admin.settings.fields.scheduler_extension_action_queues_enabled.help', metadata: [
                 'access_feature' => 'admin.settings.scheduler',
             ], sortOrder: 30),
             new CoreSettingDefinition('scheduler', 'scheduler.web_trigger_enabled', 'admin.settings.fields.scheduler_web_trigger_enabled.label', false, ConfigValueType::Boolean, help: 'admin.settings.fields.scheduler_web_trigger_enabled.help', metadata: [
@@ -229,6 +229,6 @@ final readonly class CoreSettingsRegistry
 
     private function appName(): string
     {
-        return $this->systemPackageMetadata->metadata()['name'];
+        return $this->systemExtensionMetadata->metadata()['name'];
     }
 }

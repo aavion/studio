@@ -207,8 +207,8 @@ final class AdminSchedulerController extends AbstractController
         }
 
         $enabled = '1' === $request->request->get('enabled');
-        if ($enabled && !$task->trusted() && SchedulerTaskType::ActionQueue === $task->type() && '1' !== $request->request->get('confirm_package_action_queue')) {
-            $this->alertKey('error', 'admin.scheduler.form.errors.package_action_queue_confirmation_required');
+        if ($enabled && !$task->trusted() && SchedulerTaskType::ActionQueue === $task->type() && '1' !== $request->request->get('confirm_extension_action_queue')) {
+            $this->alertKey('error', 'admin.scheduler.form.errors.extension_action_queue_confirmation_required');
 
             return;
         }

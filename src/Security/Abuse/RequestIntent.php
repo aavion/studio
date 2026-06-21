@@ -22,7 +22,7 @@ enum RequestIntent: string
     case PasswordReset = 'password_reset';
     case Contact = 'contact';
     case SetupApply = 'setup_apply';
-    case PackageAdminOperation = 'package_admin_operation';
+    case ExtensionAdminOperation = 'extension_admin_operation';
     case SettingsMutation = 'settings_mutation';
     case UserAclMutation = 'user_acl_mutation';
     case UploadArchiveValidation = 'upload_archive_validation';

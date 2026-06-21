@@ -19,19 +19,19 @@ final class FormSubmissionHandlerTest extends TestCase
             new FormFieldDefinition('title', 'Title', '', validation: ['required' => true, 'max_length' => 20]),
             new FormFieldDefinition('enabled', 'Enabled', false, ConfigValueType::Boolean),
             new FormFieldDefinition('sort_order', 'Sort order', 900, ConfigValueType::Integer, FormInputType::Number, validation: ['min' => 0, 'max' => 999]),
-            new FormFieldDefinition('widgets', 'Widgets', [], ConfigValueType::Json, FormInputType::MultiSelect, options: ['system_status' => 'System status', 'packages' => 'Packages']),
+            new FormFieldDefinition('widgets', 'Widgets', [], ConfigValueType::Json, FormInputType::MultiSelect, options: ['system_status' => 'System status', 'extensions' => 'Extensions']),
         ], [
             'title' => 'Example',
             'enabled' => '1',
             'sort_order' => '42',
-            'widgets' => ['system_status', 'packages'],
+            'widgets' => ['system_status', 'extensions'],
         ]);
 
         self::assertTrue($result->isValid());
         self::assertSame('Example', $result->value('title'));
         self::assertTrue($result->value('enabled'));
         self::assertSame(42, $result->value('sort_order'));
-        self::assertSame(['system_status', 'packages'], $result->value('widgets'));
+        self::assertSame(['system_status', 'extensions'], $result->value('widgets'));
     }
 
     public function testItCollectsValidationErrorsWithoutThrowing(): void

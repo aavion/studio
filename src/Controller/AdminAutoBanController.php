@@ -95,7 +95,7 @@ final class AdminAutoBanController extends AbstractController
             $this->alerts->addAlert(UiAlertTranslation::error('admin.auto_bans.reset.failed'), UiAlertDelivery::Direct);
         }
 
-        return $this->redirectToRoute('backend_admin_route', ['path' => 'settings/security']);
+        return $this->redirectToRoute('backend_admin_auto_bans');
     }
 
     private function accessResponse(Request $request, bool $mutable): ?Response
