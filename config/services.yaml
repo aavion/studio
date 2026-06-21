@@ -169,6 +169,10 @@ services:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
+    App\Core\Extension\ExtensionClassAutoloader:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
     App\Setup\SetupRunner:
         arguments:
             $projectDir: '%kernel.project_dir%'

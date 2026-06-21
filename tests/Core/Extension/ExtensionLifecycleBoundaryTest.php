@@ -294,6 +294,102 @@ final class ExtensionLifecycleBoundaryTest extends KernelTestCase
         self::assertSame('extensions.demo-module.demo', $registry->apiEndpointHandlers()[0]->apiEndpointHandlerKey());
     }
 
+    public function testExtensionPhpLoaderRegistersActiveExtensionNamespaceAutoloader(): void
+    {
+        $this->insertExtension('demo-module', ['module'], 'active', manifest: [
+            'EXTENSION_NAMESPACE' => 'DemoModuleRuntime',
+        ]);
+        $this->writeTestFile($this->projectDir, 'extensions/demo-module/src/SettingsFactory.php', <<<'PHP'
+            <?php
+
+            namespace DemoModuleRuntime;
+
+            use App\Core\Extension\Settings\ExtensionSettingDefinition;
+
+            final class SettingsFactory
+            {
+                public static function displayMode(string $extension): ExtensionSettingDefinition
+                {
+                    return new ExtensionSettingDefinition(
+                        $extension,
+                        'display.mode',
+                        'ext.demo-module.settings.display_mode.label',
+                        'autoloaded',
+                    );
+                }
+            }
+            PHP);
+        $this->writeTestFile($this->projectDir, 'extensions/demo-module/vendor/autoload.php', <<<'PHP'
+            <?php
+
+            file_put_contents(__DIR__.'/vendor-loaded.txt', 'yes');
+            PHP);
+        $this->writeTestFile($this->projectDir, 'extensions/demo-module/extension.php', <<<'PHP'
+            <?php
+
+            use App\Core\Extension\ExtensionContributionContext;
+            use App\Core\Extension\ExtensionContributions;
+            use DemoModuleRuntime\SettingsFactory;
+
+            return ExtensionContributions::create()
+                ->runtime(static fn (ExtensionContributionContext $context): array => [
+                    SettingsFactory::displayMode($context->extensionName()),
+                ]);
+            PHP);
+
+        $registry = new ExtensionRuntimeContributionRegistry();
+        $result = (new ExtensionPhpLoader(
+            new ActiveExtensionProvider($this->entityManager),
+            $this->entityManager,
+            $this->projectDir,
+            new NullWorkflowResultMessageReporter(),
+            runtimeContributions: $registry,
+        ))->loadActiveExtensions();
+
+        self::assertTrue($result->isSuccess());
+        self::assertSame('autoloaded', $registry->extensionSettings()[0]->defaultValue());
+        self::assertFileDoesNotExist($this->projectDir.'/extensions/demo-module/vendor/vendor-loaded.txt');
+    }
+
+    public function testExtensionPhpLoaderRejectsDuplicateActiveExtensionNamespaces(): void
+    {
+        $this->insertExtension('demo-module', ['module'], 'active', manifest: [
+            'EXTENSION_NAMESPACE' => 'SharedExtension',
+        ]);
+        $this->insertExtension('demo-addon', ['module'], 'active', manifest: [
+            'EXTENSION_NAMESPACE' => 'SharedExtension',
+        ]);
+        $this->writeTestFile($this->projectDir, 'extensions/demo-module/src/Thing.php', <<<'PHP'
+            <?php
+
+            namespace SharedExtension;
+
+            final class Thing {}
+            PHP);
+        $this->writeTestFile($this->projectDir, 'extensions/demo-module/extension.php', '<?php return [];');
+        $this->writeTestFile($this->projectDir, 'extensions/demo-addon/src/Thing.php', <<<'PHP'
+            <?php
+
+            namespace SharedExtension;
+
+            final class Thing {}
+            PHP);
+        $this->writeTestFile($this->projectDir, 'extensions/demo-addon/extension.php', '<?php return [];');
+
+        $result = (new ExtensionPhpLoader(
+            new ActiveExtensionProvider($this->entityManager),
+            $this->entityManager,
+            $this->projectDir,
+            new NullWorkflowResultMessageReporter(),
+            runtimeContributions: new ExtensionRuntimeContributionRegistry(),
+        ))->loadActiveExtensions();
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('active', $this->extensionStatus('demo-module'));
+        self::assertSame('faulty', $this->extensionStatus('demo-addon'));
+        self::assertSame('message.extension.lifecycle.php_load_failed', $result->firstIssue()?->translationKey());
+    }
+
     public function testExtensionPhpLoaderDoesNotKeepPartialRuntimeContributionsAfterFailure(): void
     {
         $this->insertExtension('broken-module', ['module'], 'active');
@@ -962,6 +1058,7 @@ final class ExtensionLifecycleBoundaryTest extends KernelTestCase
         string $status,
         string $path = '',
         string $dependencies = '[]',
+        array $manifest = [],
     ): void {
         $this->connection->insert('extension', [
             'uid' => $this->uuid(),
@@ -975,6 +1072,7 @@ final class ExtensionLifecycleBoundaryTest extends KernelTestCase
                 'registry_state' => 'available',
                 'manifest' => [
                     'EXTENSION_DEPENDENCIES' => $dependencies,
+                    ...$manifest,
                 ],
             ], JSON_THROW_ON_ERROR),
             'modified_at' => '2026-05-25 00:00:00',

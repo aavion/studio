@@ -31,6 +31,7 @@ final class ExtensionPhpLoader implements EventSubscriberInterface
      */
     private array $loadedExtensions = [];
     private ExtensionDependentDeactivator $dependentDeactivator;
+    private ExtensionClassAutoloader $classAutoloader;
 
     public function __construct(
         private readonly ActiveExtensionProviderInterface $extensionProvider,
@@ -44,8 +45,10 @@ final class ExtensionPhpLoader implements EventSubscriberInterface
         private readonly ?DatabaseReadyState $databaseReadyState = null,
         private readonly ?ExtensionContentSchemaImpact $contentSchemaImpact = null,
         ?ExtensionDependentDeactivator $dependentDeactivator = null,
+        ?ExtensionClassAutoloader $classAutoloader = null,
     ) {
         $this->dependentDeactivator = $dependentDeactivator ?? new ExtensionDependentDeactivator($entityManager);
+        $this->classAutoloader = $classAutoloader ?? new ExtensionClassAutoloader($projectDir, $pathGuard);
     }
 
     public static function getSubscribedEvents(): array
@@ -94,9 +97,31 @@ final class ExtensionPhpLoader implements EventSubscriberInterface
         $dependentChanges = [];
         $assetRebuildNeeded = false;
 
+        $this->classAutoloader->reset();
+
         foreach ($extensions as $extension) {
             if (ExtensionStatus::Active !== $extension->status()) {
                 $skipped[] = $extension->extensionName();
+                continue;
+            }
+
+            try {
+                $this->classAutoloader->register($extension);
+            } catch (Throwable $error) {
+                $issue = $this->phpLoadIssue($extension, $extension->path().'/src', $error);
+                $issues[] = $issue;
+                $messages[] = Message::exception(
+                    ExtensionMessageCode::EXTENSION_LIFECYCLE_PHP_LOAD_FAILED,
+                    ExtensionMessageKey::EXTENSION_LIFECYCLE_PHP_LOAD_FAILED,
+                    ['%extension%' => $extension->extensionName()],
+                    $issue->context(),
+                );
+                $fault = $this->markFaulty($extension, $extension->path().'/src', $error);
+                array_push($issues, ...$fault['issues']);
+                array_push($messages, ...$fault['messages']);
+                array_push($dependentChanges, ...$fault['dependent_changes']);
+                $assetRebuildNeeded = $assetRebuildNeeded || ([] === $fault['issues'] && ($fault['changed'] || [] !== $fault['dependent_changes']));
+
                 continue;
             }
 
