@@ -44,10 +44,10 @@ final class ViewTwigExtensionTest extends KernelTestCase
             '{% include "@frontend/partials/forms/fields/captcha.html.twig" with {form_id: "comment-form", name: "captcha"} only %}|{% include "@backend/editor/fields/richtext.html.twig" with {name: "body", value: "Hello"} only %}',
         )->render();
 
-        self::assertStringContainsString('name="captcha[provider]" value="none"', $html);
-        self::assertStringContainsString('name="captcha[fallback_rendered]" value="1"', $html);
-        self::assertStringContainsString('name="captcha[form_id]" value="comment-form"', $html);
         self::assertStringContainsString('name="_captcha_instance"', $html);
+        self::assertStringNotContainsString('name="captcha[provider]"', $html);
+        self::assertStringNotContainsString('name="captcha[fallback_rendered]"', $html);
+        self::assertStringNotContainsString('name="captcha[form_id]"', $html);
         self::assertStringNotContainsString('captcha[status]', $html);
         self::assertStringContainsString('|', $html);
         self::assertStringContainsString('name="body"', $html);
@@ -65,10 +65,10 @@ final class ViewTwigExtensionTest extends KernelTestCase
             '<twig:root:CaptchaField form_id="registration-form" workflow="user.registration" name="captcha" />',
         )->render();
 
-        self::assertStringContainsString('name="captcha[provider]" value="none"', $html);
-        self::assertStringContainsString('name="captcha[fallback_rendered]" value="1"', $html);
-        self::assertStringContainsString('name="captcha[form_id]" value="registration-form"', $html);
         self::assertStringContainsString('name="_captcha_instance"', $html);
+        self::assertStringNotContainsString('name="captcha[provider]"', $html);
+        self::assertStringNotContainsString('name="captcha[fallback_rendered]"', $html);
+        self::assertStringNotContainsString('name="captcha[form_id]"', $html);
         self::assertStringNotContainsString('captcha[status]', $html);
     }
 

@@ -45,8 +45,7 @@ final class CaptchaProviderBridgeTest extends TestCase
         self::assertNull($result->provider());
         self::assertFalse($result->visible());
         self::assertFalse($result->faulty());
-        self::assertTrue($result->context()['captcha']['fallback_rendered']);
-        self::assertSame('login-form', $result->context()['captcha']['form_id']);
+        self::assertSame([], $result->context());
     }
 
     public function testItDelegatesRenderAndValidationToTheActiveCaptchaProvider(): void
@@ -98,7 +97,6 @@ final class CaptchaProviderBridgeTest extends TestCase
 
         $result = $bridge->validate(new CaptchaValidationRequest('login', 'login-form', 'captcha', [
             'provider' => 'none',
-            'fallback_rendered' => '1',
             'status' => 'skipped',
         ]));
 

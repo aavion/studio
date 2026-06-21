@@ -1,6 +1,1 @@
-{% set captcha_context = captcha|default({}) %}
-{% set captcha_field_name = captcha_context.field_name|default(name|default('captcha')) %}
-{% set captcha_form_id = captcha_context.form_id|default(form_id|default('captcha-form')) %}
-<input type="hidden" name="{{ captcha_field_name }}[provider]" value="{{ captcha_context.provider|default('none') }}">
-<input type="hidden" name="{{ captcha_field_name }}[fallback_rendered]" value="1">
-<input type="hidden" name="{{ captcha_field_name }}[form_id]" value="{{ captcha_form_id }}">
+{# Native fallback intentionally renders no challenge or provider payload fields. #}

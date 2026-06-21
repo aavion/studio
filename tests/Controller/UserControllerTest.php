@@ -348,10 +348,10 @@ final class UserControllerTest extends WebTestCase
 
             self::assertResponseIsSuccessful();
             self::assertSelectorExists('form#user-registration-form[method="post"]');
-            self::assertSelectorExists('input[name="captcha[provider]"][value="none"]');
-            self::assertSelectorExists('input[name="captcha[fallback_rendered]"][value="1"]');
-            self::assertSelectorExists('input[name="captcha[form_id]"][value="user-registration-form"]');
             self::assertSelectorExists('input[name="_captcha_instance"]');
+            self::assertSelectorNotExists('input[name="captcha[provider]"]');
+            self::assertSelectorNotExists('input[name="captcha[fallback_rendered]"]');
+            self::assertSelectorNotExists('input[name="captcha[form_id]"]');
             self::assertSelectorNotExists('input[name="captcha[status]"][value="skipped"]');
         } finally {
             $config->set('user.registration.mode', 'disabled');

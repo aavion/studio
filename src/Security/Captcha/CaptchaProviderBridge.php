@@ -29,7 +29,7 @@ final readonly class CaptchaProviderBridge
     {
         $provider = $this->runtimeContributions->provider(ExtensionScope::CaptchaProvider);
         if (null === $provider) {
-            return CaptchaRenderResult::fallback($this->fallbackContext($context));
+            return CaptchaRenderResult::fallback();
         }
 
         try {
@@ -75,22 +75,6 @@ final readonly class CaptchaProviderBridge
         }
 
         return $this->invalidValidationResult($provider->extensionName(), $request, $result);
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function fallbackContext(CaptchaRenderContext $context): array
-    {
-        return [
-            'captcha' => [
-                'provider' => 'none',
-                'workflow' => $context->workflow(),
-                'form_id' => $context->formId(),
-                'field_name' => $context->fieldName(),
-                'fallback_rendered' => true,
-            ],
-        ];
     }
 
     private function invalidRenderResult(string $provider, CaptchaRenderContext $context, mixed $result): CaptchaRenderResult
