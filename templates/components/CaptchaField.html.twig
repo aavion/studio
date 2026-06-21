@@ -1,0 +1,12 @@
+{% set captcha_form_id = form_id|default('captcha-form') %}
+{% set captcha_field_name = name|default('captcha') %}
+{% include '@provider/captcha/field.html.twig' with {
+    captcha: {
+        provider: 'none',
+        workflow: workflow|default('form'),
+        form_id: captcha_form_id,
+        field_name: captcha_field_name,
+    },
+    form_id: captcha_form_id,
+    name: captcha_field_name,
+} only %}

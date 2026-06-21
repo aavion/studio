@@ -39,11 +39,9 @@
                 <input type="hidden" name="_auto_ban_recovery_token" value="{{ csrf_token('auto_ban_recovery_login') }}">
             {% endif %}
             <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
-            {% include '@frontend/partials/forms/fields/captcha.html.twig' with {
-                form_id: 'user-login-form',
-                workflow: 'user.login',
-                name: 'captcha',
-            } only %}
+            {% if auto_ban_recovery_login|default(false) %}
+                <twig:root:CaptchaField form_id="user-login-form" workflow="user.login.recovery" name="captcha" />
+            {% endif %}
             {% include '@frontend/partials/forms/fields/submit.html.twig' with {label: 'ui.user.login.submit'|trans} only %}
         </form>
         {% set login_actions = [

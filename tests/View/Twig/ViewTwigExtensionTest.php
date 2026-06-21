@@ -55,6 +55,21 @@ final class ViewTwigExtensionTest extends KernelTestCase
         self::assertStringContainsString('Hello', $html);
     }
 
+    public function testItRendersRootCaptchaFieldComponent(): void
+    {
+        self::bootKernel();
+
+        $twig = self::getContainer()->get(Environment::class);
+        $html = $twig->createTemplate(
+            '<twig:root:CaptchaField form_id="registration-form" workflow="user.registration" name="captcha" />',
+        )->render();
+
+        self::assertStringContainsString('name="captcha[provider]" value="none"', $html);
+        self::assertStringContainsString('name="captcha[fallback_rendered]" value="1"', $html);
+        self::assertStringContainsString('name="captcha[form_id]" value="registration-form"', $html);
+        self::assertStringNotContainsString('captcha[status]', $html);
+    }
+
     public function testItRendersCodemirrorSyntaxProviderAliases(): void
     {
         self::bootKernel();

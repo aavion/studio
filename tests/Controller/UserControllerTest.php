@@ -334,6 +334,27 @@ final class UserControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Accept invitation');
         self::assertSelectorExists('input[name="username"]');
+        self::assertSelectorNotExists('input[name="captcha[provider]"]');
+    }
+
+    public function testRegistrationFormRendersCaptchaField(): void
+    {
+        $client = self::createClient();
+        $config = self::getContainer()->get(Config::class);
+        $config->set('user.registration.mode', 'auto_approval');
+
+        try {
+            $client->request('GET', '/user/register');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorExists('form#user-registration-form[method="post"]');
+            self::assertSelectorExists('input[name="captcha[provider]"][value="none"]');
+            self::assertSelectorExists('input[name="captcha[fallback_rendered]"][value="1"]');
+            self::assertSelectorExists('input[name="captcha[form_id]"][value="user-registration-form"]');
+            self::assertSelectorNotExists('input[name="captcha[status]"][value="skipped"]');
+        } finally {
+            $config->set('user.registration.mode', 'disabled');
+        }
     }
 
     public function testPasswordResetTokenRendersPasswordPolicyMeter(): void
