@@ -36,6 +36,8 @@ setup:
     next: 'Continue'
   message:
     title: 'Setup route'
+  operation:
+    apply: 'Setup apply'
   preflight:
     title: 'Preflight checks'
     text: 'Setup checks the essentials before asking for database details.'

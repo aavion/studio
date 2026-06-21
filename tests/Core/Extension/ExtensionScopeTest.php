@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Core\Extension;
 
+use App\Core\Extension\ExtensionMessageKey;
 use App\Core\Extension\ExtensionScope;
-use InvalidArgumentException;
+use App\Core\Message\MessageException;
 use PHPUnit\Framework\TestCase;
 
 final class ExtensionScopeTest extends TestCase
@@ -43,8 +44,8 @@ final class ExtensionScopeTest extends TestCase
 
     public function testItRequiresAtLeastOneIdentityScope(): void
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Extension scope list must include module, a theme scope, or a provider scope.');
+        $this->expectException(MessageException::class);
+        $this->expectExceptionMessage(ExtensionMessageKey::EXTENSION_SCOPE_IDENTITY_MISSING);
 
         ExtensionScope::fromManifestValue('[system-template, api, database, content-schema, scheduler-tasks, operations]');
     }
@@ -83,8 +84,8 @@ final class ExtensionScopeTest extends TestCase
 
     public function testItRejectsUnknownScopes(): void
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Invalid extension scope "unknown".');
+        $this->expectException(MessageException::class);
+        $this->expectExceptionMessage(ExtensionMessageKey::EXTENSION_SCOPE_INVALID);
 
         ExtensionScope::fromManifestValue('[module, unknown]');
     }

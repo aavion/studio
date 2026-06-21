@@ -13,6 +13,7 @@ use App\Core\Process\PhpCliBinaryManager;
 use App\Core\Workflow\WorkflowResult;
 use App\Setup\SetupLiveOperationPayloadProtector;
 use Symfony\Component\HttpKernel\KernelInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use Throwable;
 
 final readonly class LiveOperationStarter
@@ -23,6 +24,7 @@ final readonly class LiveOperationStarter
         private SetupLiveOperationPayloadProtector $setupPayloadProtector,
         private PhpCliBinaryManager $phpCliBinaryManager,
         private DetachedProcessStarter $detachedProcessStarter,
+        private TranslatorInterface $translator,
     ) {
     }
 
@@ -79,6 +81,17 @@ final readonly class LiveOperationStarter
                 ['operation' => $operation, 'operation_id' => $run['operation_id']],
             ),
         ]);
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     * @param array<string, mixed> $labelParameters
+     *
+     * @return WorkflowResult<array{operation_id: string, token: string, operation: string, label: string, status: string}>
+     */
+    public function startTranslated(string $operation, array $payload, string $labelKey, array $labelParameters = []): WorkflowResult
+    {
+        return $this->start($operation, $payload, $this->translator->trans($labelKey, $labelParameters));
     }
 
     private function startProcess(string $operation, string $operationId, string $token): void

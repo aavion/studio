@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\View\Alert;
 
+use App\Core\Message\MessageException;
 use App\Entity\AclGroup;
 use App\Entity\UserAccount;
 use App\Security\UserRole;
-use InvalidArgumentException;
+use App\View\ViewMessageKey;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -39,7 +40,11 @@ final readonly class UiAlertTopicFactory
         $roleValue = $role instanceof UserRole ? $role->value : trim($role);
         $role = UserRole::tryFrom($roleValue);
         if (!$role instanceof UserRole || UserRole::Public === $role) {
-            throw new InvalidArgumentException('UI alert role topics require a non-public user role value.');
+            throw MessageException::invalidArgument(ViewMessageKey::VIEW_UI_ALERT_TOPIC_ROLE_INVALID, [
+                '%role%' => $roleValue,
+            ], [
+                'role' => $roleValue,
+            ]);
         }
 
         return $this->topic('role', $role->value);
@@ -49,7 +54,11 @@ final readonly class UiAlertTopicFactory
     {
         $identity = strtolower($group instanceof AclGroup ? $group->uid() : trim($group));
         if (1 !== preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $identity)) {
-            throw new InvalidArgumentException('UI alert ACL group topics require a group UID.');
+            throw MessageException::invalidArgument(ViewMessageKey::VIEW_UI_ALERT_TOPIC_ACL_GROUP_INVALID, [
+                '%group%' => $identity,
+            ], [
+                'group' => $identity,
+            ]);
         }
 
         return $this->topic('acl_group', $identity);
@@ -120,7 +129,11 @@ final readonly class UiAlertTopicFactory
             return strtolower($resolvedUid);
         }
 
-        throw new InvalidArgumentException('UI alert user topics require an account UID or resolvable username.');
+        throw MessageException::invalidArgument(ViewMessageKey::VIEW_UI_ALERT_TOPIC_USER_INVALID, [
+            '%user%' => $identity,
+        ], [
+            'user' => $identity,
+        ]);
     }
 
     /**

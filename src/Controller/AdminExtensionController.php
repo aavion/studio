@@ -106,13 +106,13 @@ final class AdminExtensionController extends AbstractController
             return $this->redirect('/admin/extensions');
         }
 
-        $result = $this->liveOperationStarter->start(
+        $result = $this->liveOperationStarter->startTranslated(
             LiveOperationQueueFactory::EXTENSION_INSTALL_VERIFY,
             [
                 'install_id' => $stage->value()['install_id'],
                 'trigger' => 'admin_ui',
             ],
-            'Verify extension ZIP',
+            'admin.extensions.install.live_label',
         );
         $this->auditResult('extension.install_verify_started', $result, [
             'operation' => LiveOperationQueueFactory::EXTENSION_INSTALL_VERIFY,
@@ -265,11 +265,11 @@ final class AdminExtensionController extends AbstractController
             return $this->liveOperationResponder->render($this->accessDeniedResult('extension_lifecycle_'.$action));
         }
 
-        $label = sprintf('Extension %s %s', $extensionName, $action);
-        $result = $this->liveOperationStarter->start(
+        $result = $this->liveOperationStarter->startTranslated(
             LiveOperationQueueFactory::EXTENSION_LIFECYCLE,
             ['extension' => $extensionName, 'action' => $action, 'trigger' => 'admin_ui'],
-            $label,
+            'admin.extensions.lifecycle.live_label',
+            ['%extension%' => $extensionName, '%action%' => $action],
         );
         $this->auditResult('extension.lifecycle.'.$action, $result, [
             'extension' => $extensionName,
@@ -308,10 +308,11 @@ final class AdminExtensionController extends AbstractController
             return $live ? $this->liveOperationResponder->render($result) : $this->redirect('/admin/extensions/'.rawurlencode($extensionName));
         }
 
-        $result = $this->liveOperationStarter->start(
+        $result = $this->liveOperationStarter->startTranslated(
             LiveOperationQueueFactory::EXTENSION_OPERATION,
             ['extension' => $extensionName, 'target' => $target, 'trigger' => 'admin_ui'],
-            'Extension operation '.$target,
+            'admin.extensions.operation.live_label',
+            ['%target%' => $target],
         );
         $this->auditResult('extension.operation', $result, [
             'extension' => $extensionName,

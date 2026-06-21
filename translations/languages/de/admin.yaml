@@ -80,8 +80,11 @@ admin:
       settings: 'Einstellungen'
       no_settings: 'Keine Einstellungen'
       none: 'Keine Aktionen'
+    operation:
+      live_label: 'Extension-Operation %target%'
     install:
       label: 'Installieren'
+      live_label: 'Extension-ZIP prüfen'
       title: 'Extension installieren'
       text: 'Lade ein Extension-ZIP hoch. Das Extension-Manifest wird zuerst geprüft und die finale Installation wartet im ActionLog auf Bestätigung.'
       file: 'Extension-ZIP'
@@ -101,6 +104,7 @@ admin:
       source: 'Quelle'
       readme_title: 'README'
     lifecycle:
+      live_label: 'Extension %extension% %action%'
       review_title: 'Änderungen prüfen'
       immutable: 'Diese System-Extension ist unveränderlich und kann ihren Lifecycle-State nicht ändern.'
       unavailable: 'Diese Lifecycle-Aktion ist nicht verfügbar.'
@@ -315,6 +319,8 @@ admin:
     requested_at: 'Angefragt %datetime%'
     role: 'Rolle: %role%'
     groups: 'Gruppen: %groups%'
+    operation:
+      live_label: 'ACL-Gruppe %group% %action%'
     filters:
       title: 'Filter'
       label: 'Review-Filter'

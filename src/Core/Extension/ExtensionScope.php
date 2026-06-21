@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Extension;
 
-use InvalidArgumentException;
+use App\Core\Message\MessageException;
 
 enum ExtensionScope: string
 {
@@ -31,18 +31,22 @@ enum ExtensionScope: string
         foreach ($values as $scope) {
             $case = self::tryFrom($scope);
             if (null === $case) {
-                throw new InvalidArgumentException(sprintf('Invalid extension scope "%s".', $scope));
+                throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_SCOPE_INVALID, [
+                    '%scope%' => $scope,
+                ], [
+                    'scope' => $scope,
+                ]);
             }
 
             $scopes[$case->value] = $case;
         }
 
         if ([] === $scopes) {
-            throw new InvalidArgumentException('Extension scope list must not be empty.');
+            throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_SCOPE_LIST_EMPTY);
         }
 
         if (!self::hasIdentityScope($scopes)) {
-            throw new InvalidArgumentException('Extension scope list must include module, a theme scope, or a provider scope.');
+            throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_SCOPE_IDENTITY_MISSING);
         }
 
         return array_values($scopes);
@@ -101,7 +105,7 @@ enum ExtensionScope: string
 
         if (str_starts_with($value, '[') || str_ends_with($value, ']')) {
             if (!str_starts_with($value, '[') || !str_ends_with($value, ']')) {
-                throw new InvalidArgumentException('Extension scope list must use matching square brackets.');
+                throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_SCOPE_LIST_INVALID);
             }
 
             $value = substr($value, 1, -1);

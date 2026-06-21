@@ -54,7 +54,7 @@ Do not copy the PR checklist into this skill as a second source of truth. Always
 
 ## Output
 
-Return a PR-ready note based on the project template:
+Return a PR-ready note based on the project template. Always put the PR-ready note itself in one Markdown code block so it can be copied directly into GitHub:
 
 ```md
 ## Summary

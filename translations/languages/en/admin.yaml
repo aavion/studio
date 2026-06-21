@@ -80,8 +80,11 @@ admin:
       settings: 'Settings'
       no_settings: 'No settings'
       none: 'No actions'
+    operation:
+      live_label: 'Extension operation %target%'
     install:
       label: 'Install'
+      live_label: 'Verify extension ZIP'
       title: 'Install extension'
       text: 'Upload an extension ZIP. The extension manifest is verified first and the final installation waits for confirmation in the ActionLog.'
       file: 'Extension ZIP'
@@ -101,6 +104,7 @@ admin:
       source: 'Source'
       readme_title: 'README'
     lifecycle:
+      live_label: 'Extension %extension% %action%'
       review_title: 'Review changes'
       immutable: 'This system extension is immutable and cannot change lifecycle state.'
       unavailable: 'This lifecycle action is not available.'
@@ -315,6 +319,8 @@ admin:
     requested_at: 'Requested %datetime%'
     role: 'Role: %role%'
     groups: 'Groups: %groups%'
+    operation:
+      live_label: 'ACL group %group% %action%'
     filters:
       title: 'Filters'
       label: 'Review filters'

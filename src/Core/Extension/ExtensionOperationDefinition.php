@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Core\Extension;
 
+use App\Core\Message\MessageException;
 use App\Core\Validation\IdentifierSpec;
-use InvalidArgumentException;
 
 final readonly class ExtensionOperationDefinition
 {
@@ -16,11 +16,19 @@ final readonly class ExtensionOperationDefinition
         private ?string $target = null,
     ) {
         if (!IdentifierSpec::isMachineIdentifier($identifier, minLength: 3)) {
-            throw new InvalidArgumentException(sprintf('Invalid extension operation identifier "%s".', $identifier));
+            throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_OPERATION_IDENTIFIER_INVALID, [
+                '%identifier%' => $identifier,
+            ], [
+                'identifier' => $identifier,
+            ]);
         }
 
         if (null !== $target && !IdentifierSpec::isMachineIdentifier($target, minLength: 3)) {
-            throw new InvalidArgumentException(sprintf('Invalid extension operation target "%s".', $target));
+            throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_OPERATION_TARGET_INVALID, [
+                '%target%' => $target,
+            ], [
+                'target' => $target,
+            ]);
         }
     }
 

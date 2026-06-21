@@ -308,7 +308,7 @@ final readonly class UserGroupApiHandler implements ApiEndpointHandlerInterface
             return $this->validationFailed($request, ['__actor' => ['admin.users.form.errors.invalid']], ['group_identifier' => $group->identifier()]);
         }
 
-        $result = $this->liveOperations->start(
+        $result = $this->liveOperations->startTranslated(
             LiveOperationQueueFactory::ACL_GROUP_APPLY,
             [
                 'group_uid' => $group->uid(),
@@ -317,7 +317,8 @@ final readonly class UserGroupApiHandler implements ApiEndpointHandlerInterface
                 'actor_uid' => $actorUid,
                 'trigger' => 'api',
             ],
-            sprintf('ACL group %s %s', $group->identifier(), $action),
+            'admin.groups.operation.live_label',
+            ['%group%' => $group->identifier(), '%action%' => $action],
         );
         if (!$result->isSuccess() || !is_array($result->value())) {
             return $this->validationFailed($request, ['__operation' => [$result->firstIssue()?->translationKey() ?? 'message.operation.failed']], [

@@ -70,6 +70,9 @@ final readonly class ExtensionAlertFacade
     private function translationKey(string $extensionName, string $message): string
     {
         $message = trim($message);
+        if ('' === $message) {
+            return ExtensionMessageKey::EXTENSION_RUNTIME_ALERT_FALLBACK;
+        }
 
         return ExtensionTranslationKey::isOwnedBy($extensionName, $message)
             ? $message
@@ -83,11 +86,15 @@ final readonly class ExtensionAlertFacade
      */
     private function parameters(string $message, array $parameters, string $translationKey): array
     {
+        if ($translationKey === ExtensionMessageKey::EXTENSION_RUNTIME_ALERT_FALLBACK) {
+            return $parameters;
+        }
+
         if ($translationKey !== ExtensionMessageKey::EXTENSION_RUNTIME_LOG) {
             return $parameters;
         }
 
-        return [...$parameters, '%message%' => '' !== trim($message) ? trim($message) : 'Extension alert'];
+        return [...$parameters, '%message%' => trim($message)];
     }
 
     /**
