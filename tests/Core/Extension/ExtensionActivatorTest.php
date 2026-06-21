@@ -284,7 +284,7 @@ PHP);
     public function testActivatedExtensionSchedulerTaskCanBeRegisteredAndEnabled(): void
     {
         $this->temporaryProjectDir = $this->createTemporaryDirectory('system-extension-scheduler');
-        $this->insertExtension('demo-module', ['module'], 'inactive');
+        $this->insertExtension('demo-module', ['module', 'scheduler-tasks'], 'inactive');
         $this->writeTestFile($this->temporaryProjectDir, 'extensions/demo-module/extension.php', <<<'PHP'
 <?php
 
