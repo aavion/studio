@@ -40,3 +40,10 @@ if (!function_exists('extension_settings_get')) {
         return ExtensionRuntime::settingsGet($key, $default);
     }
 }
+
+if (!function_exists('extension_asset')) {
+    function extension_asset(string $path, bool $private = false): ?string
+    {
+        return ExtensionRuntime::asset($path, $private);
+    }
+}
