@@ -21,7 +21,7 @@ Codex may create local commits for this branch when each commit has a clear them
 - `EXTENSION_NAMESPACE` only enables PSR-4 class loading for active, valid extensions below the declared namespace and child namespaces. It does not imply container service discovery.
 - Extension-local dependencies are extension-owned. Studio must not automatically register `extensions/<slug>/vendor/autoload.php`.
 - No automatic service discovery does not prevent extensions from instantiating and using their own extension-owned service objects internally.
-- No automatic vendor autoload registration does not prevent extensions from manually bootstrapping extension-owned dependencies when the PHP policy boundary supports it.
+- No automatic vendor autoload registration does not prevent extensions from using extension-owned dependencies through documented narrow facades when the PHP policy boundary supports it.
 - `extension.php` remains the explicit contribution entry point.
 - Extension contributions may be static values or explicit lazy contribution factories so extensions can generate dynamic contributions from extension-owned variables, classes, and callables.
 - Lazy callables must be wrapped in typed contribution objects with a clear phase and contract. Avoid accepting ambiguous naked callables whose intent cannot be determined.
@@ -109,13 +109,15 @@ Keep blocking:
 
 Allow by design:
 
-- Extension-owned PHP classes, functions, constants, private files, caches, internal includes, and local dependencies when the extension owns the bootstrap risk.
+- Extension-owned PHP classes, functions, constants, private files, caches, and local dependencies when the extension owns the package risk.
 - Extension-owned HTTP/API/live handlers through documented endpoint contributions.
 - Extension-owned filesystem reads for private extension assets and state where they do not publish or modify core-owned paths.
 - External HTTP calls by provider/runtime code when the owning contract needs them, for example ReCaptcha verification, with safe diagnostics and timeout expectations documented by that provider.
 - Symfony and Studio class imports for public interfaces and facades exposed by documented contracts.
 
-The current static PHP policy still blocks language-level includes and many direct filesystem or network functions. The implementation must intentionally reconcile that policy with the self-contained extension goal before captcha providers depend on private PHP files, private assets, local caches, or external verification calls. Because a token scanner cannot reliably prove every native filesystem or network target is extension-owned, prefer documented context helpers or narrow facades where the core needs enforceable ownership checks. If native includes or direct local file reads are allowed, cover absolute paths, `..` traversal, symlink-like escapes where practical, inactive extensions, and public asset/template boundary escapes with tests.
+The current static PHP policy still blocks language-level includes and many direct filesystem or network functions. Extension-local Composer autoloaders are not registered automatically. When an active extension needs a shipped Composer package, it may call the public `require_vendor('vendor/package')` facade from extension-owned PHP. The facade validates the caller and package name, returns `true` when the package is already available through the core Composer runtime or a previously loaded extension package, otherwise reads only that extension's `vendor/composer/installed.json` metadata and registers PSR-4 prefixes for the requested package. It rejects PSR-4 prefixes that overlap already registered Composer prefixes so extension-local packages cannot spoof core/vendor namespaces. It never executes `extensions/<slug>/vendor/autoload.php`, Composer `files`, scripts, or non-PSR-4 autoload sections, and returns `false` for missing, malformed, cross-boundary, or non-extension calls so extension code can degrade explicitly.
+
+The implementation must intentionally reconcile the static policy with the self-contained extension goal before captcha providers depend on private PHP files, private assets, local caches, or external verification calls. Because a token scanner cannot reliably prove every native filesystem or network target is extension-owned, prefer documented context helpers or narrow facades where the core needs enforceable ownership checks. If native includes or direct local file reads are allowed, cover absolute paths, `..` traversal, symlink-like escapes where practical, inactive extensions, and public asset/template boundary escapes with tests.
 
 If a future review finding requires tightening this policy, prefer a narrow blacklist or contribution guard at the central boundary over a broad whitelist that would make creative extensions impossible.
 
@@ -381,7 +383,7 @@ At every checkpoint and again before opening review, verify these edges explicit
 - Test runtime and activation phases independently.
 - Test runtime boot once-per-runtime-loader behavior and idempotency expectations.
 - Test active namespace autoloading and inactive/faulty/removed exclusions.
-- Test extension-local `vendor/autoload.php` is not registered automatically.
+- Test extension-local `vendor/autoload.php` is not registered automatically and `require_vendor()` loads only the requested package's PSR-4 prefixes without executing Composer `files`.
 - Test event listener contributions against allowed and disallowed events.
 - Test listener priority ordering where documented.
 - Test listener failures become structured diagnostics and preserve extension ownership.
@@ -416,7 +418,7 @@ At every checkpoint and again before opening review, verify these edges explicit
 - No IconCaptcha assets, JavaScript, CSS, challenge generation, refresh endpoint, or provider-specific payload schema.
 - No third-party captcha provider.
 - No automatic Symfony service registration for extension classes.
-- No automatic extension-local Composer/vendor autoload registration.
+- No automatic extension-local Composer/vendor autoload registration; extension-owned packages must use `require_vendor()` or extension-owned code paths.
 - No ban on extension-owned internal service objects or manually bootstrapped extension-owned dependencies.
 - No multi-active provider selection in the first implementation.
 - No arbitrary Symfony event subscription surface for extensions.

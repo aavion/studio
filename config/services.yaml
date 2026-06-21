@@ -89,6 +89,7 @@ services:
             - '../src/**/*Capability.php'
             - '../src/**/*Change.php'
             - '../src/Api/Http/ApiRequestContext.php'
+            - '../src/Core/Extension/extension_functions.php'
             - '../src/**/*Contribution.php'
             - '../src/**/*Definition.php'
             - '../src/**/*Descriptor.php'

@@ -123,6 +123,9 @@
             "tests/Fixtures/",
             "extensions/"
         ],
+        "files": [
+            "src/Core/Extension/extension_functions.php"
+        ],
         "psr-4": {
             "App\\": "src/"
         }
