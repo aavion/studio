@@ -6,6 +6,8 @@ namespace App\Core\Event;
 
 use App\Core\Event\EventMessageCode;
 use App\Core\Event\EventMessageKey;
+use App\Core\Extension\ExtensionEventListenerDispatcher;
+use App\Core\Extension\ExtensionEventListenerFailedException;
 use App\Core\Message\Message;
 use App\Core\Message\MessageLevel;
 use App\Core\Message\WorkflowResultMessageReporterInterface;
@@ -21,6 +23,7 @@ final readonly class PublicEventDispatcher
         private PublicEventHookRegistry $hookRegistry,
         private WorkflowResultMessageReporterInterface $messageReporter,
         private ?SystemDebugCollector $debugCollector = null,
+        private ?ExtensionEventListenerDispatcher $extensionListenerDispatcher = null,
     ) {
     }
 
@@ -103,6 +106,43 @@ final readonly class PublicEventDispatcher
             ]);
 
             $this->reportHookFailure($event, $registeredHooks[$eventClass], $issue, $error, $context, $extension);
+            $this->reportFailure([$issue], $eventClass, $context, $extension);
+
+            return PublicEventDispatchResult::failed($event, [$issue]);
+        }
+
+        try {
+            $this->extensionListenerDispatcher?->dispatch($event, $registeredHooks[$eventClass]);
+        } catch (ExtensionEventListenerFailedException $error) {
+            $extension = $error->registration()->extensionName();
+            $previous = $error->getPrevious() ?? $error;
+            $this->debugCollector?->recordHook(
+                $eventClass,
+                $registeredHooks[$eventClass]->domain(),
+                $registeredHooks[$eventClass]->mode()->value,
+                $registeredHooks[$eventClass]->mutable(),
+                'failed',
+                $context,
+                $extension,
+                1,
+            );
+
+            $issue = Message::exception(EventMessageCode::EVENT_HOOK_LISTENER_FAILED, EventMessageKey::EVENT_HOOK_LISTENER_FAILED, [
+                '%event%' => $eventClass,
+            ], [
+                'event' => $eventClass,
+                'domain' => $registeredHooks[$eventClass]->domain(),
+                'exception' => $previous::class,
+                'message' => $previous->getMessage(),
+                'context' => $context,
+                'extension' => $extension,
+                'listener' => 'extension',
+            ]);
+
+            $this->reportHookFailure($event, $registeredHooks[$eventClass], $issue, $previous, [
+                ...$context,
+                'extension_listener' => $extension,
+            ], null);
             $this->reportFailure([$issue], $eventClass, $context, $extension);
 
             return PublicEventDispatchResult::failed($event, [$issue]);

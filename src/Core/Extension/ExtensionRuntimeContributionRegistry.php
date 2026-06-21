@@ -64,6 +64,13 @@ final class ExtensionRuntimeContributionRegistry implements StaticViewInjectionP
 
     private array $contentSchemaDefinitions = [];
 
+    /**
+     * @var array<class-string, list<ExtensionEventListenerRegistration>>
+     */
+    private array $eventListeners = [];
+
+    private int $eventListenerSequence = 0;
+
     public function __clone(): void
     {
         $this->viewContributions = clone $this->viewContributions;
@@ -173,6 +180,12 @@ final class ExtensionRuntimeContributionRegistry implements StaticViewInjectionP
             return;
         }
 
+        if ($contribution instanceof ExtensionEventListenerContribution) {
+            $this->addEventListenerContribution($extension, $contribution);
+
+            return;
+        }
+
         $schedulerProviderHandled = false;
 
         if ($contribution instanceof SchedulerCallableProviderInterface) {
@@ -199,6 +212,8 @@ final class ExtensionRuntimeContributionRegistry implements StaticViewInjectionP
         $this->cookieConsentDefinitions = $registry->cookieConsentDefinitions;
         $this->databaseTables = $registry->databaseTables;
         $this->contentSchemaDefinitions = $registry->contentSchemaDefinitions;
+        $this->eventListeners = $registry->eventListeners;
+        $this->eventListenerSequence = $registry->eventListenerSequence;
     }
 
     private function addSchedulerTaskDefinition(Extension $extension, SchedulerTaskDefinition $definition): void
@@ -222,6 +237,18 @@ final class ExtensionRuntimeContributionRegistry implements StaticViewInjectionP
     {
         $this->guard()->assertContentSchema($extension, $definition);
         $this->contentSchemaDefinitions[] = $definition;
+    }
+
+    private function addEventListenerContribution(Extension $extension, ExtensionEventListenerContribution $contribution): void
+    {
+        $this->guard()->assertEventListenerContribution($extension, $contribution);
+        $registration = new ExtensionEventListenerRegistration($extension, $contribution, $this->eventListenerSequence++);
+        $this->eventListeners[$contribution->eventClass()][] = $registration;
+        usort(
+            $this->eventListeners[$contribution->eventClass()],
+            static fn (ExtensionEventListenerRegistration $left, ExtensionEventListenerRegistration $right): int => $right->priority() <=> $left->priority()
+                ?: $left->sequence() <=> $right->sequence(),
+        );
     }
 
     /**
@@ -306,5 +333,14 @@ final class ExtensionRuntimeContributionRegistry implements StaticViewInjectionP
     public function schedulerActionQueue(string $target): ?ActionQueue
     {
         return $this->schedulerContributions->schedulerActionQueue($target);
+    }
+
+    /**
+     * @param class-string $eventClass
+     * @return list<ExtensionEventListenerRegistration>
+     */
+    public function extensionEventListeners(string $eventClass): array
+    {
+        return $this->eventListeners[$eventClass] ?? [];
     }
 }

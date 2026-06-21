@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Core\Extension;
 
 use App\Core\Extension\ExtensionContributions;
+use App\Core\Extension\ExtensionEventListenerContribution;
 use App\Core\Extension\ExtensionRuntimeContributionFactory;
 use App\Core\Extension\ExtensionRuntimeBoot;
 use App\Core\Extension\Content\ExtensionContentSchemaDefinition;
@@ -14,6 +15,7 @@ use App\Core\Extension\Settings\ExtensionSettingDefinition;
 use App\Scheduler\SchedulerTaskDefinition;
 use App\View\Injection\StaticViewInjection;
 use App\View\Injection\ViewSurface;
+use App\View\ViewContextEvent;
 use PHPUnit\Framework\TestCase;
 
 final class ExtensionContributionsTest extends TestCase
@@ -55,6 +57,8 @@ final class ExtensionContributionsTest extends TestCase
             ->runtime(static fn (): array => [])
             ->runtimeBoot(static function (): void {
             })
+            ->eventListener(ViewContextEvent::class, static function (): void {
+            })
             ->staticView($staticView)
             ->setting($setting)
             ->schedulerTask($schedulerTask)
@@ -65,6 +69,7 @@ final class ExtensionContributionsTest extends TestCase
 
         self::assertInstanceOf(ExtensionRuntimeContributionFactory::class, $items[0]);
         self::assertInstanceOf(ExtensionRuntimeBoot::class, $items[1]);
-        self::assertSame([$staticView, $setting, $schedulerTask, $databaseTable, $contentSchema], array_slice($items, 2));
+        self::assertInstanceOf(ExtensionEventListenerContribution::class, $items[2]);
+        self::assertSame([$staticView, $setting, $schedulerTask, $databaseTable, $contentSchema], array_slice($items, 3));
     }
 }

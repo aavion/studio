@@ -479,6 +479,37 @@ final class ExtensionLifecycleBoundaryTest extends KernelTestCase
         self::assertSame('message.extension.lifecycle.php_load_failed', $result->firstIssue()?->translationKey());
     }
 
+    public function testExtensionPhpLoaderRegistersRuntimeEventListeners(): void
+    {
+        $this->insertExtension('demo-module', ['module'], 'active');
+        $this->writeTestFile($this->projectDir, 'extensions/demo-module/extension.php', <<<'PHP'
+            <?php
+
+            use App\Core\Extension\ExtensionContributions;
+            use App\Core\Extension\ExtensionEventContext;
+            use App\View\ViewContextEvent;
+
+            return ExtensionContributions::create()
+                ->eventListener(ViewContextEvent::class, static function (ViewContextEvent $event, ExtensionEventContext $context): void {
+                    $event->set('extension_listener', $context->extensionName());
+                }, priority: 10);
+            PHP);
+
+        $registry = new ExtensionRuntimeContributionRegistry();
+        $result = (new ExtensionPhpLoader(
+            new ActiveExtensionProvider($this->entityManager),
+            $this->entityManager,
+            $this->projectDir,
+            new NullWorkflowResultMessageReporter(),
+            runtimeContributions: $registry,
+        ))->loadActiveExtensions();
+
+        self::assertTrue($result->isSuccess());
+        self::assertCount(1, $registry->extensionEventListeners(ViewContextEvent::class));
+        self::assertSame('demo-module', $registry->extensionEventListeners(ViewContextEvent::class)[0]->extensionName());
+        self::assertSame(10, $registry->extensionEventListeners(ViewContextEvent::class)[0]->priority());
+    }
+
     public function testExtensionPhpLoaderDoesNotKeepPartialRuntimeContributionsAfterFailure(): void
     {
         $this->insertExtension('broken-module', ['module'], 'active');

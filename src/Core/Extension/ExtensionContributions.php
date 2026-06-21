@@ -14,6 +14,7 @@ use App\Core\Extension\Database\ExtensionDatabaseProviderInterface;
 use App\Core\Extension\Database\ExtensionDatabaseTable;
 use App\Core\Extension\Settings\ExtensionSettingDefinition;
 use App\Core\Extension\Settings\ExtensionSettingProviderInterface;
+use App\Core\Event\PublicEventInterface;
 use App\Live\LiveEndpointDefinition;
 use App\Live\LiveEndpointHandlerInterface;
 use App\Live\LiveEndpointHandlerProviderInterface;
@@ -48,7 +49,7 @@ final class ExtensionContributions implements \IteratorAggregate
     }
 
     public function add(
-        StaticViewInjection|ConfigurableStaticViewInjectionSet|DynamicViewInjection|ExtensionSettingDefinition|SchedulerTaskDefinition|ApiEndpointDefinition|ApiEndpointHandlerInterface|LiveEndpointDefinition|LiveEndpointHandlerInterface|CookieConsentDefinition|ExtensionDatabaseTable|ExtensionContentSchemaDefinition|ExtensionRuntimeContributionFactory|ExtensionActivationContributionFactory|ExtensionRuntimeBoot|StaticViewInjectionProviderInterface|DynamicViewInjectionProviderInterface|ExtensionSettingProviderInterface|ApiEndpointProviderInterface|ApiEndpointHandlerProviderInterface|LiveEndpointProviderInterface|LiveEndpointHandlerProviderInterface|CookieConsentProviderInterface|SchedulerTaskProviderInterface|SchedulerCallableProviderInterface|SchedulerActionQueueProviderInterface|ExtensionDatabaseProviderInterface|ExtensionContentSchemaProviderInterface $contribution,
+        StaticViewInjection|ConfigurableStaticViewInjectionSet|DynamicViewInjection|ExtensionSettingDefinition|SchedulerTaskDefinition|ApiEndpointDefinition|ApiEndpointHandlerInterface|LiveEndpointDefinition|LiveEndpointHandlerInterface|CookieConsentDefinition|ExtensionDatabaseTable|ExtensionContentSchemaDefinition|ExtensionRuntimeContributionFactory|ExtensionActivationContributionFactory|ExtensionRuntimeBoot|ExtensionEventListenerContribution|StaticViewInjectionProviderInterface|DynamicViewInjectionProviderInterface|ExtensionSettingProviderInterface|ApiEndpointProviderInterface|ApiEndpointHandlerProviderInterface|LiveEndpointProviderInterface|LiveEndpointHandlerProviderInterface|CookieConsentProviderInterface|SchedulerTaskProviderInterface|SchedulerCallableProviderInterface|SchedulerActionQueueProviderInterface|ExtensionDatabaseProviderInterface|ExtensionContentSchemaProviderInterface $contribution,
     ): self {
         $this->items[] = $contribution;
 
@@ -68,6 +69,14 @@ final class ExtensionContributions implements \IteratorAggregate
     public function runtimeBoot(callable $boot): self
     {
         return $this->add(new ExtensionRuntimeBoot($boot));
+    }
+
+    /**
+     * @param class-string<PublicEventInterface> $eventClass
+     */
+    public function eventListener(string $eventClass, callable $listener, int $priority = 0): self
+    {
+        return $this->add(new ExtensionEventListenerContribution($eventClass, $listener, $priority));
     }
 
     public function staticView(StaticViewInjection $injection): self

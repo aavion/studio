@@ -7,9 +7,11 @@ namespace App\Core\Extension\Contribution;
 use App\Api\ApiMessageKey;
 use App\Api\Endpoint\ApiEndpointDefinition;
 use App\Api\Endpoint\ApiEndpointHandlerInterface;
+use App\Core\Event\PublicEventHookRegistry;
 use App\Core\Extension\Content\ExtensionContentSchemaDefinition;
 use App\Core\Extension\Database\ExtensionDatabaseTable;
 use App\Core\Extension\ExtensionApiContributionGuard;
+use App\Core\Extension\ExtensionEventListenerContribution;
 use App\Core\Extension\ExtensionLiveContributionGuard;
 use App\Core\Extension\ExtensionMessageCode;
 use App\Core\Extension\ExtensionMessageKey;
@@ -37,6 +39,10 @@ final readonly class ExtensionRuntimeContributionGuard
         'PHPSESSID',
         VisitorIdGenerator::COOKIE_NAME,
     ];
+
+    public function __construct(private ?PublicEventHookRegistry $eventHookRegistry = null)
+    {
+    }
 
     public function assertSchedulerTask(Extension $extension, SchedulerTaskDefinition $definition): void
     {
@@ -186,6 +192,21 @@ final readonly class ExtensionRuntimeContributionGuard
         }
     }
 
+    public function assertEventListenerContribution(Extension $extension, ExtensionEventListenerContribution $contribution): void
+    {
+        if (isset($this->eventHooks()[$contribution->eventClass()])) {
+            return;
+        }
+
+        throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_RUNTIME_CONTRIBUTION_UNSUPPORTED, [
+            '%extension%' => $extension->extensionName(),
+            '%type%' => ExtensionEventListenerContribution::class.'('.$contribution->eventClass().') unregistered_event',
+        ], [
+            'extension' => $extension->extensionName(),
+            'event' => $contribution->eventClass(),
+        ]);
+    }
+
     private function assertViewTemplate(Extension $extension, ViewSurface $surface, string $template, string $type): void
     {
         $expectedPrefix = match ($surface) {
@@ -217,6 +238,14 @@ final readonly class ExtensionRuntimeContributionGuard
         throw MessageException::invalidArgument(ApiMessageKey::API_ENDPOINT_OWNER_INVALID, [
             '%owner%' => $extension->extensionName(),
         ], ['extension' => $extension->extensionName(), 'required_scope' => ExtensionScope::Api->value]);
+    }
+
+    /**
+     * @return array<class-string, mixed>
+     */
+    private function eventHooks(): array
+    {
+        return ($this->eventHookRegistry ?? new PublicEventHookRegistry())->byEventClass();
     }
 
     private function necessaryExtensionCookieAllowed(Extension $extension, Cookie $cookie): bool

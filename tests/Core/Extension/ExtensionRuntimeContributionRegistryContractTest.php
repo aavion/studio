@@ -10,11 +10,13 @@ use App\Core\Extension\Database\ExtensionDatabaseColumn;
 use App\Core\Extension\Database\ExtensionDatabaseTable;
 use App\Core\Extension\ExtensionContributionContext;
 use App\Core\Extension\ExtensionContributions;
+use App\Core\Extension\ExtensionEventListenerContribution;
 use App\Core\Extension\ExtensionRuntimeBoot;
 use App\Core\Extension\ExtensionRuntimeContributionRegistry;
 use App\Core\Extension\ExtensionScope;
 use App\Core\Extension\ExtensionStatus;
 use App\Core\Extension\Settings\ExtensionSettingDefinition;
+use App\Core\Event\PublicEventInterface;
 use App\Core\Operation\ActionQueue;
 use App\Entity\Extension;
 use App\Scheduler\SchedulerActionQueueProviderInterface;
@@ -28,7 +30,9 @@ use App\View\Injection\DynamicViewInjection;
 use App\View\Injection\DynamicViewInjectionSlot;
 use App\View\Injection\StaticViewInjection;
 use App\View\Injection\ViewSurface;
+use App\View\ViewContextEvent;
 use PHPUnit\Framework\TestCase;
+use Symfony\Contracts\EventDispatcher\Event;
 
 final class ExtensionRuntimeContributionRegistryContractTest extends TestCase
 {
@@ -115,6 +119,51 @@ final class ExtensionRuntimeContributionRegistryContractTest extends TestCase
 
         self::assertSame([$table], $registry->extensionDatabaseTables());
         self::assertSame([$schema], $registry->extensionContentSchemas());
+    }
+
+    public function testItAcceptsPublicEventListenerContributionsWithStablePriorityOrdering(): void
+    {
+        $registry = new ExtensionRuntimeContributionRegistry();
+
+        $registry->add($this->extension([ExtensionScope::Module]), [
+            new ExtensionEventListenerContribution(ViewContextEvent::class, static function (): void {
+            }, priority: 0),
+            new ExtensionEventListenerContribution(ViewContextEvent::class, static function (): void {
+            }, priority: 20),
+            new ExtensionEventListenerContribution(ViewContextEvent::class, static function (): void {
+            }, priority: 20),
+        ]);
+
+        $listeners = $registry->extensionEventListeners(ViewContextEvent::class);
+
+        self::assertSame([20, 20, 0], array_map(static fn ($listener): int => $listener->priority(), $listeners));
+        self::assertSame([1, 2, 0], array_map(static fn ($listener): int => $listener->sequence(), $listeners));
+        self::assertSame('demo-module', $listeners[0]->extensionName());
+    }
+
+    public function testItRejectsUnregisteredPublicEventListenersWithoutPartialState(): void
+    {
+        $registry = new ExtensionRuntimeContributionRegistry();
+
+        try {
+            $registry->add($this->extension([ExtensionScope::Module]), [
+                new ExtensionSettingDefinition(
+                    'demo-module',
+                    'display.mode',
+                    'extension.demo_module.display_mode.label',
+                    'compact',
+                ),
+                new ExtensionEventListenerContribution(ExtensionRuntimeContributionRegistryContractTestEvent::class, static function (): void {
+                }),
+            ]);
+
+            self::fail('Expected unregistered public events to be rejected.');
+        } catch (\Throwable $error) {
+            self::assertStringContainsString('message.extension.runtime.contribution_unsupported', $error->getMessage());
+        }
+
+        self::assertSame([], $registry->extensionSettings());
+        self::assertSame([], $registry->extensionEventListeners(ExtensionRuntimeContributionRegistryContractTestEvent::class));
     }
 
     public function testItRejectsDatabaseContributionsWithoutDatabaseScope(): void
@@ -369,4 +418,8 @@ final class ExtensionRuntimeContributionRegistryContractTest extends TestCase
             ExtensionStatus::Active,
         );
     }
+}
+
+final class ExtensionRuntimeContributionRegistryContractTestEvent extends Event implements PublicEventInterface
+{
 }
