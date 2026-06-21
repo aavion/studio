@@ -312,6 +312,7 @@ services:
             $logs: '@App\Core\Extension\ExtensionLogFacade'
             $alerts: '@App\Core\Extension\ExtensionAlertFacade'
             $references: '@App\Core\Extension\ExtensionReferenceFacade'
+            $databases: '@App\Core\Extension\ExtensionDatabaseFacade'
 
     App\Security\AutoBan\AutoBanSignalEvaluator:
         arguments:

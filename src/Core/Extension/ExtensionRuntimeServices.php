@@ -20,6 +20,7 @@ final readonly class ExtensionRuntimeServices
         private ?ExtensionLogFacade $logs = null,
         private ?ExtensionAlertFacade $alerts = null,
         private ?ExtensionReferenceFacade $references = null,
+        private ?ExtensionDatabaseFacade $databases = null,
     ) {
     }
 
@@ -76,5 +77,10 @@ final readonly class ExtensionRuntimeServices
     public function references(): ?ExtensionReferenceFacade
     {
         return $this->references;
+    }
+
+    public function databases(): ?ExtensionDatabaseFacade
+    {
+        return $this->databases;
     }
 }

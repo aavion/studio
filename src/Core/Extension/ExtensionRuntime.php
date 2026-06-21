@@ -164,6 +164,53 @@ final class ExtensionRuntime
     }
 
     /**
+     * @param array<string, mixed> $criteria
+     * @param array<string, mixed> $options
+     * @return list<array<string, mixed>>
+     */
+    public static function dbFetch(string $table, array $criteria = [], array $options = []): array
+    {
+        $slug = self::callerExtensionSlug();
+        $databases = self::$services?->databases();
+
+        return null !== $slug && null !== $databases ? $databases->fetch($slug, $table, $criteria, $options) : [];
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     */
+    public static function dbInsert(string $table, array $row): bool
+    {
+        $slug = self::callerExtensionSlug();
+        $databases = self::$services?->databases();
+
+        return null !== $slug && null !== $databases && $databases->insert($slug, $table, $row);
+    }
+
+    /**
+     * @param array<string, mixed> $criteria
+     * @param array<string, mixed> $values
+     */
+    public static function dbUpdate(string $table, array $criteria, array $values): int
+    {
+        $slug = self::callerExtensionSlug();
+        $databases = self::$services?->databases();
+
+        return null !== $slug && null !== $databases ? $databases->update($slug, $table, $criteria, $values) : 0;
+    }
+
+    /**
+     * @param array<string, mixed> $criteria
+     */
+    public static function dbDelete(string $table, array $criteria): int
+    {
+        $slug = self::callerExtensionSlug();
+        $databases = self::$services?->databases();
+
+        return null !== $slug && null !== $databases ? $databases->delete($slug, $table, $criteria) : 0;
+    }
+
+    /**
      * @internal test helper
      */
     public static function reset(): void

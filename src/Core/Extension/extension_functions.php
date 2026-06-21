@@ -135,3 +135,46 @@ if (!function_exists('extension_entity')) {
         return ExtensionRuntime::entity($uid, $type, $options);
     }
 }
+
+if (!function_exists('extension_db_fetch')) {
+    /**
+     * @param array<string, mixed> $criteria
+     * @param array<string, mixed> $options
+     * @return list<array<string, mixed>>
+     */
+    function extension_db_fetch(string $table, array $criteria = [], array $options = []): array
+    {
+        return ExtensionRuntime::dbFetch($table, $criteria, $options);
+    }
+}
+
+if (!function_exists('extension_db_insert')) {
+    /**
+     * @param array<string, mixed> $row
+     */
+    function extension_db_insert(string $table, array $row): bool
+    {
+        return ExtensionRuntime::dbInsert($table, $row);
+    }
+}
+
+if (!function_exists('extension_db_update')) {
+    /**
+     * @param array<string, mixed> $criteria
+     * @param array<string, mixed> $values
+     */
+    function extension_db_update(string $table, array $criteria, array $values): int
+    {
+        return ExtensionRuntime::dbUpdate($table, $criteria, $values);
+    }
+}
+
+if (!function_exists('extension_db_delete')) {
+    /**
+     * @param array<string, mixed> $criteria
+     */
+    function extension_db_delete(string $table, array $criteria): int
+    {
+        return ExtensionRuntime::dbDelete($table, $criteria);
+    }
+}
