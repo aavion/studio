@@ -140,21 +140,79 @@ final class ExtensionVendorFacadeTest extends TestCase
         self::assertFalse(class_exists('App\\Spoof'));
     }
 
+    public function testRequireVendorUsesMostSpecificRegisteredPsr4PrefixFirst(): void
+    {
+        $this->writeExtensionPackages([
+            ['name' => 'acme/base', 'prefix' => 'Acme\\', 'source' => 'src'],
+            ['name' => 'acme/feature', 'prefix' => 'Acme\\Feature\\', 'source' => 'src'],
+        ]);
+        $this->writeProjectFile('extensions/vendor-facade-test/vendor/acme/feature/src/Widget.php', <<<'PHP'
+            <?php
+
+            namespace Acme\Feature;
+
+            final class Widget
+            {
+                public static function label(): string
+                {
+                    return 'feature';
+                }
+            }
+            PHP);
+        $this->writeProjectFile('extensions/vendor-facade-test/extension.php', <<<'PHP'
+            <?php
+
+            return require_vendor('acme/base')
+                && require_vendor('acme/feature')
+                && class_exists(\Acme\Feature\Widget::class);
+            PHP);
+
+        self::assertTrue(require $this->extensionDir.'/extension.php');
+        self::assertSame('feature', \Acme\Feature\Widget::label());
+    }
+
     /**
      * @param array<string, mixed> $extraAutoload
      */
     private function writeExtensionPackage(string $package, string $prefix, string $sourcePath, array $extraAutoload = []): void
     {
         $autoload = ['psr-4' => [$prefix => $sourcePath], ...$extraAutoload];
-        $this->writeProjectFile('extensions/vendor-facade-test/vendor/composer/installed.json', json_encode([
-            'packages' => [[
-                'name' => $package,
-                'version' => '1.0.0',
-                'autoload' => $autoload,
-                'install-path' => '../'.$package,
-            ]],
-        ], JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
+        $this->writeInstalledPackages([[
+            'name' => $package,
+            'version' => '1.0.0',
+            'autoload' => $autoload,
+            'install-path' => '../'.$package,
+        ]]);
         mkdir($this->extensionDir.'/vendor/'.$package.'/'.$sourcePath, 0777, true);
+    }
+
+    /**
+     * @param list<array{name: string, prefix: string, source: string}> $packages
+     */
+    private function writeExtensionPackages(array $packages): void
+    {
+        $metadata = [];
+        foreach ($packages as $package) {
+            $metadata[] = [
+                'name' => $package['name'],
+                'version' => '1.0.0',
+                'autoload' => ['psr-4' => [$package['prefix'] => $package['source']]],
+                'install-path' => '../'.$package['name'],
+            ];
+            mkdir($this->extensionDir.'/vendor/'.$package['name'].'/'.$package['source'], 0777, true);
+        }
+
+        $this->writeInstalledPackages($metadata);
+    }
+
+    /**
+     * @param list<array<string, mixed>> $packages
+     */
+    private function writeInstalledPackages(array $packages): void
+    {
+        $this->writeProjectFile('extensions/vendor-facade-test/vendor/composer/installed.json', json_encode([
+            'packages' => $packages,
+        ], JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
     }
 
     private function writeProjectFile(string $relativePath, string $contents): void

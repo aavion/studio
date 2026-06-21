@@ -129,14 +129,17 @@ final class ExtensionVendorFacade
 
     private static function load(string $class): void
     {
-        foreach (self::$registeredPrefixes as $prefix => $directories) {
+        $prefixes = self::$registeredPrefixes;
+        uksort($prefixes, static fn (string $left, string $right): int => strlen($right) <=> strlen($left) ?: $left <=> $right);
+
+        foreach ($prefixes as $prefix => $directories) {
             if (!str_starts_with($class, $prefix)) {
                 continue;
             }
 
             $relativeClass = substr($class, strlen($prefix));
             if ('' === $relativeClass || str_contains($relativeClass, "\0")) {
-                return;
+                continue;
             }
 
             foreach ($directories as $directory) {
@@ -147,8 +150,6 @@ final class ExtensionVendorFacade
                     return;
                 }
             }
-
-            return;
         }
     }
 

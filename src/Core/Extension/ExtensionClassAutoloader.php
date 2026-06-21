@@ -40,15 +40,23 @@ final class ExtensionClassAutoloader
         }
 
         $prefix = $namespace.'\\';
-        $existing = $this->prefixes[$prefix] ?? null;
-        if (null !== $existing && $existing !== $sourceDirectory) {
+        foreach ($this->prefixes as $existingPrefix => $existingSourceDirectory) {
+            if (!$this->prefixesOverlap($prefix, $existingPrefix)) {
+                continue;
+            }
+
+            if ($prefix === $existingPrefix && $existingSourceDirectory === $sourceDirectory) {
+                continue;
+            }
+
             throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_PHP_NAMESPACE_INVALID, [
                 '%path%' => $extension->path().'/src',
                 '%expected_namespace%' => $namespace,
             ], [
                 'extension' => $extension->extensionName(),
                 'namespace' => $namespace,
-                'existing_source' => $this->projectRelativePath($existing),
+                'existing_namespace' => rtrim($existingPrefix, '\\'),
+                'existing_source' => $this->projectRelativePath($existingSourceDirectory),
                 'source' => $this->projectRelativePath($sourceDirectory),
             ]);
         }
@@ -68,7 +76,10 @@ final class ExtensionClassAutoloader
 
     private function load(string $class): void
     {
-        foreach ($this->prefixes as $prefix => $sourceDirectory) {
+        $prefixes = $this->prefixes;
+        uksort($prefixes, static fn (string $left, string $right): int => strlen($right) <=> strlen($left));
+
+        foreach ($prefixes as $prefix => $sourceDirectory) {
             if (!str_starts_with($class, $prefix)) {
                 continue;
             }
@@ -85,6 +96,11 @@ final class ExtensionClassAutoloader
 
             return;
         }
+    }
+
+    private function prefixesOverlap(string $left, string $right): bool
+    {
+        return str_starts_with($left, $right) || str_starts_with($right, $left);
     }
 
     private function namespace(Extension $extension): ?string
