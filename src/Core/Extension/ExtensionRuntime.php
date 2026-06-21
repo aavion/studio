@@ -154,6 +154,54 @@ final class ExtensionRuntime
 
     /**
      * @param array<string, mixed> $options
+     */
+    public static function storagePut(string $path, string $contents, array $options = []): bool
+    {
+        $slug = self::callerExtensionSlug();
+        $storage = self::$services?->storage();
+
+        return null !== $slug && null !== $storage && $storage->put($slug, $path, $contents, $options);
+    }
+
+    public static function storageGet(string $path): ?string
+    {
+        $slug = self::callerExtensionSlug();
+        $storage = self::$services?->storage();
+
+        return null !== $slug && null !== $storage ? $storage->get($slug, $path) : null;
+    }
+
+    public static function storageDelete(string $path): bool
+    {
+        $slug = self::callerExtensionSlug();
+        $storage = self::$services?->storage();
+
+        return null !== $slug && null !== $storage && $storage->delete($slug, $path);
+    }
+
+    public static function storageExists(string $path): bool
+    {
+        $slug = self::callerExtensionSlug();
+        $storage = self::$services?->storage();
+
+        return null !== $slug && null !== $storage && $storage->exists($slug, $path);
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     *
+     * @return list<array{path: string, size: int, modified_at: int, expires_at: int|null}>
+     */
+    public static function storageList(string $prefix = '', array $options = []): array
+    {
+        $slug = self::callerExtensionSlug();
+        $storage = self::$services?->storage();
+
+        return null !== $slug && null !== $storage ? $storage->list($slug, $prefix, $options) : [];
+    }
+
+    /**
+     * @param array<string, mixed> $options
      * @return array<string, mixed>|null
      */
     public static function lookup(string $type, string $identifier, array $options = []): ?array

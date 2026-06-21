@@ -314,6 +314,12 @@ services:
             $references: '@App\Core\Extension\ExtensionReferenceFacade'
             $databases: '@App\Core\Extension\ExtensionDatabaseFacade'
             $mail: '@App\Core\Extension\ExtensionMailFacade'
+            $storage: '@App\Core\Extension\ExtensionStorage'
+
+    App\Core\Extension\ExtensionStorage:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+            $environment: '%kernel.environment%'
 
     App\Security\AutoBan\AutoBanSignalEvaluator:
         arguments:

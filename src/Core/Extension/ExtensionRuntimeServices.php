@@ -22,6 +22,7 @@ final readonly class ExtensionRuntimeServices
         private ?ExtensionReferenceFacade $references = null,
         private ?ExtensionDatabaseFacade $databases = null,
         private ?ExtensionMailFacade $mail = null,
+        private ?ExtensionStorage $storage = null,
     ) {
     }
 
@@ -88,5 +89,10 @@ final readonly class ExtensionRuntimeServices
     public function mail(): ?ExtensionMailFacade
     {
         return $this->mail;
+    }
+
+    public function storage(): ?ExtensionStorage
+    {
+        return $this->storage;
     }
 }

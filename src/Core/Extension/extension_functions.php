@@ -126,6 +126,49 @@ if (!function_exists('extension_mail')) {
     }
 }
 
+if (!function_exists('extension_storage_put')) {
+    /**
+     * @param array<string, mixed> $options
+     */
+    function extension_storage_put(string $path, string $contents, array $options = []): bool
+    {
+        return ExtensionRuntime::storagePut($path, $contents, $options);
+    }
+}
+
+if (!function_exists('extension_storage_get')) {
+    function extension_storage_get(string $path): ?string
+    {
+        return ExtensionRuntime::storageGet($path);
+    }
+}
+
+if (!function_exists('extension_storage_delete')) {
+    function extension_storage_delete(string $path): bool
+    {
+        return ExtensionRuntime::storageDelete($path);
+    }
+}
+
+if (!function_exists('extension_storage_exists')) {
+    function extension_storage_exists(string $path): bool
+    {
+        return ExtensionRuntime::storageExists($path);
+    }
+}
+
+if (!function_exists('extension_storage_list')) {
+    /**
+     * @param array<string, mixed> $options
+     *
+     * @return list<array{path: string, size: int, modified_at: int, expires_at: int|null}>
+     */
+    function extension_storage_list(string $prefix = '', array $options = []): array
+    {
+        return ExtensionRuntime::storageList($prefix, $options);
+    }
+}
+
 if (!function_exists('extension_lookup')) {
     /**
      * @param array<string, mixed> $options
