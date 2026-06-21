@@ -135,11 +135,17 @@ final class ExtensionLifecycleBoundaryTest extends KernelTestCase
         $this->writeTestFile($this->projectDir, 'extensions/demo-module/extension.php', <<<'PHP'
             <?php
 
+            use App\Core\Extension\ExtensionContributionContext;
+            use App\Core\Extension\ExtensionContributions;
+
             file_put_contents(__DIR__.'/loaded.txt', 'yes');
 
-            return static function ($extension): void {
-                file_put_contents(__DIR__.'/called.txt', $extension->extensionName());
-            };
+            return ExtensionContributions::create()
+                ->runtime(static function (ExtensionContributionContext $context): array {
+                    file_put_contents(__DIR__.'/called.txt', $context->extensionName());
+
+                    return [];
+                });
             PHP);
         $this->writeTestFile($this->projectDir, 'extensions/inactive-module/extension.php', <<<'PHP'
             <?php
@@ -147,11 +153,13 @@ final class ExtensionLifecycleBoundaryTest extends KernelTestCase
             file_put_contents(__DIR__.'/loaded.txt', 'no');
             PHP);
 
+        $registry = new ExtensionRuntimeContributionRegistry();
         $result = (new ExtensionPhpLoader(
             new ActiveExtensionProvider($this->entityManager),
             $this->entityManager,
             $this->projectDir,
             new NullWorkflowResultMessageReporter(),
+            runtimeContributions: $registry,
         ))->loadActiveExtensions();
 
         self::assertTrue($result->isSuccess());
@@ -159,6 +167,32 @@ final class ExtensionLifecycleBoundaryTest extends KernelTestCase
         self::assertFileExists($this->projectDir.'/extensions/demo-module/loaded.txt');
         self::assertSame('demo-module', file_get_contents($this->projectDir.'/extensions/demo-module/called.txt'));
         self::assertFileDoesNotExist($this->projectDir.'/extensions/inactive-module/loaded.txt');
+    }
+
+    public function testExtensionPhpLoaderRejectsNakedCallableReturnsWithoutExecutingThem(): void
+    {
+        $this->insertExtension('demo-module', ['module'], 'active');
+        $this->writeTestFile($this->projectDir, 'extensions/demo-module/extension.php', <<<'PHP'
+            <?php
+
+            return static function ($extension): void {
+                file_put_contents(__DIR__.'/called.txt', $extension->extensionName());
+            };
+            PHP);
+
+        $registry = new ExtensionRuntimeContributionRegistry();
+        $result = (new ExtensionPhpLoader(
+            new ActiveExtensionProvider($this->entityManager),
+            $this->entityManager,
+            $this->projectDir,
+            new NullWorkflowResultMessageReporter(),
+            runtimeContributions: $registry,
+        ))->loadActiveExtensions();
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('faulty', $this->extensionStatus('demo-module'));
+        self::assertFileDoesNotExist($this->projectDir.'/extensions/demo-module/called.txt');
+        self::assertSame('message.extension.lifecycle.php_load_failed', $result->firstIssue()?->translationKey());
     }
 
     public function testExtensionPhpLoaderRegistersRuntimeContributions(): void

@@ -115,10 +115,6 @@ final class ExtensionPhpLoader implements EventSubscriberInterface
             try {
                 $result = $this->includeLoader($loaderPath, $extension);
 
-                if (is_callable($result)) {
-                    $result = $result($extension);
-                }
-
                 $this->runtimeContributions?->add($extension, $result);
 
                 $this->loadedExtensions[$extension->extensionName()] = true;

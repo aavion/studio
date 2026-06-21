@@ -28,10 +28,6 @@ final readonly class ExtensionContributionReader
             return require $loaderPath;
         })($loaderPath, $extension);
 
-        if (is_callable($result)) {
-            $result = $result($extension);
-        }
-
         $registry->add($extension, $this->activationContributions($extension, $result));
 
         return $registry;

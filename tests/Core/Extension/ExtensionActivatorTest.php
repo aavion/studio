@@ -148,6 +148,28 @@ PHP);
         self::assertFileDoesNotExist($this->temporaryProjectDir.'/extensions/runtime-ran.txt');
     }
 
+    public function testItRejectsNakedCallableActivationContributionsWithoutExecutingThem(): void
+    {
+        $this->temporaryProjectDir = $this->createTemporaryDirectory('system-extension-activation-callable');
+        $this->insertExtension('demo-module', ['module', 'database'], 'inactive');
+        $this->writeTestFile($this->temporaryProjectDir, 'extensions/demo-module/extension.php', <<<'PHP'
+<?php
+
+return static function ($extension): array {
+    file_put_contents(__DIR__.'/activation-ran.txt', $extension->extensionName());
+
+    return [];
+};
+PHP);
+
+        $result = $this->activatorWithContributionApplier()->activate('demo-module', 'test', rebuildAssets: false);
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('inactive', $this->extensionStatus('demo-module'));
+        self::assertFileDoesNotExist($this->temporaryProjectDir.'/extensions/demo-module/activation-ran.txt');
+        self::assertSame('message.extension.runtime.contribution_unsupported', $result->firstIssue()?->translationKey());
+    }
+
     public function testItDoesNotReloadAlreadyActiveDependenciesWhenApplyingActivationContributions(): void
     {
         $this->temporaryProjectDir = $this->createTemporaryDirectory('system-extension-active-dependency');
