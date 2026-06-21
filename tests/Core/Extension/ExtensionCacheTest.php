@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace App\Tests\Core\Extension;
 
 use App\Core\Extension\ExtensionCache;
-use App\Core\Extension\ExtensionCacheRuntime;
+use App\Core\Extension\ExtensionRuntime;
+use App\Core\Extension\ExtensionRuntimeServices;
 use App\Tests\Support\FilesystemTestHelper;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
@@ -21,14 +22,14 @@ final class ExtensionCacheTest extends TestCase
         $this->projectDir = dirname(__DIR__, 3);
         $this->removeDirectory($this->projectDir.'/extensions/cache-facade-a');
         $this->removeDirectory($this->projectDir.'/extensions/cache-facade-b');
-        ExtensionCacheRuntime::configure(new ExtensionCache(new ArrayAdapter()), $this->projectDir);
+        ExtensionRuntime::configure(new ExtensionRuntimeServices($this->projectDir, new ExtensionCache(new ArrayAdapter())));
     }
 
     protected function tearDown(): void
     {
         $this->removeDirectory($this->projectDir.'/extensions/cache-facade-a');
         $this->removeDirectory($this->projectDir.'/extensions/cache-facade-b');
-        ExtensionCacheRuntime::reset();
+        ExtensionRuntime::reset();
     }
 
     public function testItStoresReadsAndDeletesExtensionOwnedArtifacts(): void
@@ -95,9 +96,9 @@ final class ExtensionCacheTest extends TestCase
         $cache = new ExtensionCache(new ArrayAdapter());
 
         self::assertFalse($cache->set('invalid extension', 'outside', 'value'));
-        self::assertFalse(ExtensionCacheRuntime::set('outside', 'value'));
-        self::assertSame('default', ExtensionCacheRuntime::get('outside', 'default'));
-        self::assertFalse(ExtensionCacheRuntime::delete('outside'));
+        self::assertFalse(ExtensionRuntime::cacheSet('outside', 'value'));
+        self::assertSame('default', ExtensionRuntime::cacheGet('outside', 'default'));
+        self::assertFalse(ExtensionRuntime::cacheDelete('outside'));
 
         $this->writeExtensionFile('cache-facade-a', <<<'PHP'
             <?php

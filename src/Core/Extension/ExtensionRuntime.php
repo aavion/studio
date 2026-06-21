@@ -4,40 +4,41 @@ declare(strict_types=1);
 
 namespace App\Core\Extension;
 
-final class ExtensionCacheRuntime
+final class ExtensionRuntime
 {
-    private static ?ExtensionCacheInterface $cache = null;
-    private static ?string $projectDir = null;
+    private static ?ExtensionRuntimeServices $services = null;
 
     private function __construct()
     {
     }
 
-    public static function configure(ExtensionCacheInterface $cache, string $projectDir): void
+    public static function configure(ExtensionRuntimeServices $services): void
     {
-        self::$cache = $cache;
-        self::$projectDir = self::normalizePath($projectDir);
+        self::$services = $services;
     }
 
-    public static function set(string $key, mixed $value, int $ttlSeconds = ExtensionCacheInterface::DEFAULT_TTL_SECONDS): bool
+    public static function cacheSet(string $key, mixed $value, int $ttlSeconds = ExtensionCacheInterface::DEFAULT_TTL_SECONDS): bool
     {
         $slug = self::callerExtensionSlug();
+        $cache = self::$services?->cache();
 
-        return null !== $slug && null !== self::$cache && self::$cache->set($slug, $key, $value, $ttlSeconds);
+        return null !== $slug && null !== $cache && $cache->set($slug, $key, $value, $ttlSeconds);
     }
 
-    public static function get(string $key, mixed $default = null): mixed
+    public static function cacheGet(string $key, mixed $default = null): mixed
     {
         $slug = self::callerExtensionSlug();
+        $cache = self::$services?->cache();
 
-        return null !== $slug && null !== self::$cache ? self::$cache->get($slug, $key, $default) : $default;
+        return null !== $slug && null !== $cache ? $cache->get($slug, $key, $default) : $default;
     }
 
-    public static function delete(string $key): bool
+    public static function cacheDelete(string $key): bool
     {
         $slug = self::callerExtensionSlug();
+        $cache = self::$services?->cache();
 
-        return null !== $slug && null !== self::$cache && self::$cache->delete($slug, $key);
+        return null !== $slug && null !== $cache && $cache->delete($slug, $key);
     }
 
     /**
@@ -45,13 +46,13 @@ final class ExtensionCacheRuntime
      */
     public static function reset(): void
     {
-        self::$cache = null;
-        self::$projectDir = null;
+        self::$services = null;
     }
 
     private static function callerExtensionSlug(): ?string
     {
-        $projectDir = self::$projectDir ?? realpath(dirname(__DIR__, 3));
+        $services = self::$services;
+        $projectDir = null !== $services ? $services->projectDir() : realpath(dirname(__DIR__, 3));
         $extensionsDir = self::normalizePath(is_string($projectDir) ? $projectDir : dirname(__DIR__, 3)).'/extensions/';
 
         foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS) as $frame) {

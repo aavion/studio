@@ -284,6 +284,11 @@ services:
     App\Core\Extension\ExtensionCacheInterface:
         alias: App\Core\Extension\ExtensionCache
 
+    App\Core\Extension\ExtensionRuntimeServices:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+            $cache: '@App\Core\Extension\ExtensionCacheInterface'
+
     App\Security\AutoBan\AutoBanSignalEvaluator:
         arguments:
             $environment: '%kernel.environment%'
@@ -386,7 +391,7 @@ services:
             $projectDir: '%kernel.project_dir%'
             $environment: '%kernel.environment%'
             $runtimeContributions: '@App\Core\Extension\ExtensionRuntimeContributionRegistry'
-            $extensionCache: '@App\Core\Extension\ExtensionCacheInterface'
+            $extensionRuntimeServices: '@App\Core\Extension\ExtensionRuntimeServices'
 
     App\Core\Extension\ExtensionRuntimeFailureHandler:
         arguments:
