@@ -80,13 +80,10 @@ final readonly class CoreSettingsRegistry
             new CoreSettingDefinition('security', 'security.captcha.enabled', 'admin.settings.fields.captcha_enabled.label', false, ConfigValueType::Boolean, metadata: [
                 'access_feature' => 'admin.settings.security',
             ], sortOrder: 10),
-            new CoreSettingDefinition('security', 'security.captcha.provider', 'admin.settings.fields.captcha_provider.label', 'none', ConfigValueType::String, FormInputType::Select, options: ['none' => 'admin.settings.options.captcha.none'], validation: ['required' => true], metadata: [
-                'access_feature' => 'admin.settings.security',
-            ], sortOrder: 20),
             new CoreSettingDefinition('security', 'security.captcha.preview', 'admin.settings.fields.captcha_preview.label', null, ConfigValueType::String, FormInputType::Captcha, metadata: [
                 'persist' => false,
                 'access_feature' => 'admin.settings.security',
-            ], sortOrder: 30),
+            ], sortOrder: 20),
             new CoreSettingDefinition('security', RateLimitPolicyCatalogue::MODE_KEY, 'admin.settings.fields.rate_limit_mode.label', RateLimitProfile::Standard->value, ConfigValueType::String, FormInputType::Select, options: [
                 RateLimitProfile::Off->value => 'admin.settings.options.rate_limit_mode.off',
                 RateLimitProfile::Standard->value => 'admin.settings.options.rate_limit_mode.standard',

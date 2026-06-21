@@ -88,6 +88,7 @@
 **Usage:** Keep concise session notes in the active worklog and include the current branch in headings, using the form `### YYYY-MM-DD branch-name`. Place the newest branch/date heading directly below `## Branch Logs`; within a matching branch/date heading, add new notes at the top so the newest context stays first. Record meaningful committed or completed changes, decisions, blockers, and follow-ups; keep detailed verification in PR notes unless a result materially affects the worklog context. When switching to a different branch or after a PR is merged, compact the completed branch entry into [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), then create the new branch entry at the top.
 
 ### 2026-06-21 feat-security-captcha-contract
+- Removed the obsolete `security.captcha.provider` core setting, source translations, and stale Admin/API/settings tests so captcha provider selection is lifecycle-owned by the active `captcha-provider` extension.
 - Added provider-neutral captcha bridge contracts and fallback/fault result handling that resolves active `captcha-provider` contributions from the runtime provider registry without adding provider-specific assets or challenge logic.
 - Added generic runtime provider contributions with `captchaProvider()` builder support, provider-scope guards, duplicate-provider rejection, and staged rollback coverage.
 - Added runtime extension event-listener contributions backed by the public hook registry, stable listener priority ordering, and `PublicEventDispatcher` integration with structured extension-owned failure diagnostics.

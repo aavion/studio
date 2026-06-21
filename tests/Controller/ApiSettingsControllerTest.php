@@ -184,7 +184,6 @@ final class ApiSettingsControllerTest extends WebTestCase
         ], content: json_encode([
             'values' => [
                 'security.captcha.enabled' => false,
-                'security.captcha.provider' => 'none',
                 RateLimitPolicyCatalogue::MODE_KEY => RateLimitProfile::Panic->value,
             ],
         ], JSON_THROW_ON_ERROR));
@@ -205,7 +204,6 @@ final class ApiSettingsControllerTest extends WebTestCase
             ], content: json_encode([
                 'values' => [
                     'security.captcha.enabled' => true,
-                    'security.captcha.provider' => 'none',
                     RateLimitPolicyCatalogue::MODE_KEY => RateLimitProfile::Strict->value,
                 ],
             ], JSON_THROW_ON_ERROR));
@@ -213,7 +211,6 @@ final class ApiSettingsControllerTest extends WebTestCase
             self::assertResponseIsSuccessful();
             $payload = $this->jsonPayload($client->getResponse()->getContent());
             self::assertContains('security.captcha.enabled', $payload['meta']['updated_keys']);
-            self::assertContains('security.captcha.provider', $payload['meta']['updated_keys']);
             self::assertContains(RateLimitPolicyCatalogue::MODE_KEY, $payload['meta']['updated_keys']);
         } finally {
             $this->removeApiKeyUser('apisetsecown');

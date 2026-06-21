@@ -1168,7 +1168,7 @@ final class BackendControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Security settings');
         self::assertSelectorExists('form#admin-settings-security');
-        self::assertSelectorExists('select[name="security.captcha.provider"]');
+        self::assertSelectorNotExists('select[name="security.captcha.provider"]');
         self::assertSelectorExists(sprintf('select[name="%s"]', RateLimitPolicyCatalogue::MODE_KEY));
         self::assertSelectorExists(sprintf('input[name="%s"]', ConfigAuditLogPolicy::ENABLED_KEY));
         self::assertSelectorExists(sprintf('input[name="%s[]"]', ConfigAuditLogPolicy::EVENTS_KEY));
@@ -1307,7 +1307,6 @@ final class BackendControllerTest extends WebTestCase
             '_form_id' => 'admin-settings-security',
             '_csrf_token' => 'direct-post',
             'security.captcha.enabled' => '0',
-            'security.captcha.provider' => 'none',
         ]);
 
         self::assertResponseStatusCodeSame(401);

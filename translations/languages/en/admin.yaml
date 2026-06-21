@@ -797,8 +797,6 @@ admin:
     fields:
       captcha_enabled:
         label: 'Enable captcha'
-      captcha_provider:
-        label: 'Captcha provider'
       captcha_preview:
         label: 'Captcha preview'
       rate_limit_mode:
@@ -826,8 +824,6 @@ admin:
         label: 'Suspicious probe path patterns'
         help: 'One regular expression per line. Quoted CSV imports are accepted. Invalid or empty lists fall back to the protected defaults.'
     options:
-      captcha:
-        none: 'No captcha provider'
       rate_limit_mode:
         off: 'Off'
         standard: 'Standard'
@@ -985,8 +981,6 @@ admin:
         label: 'Default sender name'
       captcha_enabled:
         label: 'Enable captcha'
-      captcha_provider:
-        label: 'Captcha provider'
       captcha_preview:
         label: 'Captcha preview'
       rate_limit_mode:
@@ -1067,8 +1061,6 @@ admin:
         extensions: 'Extension status'
         recent_activity: 'Recent activity'
         setup_warnings: 'Setup warnings'
-      captcha:
-        none: 'No captcha provider'
       rate_limit_mode:
         off: 'Off'
         standard: 'Standard'
