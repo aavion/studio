@@ -1,7 +1,7 @@
 # Developer Worklog
 
 > **Status**: Active  
-> **Updated**: 2026-06-20  
+> **Updated**: 2026-06-21  
 > **Owner**: Core  
 > **Purpose:** Keeps track of changes and upcoming tasks. 
 
@@ -86,6 +86,10 @@
 
 ## Branch Logs
 **Usage:** Keep concise session notes in the active worklog and include the current branch in headings, using the form `### YYYY-MM-DD branch-name`. Place the newest branch/date heading directly below `## Branch Logs`; within a matching branch/date heading, add new notes at the top so the newest context stays first. Record meaningful committed or completed changes, decisions, blockers, and follow-ups; keep detailed verification in PR notes unless a result materially affects the worklog context. When switching to a different branch or after a PR is merged, compact the completed branch entry into [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), then create the new branch entry at the top.
+
+### 2026-06-21 feat-security-captcha-contract
+- Aligned adjacent extension, event, security, and IconCaptcha drafts with the sharpened captcha-contract runtime policy and provider-selection decisions.
+- Sharpened the captcha-contract implementation plan against the current codebase with coding-agent guardrails for callable phase separation, staged contribution registration, extension-owned validator policy, provider Twig scope validation, extension event dispatch adapters, curated extension-facing event names, Symfony lifecycle adapter candidates, and review checkpoints.
 
 ### 2026-06-20 feat-security-captcha-contract
 - Fixed CI follow-ups by keeping the demo module focused on its configurable public info page plus Markdown typography child route and moving detached-process inherited descriptor cleanup into the detached child shell with `/proc/self/fd` coverage on Linux.
