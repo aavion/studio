@@ -35,8 +35,11 @@ final readonly class DetachedProcessStarter
             return $this->startWindows($command, $cwd, $outputPath, $pidPath, $environment);
         }
 
-        $shellCommand = ($closeInheritedFileDescriptors ? $this->closeInheritedDescriptorsCommand() : '')
-            .'nohup '.implode(' ', array_map('escapeshellarg', $command))
+        $detachedCommand = $closeInheritedFileDescriptors
+            ? 'sh -c '.escapeshellarg($this->closeInheritedDescriptorsCommand().'exec "$@"').' '.escapeshellarg('detached-process').' '.implode(' ', array_map('escapeshellarg', $command))
+            : implode(' ', array_map('escapeshellarg', $command));
+
+        $shellCommand = 'nohup '.$detachedCommand
             .' > '.escapeshellarg($outputPath).' 2>&1 < /dev/null & echo $! > '.escapeshellarg($pidPath);
 
         return $this->runShellCommand($shellCommand, $cwd, $environment);
@@ -83,6 +86,6 @@ final readonly class DetachedProcessStarter
 
     private function closeInheritedDescriptorsCommand(): string
     {
-        return 'i=3; while [ "$i" -le 1024 ]; do eval "exec $i>&-"; i=$((i + 1)); done; ';
+        return 'if [ -d /proc/self/fd ]; then for fd in /proc/self/fd/*; do fd=${fd##*/}; case "$fd" in ""|0|1|2|*[!0-9]*) continue;; esac; eval "exec $fd>&-"; done; else i=3; limit=$(getconf OPEN_MAX 2>/dev/null || echo 1024); while [ "$i" -lt "$limit" ]; do eval "exec $i>&-"; i=$((i + 1)); done; fi; ';
     }
 }
