@@ -42,7 +42,7 @@ final class ResponseHookSubscriberTest extends TestCase
     {
         $dispatcher = new EventDispatcher();
         $dispatcher->addListener(ResponseHeadersEvent::class, static function (ResponseHeadersEvent $event): void {
-            $event->setHeader('Set-Cookie', 'session=package-owned');
+            $event->setHeader('Set-Cookie', 'session=extension-owned');
             $event->setHeader('X-Bad-Value', "first\r\nsecond");
             $event->setHeader('X-Frame-Options', 'ALLOWALL');
             $event->removeHeader('Content-Security-Policy');
@@ -68,7 +68,7 @@ final class ResponseHookSubscriberTest extends TestCase
     {
         $dispatcher = new EventDispatcher();
         $dispatcher->addListener(OutputGeneratedEvent::class, static function (OutputGeneratedEvent $event): void {
-            $event->appendContent('<!-- package-output-hook -->');
+            $event->appendContent('<!-- extension-output-hook -->');
         });
         $response = new Response('<html></html>', 200, [
             'Content-Type' => 'text/html; charset=UTF-8',
@@ -77,7 +77,7 @@ final class ResponseHookSubscriberTest extends TestCase
 
         $this->subscriber($dispatcher)->onKernelResponse($this->responseEvent($response));
 
-        self::assertSame('<html></html><!-- package-output-hook -->', $response->getContent());
+        self::assertSame('<html></html><!-- extension-output-hook -->', $response->getContent());
         self::assertFalse($response->headers->has('Content-Length'));
     }
 

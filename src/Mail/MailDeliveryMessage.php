@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Mail;
 
 use App\Core\Validation\EmailAddress;
+use App\Core\Validation\IdentifierSpec;
 use BackedEnum;
 use DateTimeInterface;
 use InvalidArgumentException;
@@ -142,7 +143,7 @@ final readonly class MailDeliveryMessage
 
     private function assertParameterKey(string $key): void
     {
-        if (1 !== preg_match('/^[a-z][a-z0-9_]*$/', $key)) {
+        if (!IdentifierSpec::isSnakeIdentifier($key)) {
             throw new InvalidArgumentException(sprintf('Invalid mail parameter key "%s".', $key));
         }
     }

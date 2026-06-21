@@ -19,6 +19,7 @@ final readonly class AuditLogger implements AuditLoggerInterface
         private ?RequestStack $requestStack = null,
         private ?AccessRequestMetadata $accessRequestMetadata = null,
         private ?VisitorIdGenerator $visitorIdGenerator = null,
+        private ?DatabaseLogProjector $databaseLogProjector = null,
     ) {
     }
 
@@ -31,13 +32,16 @@ final readonly class AuditLogger implements AuditLoggerInterface
             return;
         }
 
-        $this->logger->info($action, [
+        $payload = [
             'user' => $actor->username() ?? 'anonymous',
             'user_uid' => $actor->userUid(),
             'user_access_level' => $actor->accessLevel(),
             'action' => $action,
             'context' => $this->normalize($this->withRequestTrace($context)),
-        ]);
+        ];
+
+        $this->logger->info($action, $payload);
+        $this->databaseLogProjector?->recordAudit($payload);
     }
 
     /**
@@ -94,6 +98,6 @@ final readonly class AuditLogger implements AuditLoggerInterface
     {
         $normalized = strtolower((string) preg_replace('/[^a-zA-Z0-9]+/', '_', $key));
 
-        return 1 === preg_match('/(?:password|secret|token|credential|authorization|cookie|hmac|encrypted|api_key|private_key)/', $normalized);
+        return 1 === preg_match('/(?:password|secret|token|credential|authorization|cookie|hmac|encrypted|api_key|private_key|license_key)/', $normalized);
     }
 }

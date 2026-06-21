@@ -41,7 +41,7 @@
                                 <input type="hidden" name="_form_id" value="admin-operations">
                                 <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin-operations') }}">
                                 <input type="hidden" name="_operations_action" value="kill_stale_runner">
-                                <button class="system-icon-action system-icon-action-danger" type="submit" title="{{ 'admin.operations.actions.kill_stale_runner'|trans }}" aria-label="{{ 'admin.operations.actions.kill_stale_runner'|trans }}">
+                                <button class="system-icon-action system-icon-action-danger" type="submit" title="{{ 'admin.operations.actions.kill_stale_runner'|trans }}" aria-label="{{ 'admin.operations.actions.kill_stale_runner'|trans }}"{% if not operations_mutable %} disabled{% endif %}>
                                     <span class="ti ti-x" aria-hidden="true"></span>
                                 </button>
                             </form>
@@ -58,7 +58,7 @@
                     <input type="hidden" name="_form_id" value="admin-operations">
                     <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin-operations') }}">
                     <input type="hidden" name="_operations_action" value="clear_stale_lock">
-                    <button class="system-backend-button system-button-warning" type="submit">
+                    <button class="system-backend-button system-button-warning" type="submit"{% if not operations_mutable %} disabled{% endif %}>
                         {{ 'admin.operations.actions.clear_stale_lock'|trans }}
                     </button>
                 </form>
@@ -79,7 +79,7 @@
                 <input type="hidden" name="_form_id" value="admin-operations">
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin-operations') }}">
                 <input type="hidden" name="_operations_action" value="cleanup">
-                <button class="system-backend-button system-button-secondary" type="submit">
+                <button class="system-backend-button system-button-secondary" type="submit"{% if not operations_mutable %} disabled{% endif %}>
                     {{ 'admin.operations.actions.cleanup'|trans }}
                 </button>
             </form>

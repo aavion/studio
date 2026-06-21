@@ -14,7 +14,7 @@
         {% set run_now_action %}
             <form method="post" action="{{ path('backend_admin_scheduler_run', {identifier: task.identifier}) }}">
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token('scheduler-task-run-' ~ task.identifier) }}">
-                <button class="system-backend-button system-button-secondary" type="submit">{{ 'admin.scheduler.actions.run_now'|trans }}</button>
+                <button class="system-backend-button system-button-secondary" type="submit"{% if not scheduler_mutable %} disabled{% endif %}>{{ 'admin.scheduler.actions.run_now'|trans }}</button>
             </form>
         {% endset %}
     {% endif %}
@@ -31,7 +31,7 @@
             <div>
                 <dt>{{ 'admin.scheduler.detail.source'|trans }}</dt>
                 <dd>
-                    <a href="{{ task.source == 'system' ? path('backend_admin_index') : path('backend_admin_package_detail', {packageName: task.source}) }}">{{ task.source }}</a>
+                    <a href="{{ task.source == 'system' ? path('backend_admin_index') : path('backend_admin_extension_detail', {extensionName: task.source}) }}">{{ task.source }}</a>
                 </dd>
             </div>
             <div><dt>{{ 'admin.scheduler.detail.type'|trans }}</dt><dd>{{ task.type.value }}</dd></div>
@@ -44,7 +44,7 @@
             <div><dt>{{ 'admin.scheduler.detail.run_url'|trans }}</dt><dd><code>{{ cron_run_url }}</code></dd></div>
         </dl>
         {% if task.type.value == 'action_queue' and not task.trusted %}
-            <p class="system-muted">{{ 'admin.scheduler.detail.package_action_queue_warning'|trans }}</p>
+            <p class="system-muted">{{ 'admin.scheduler.detail.extension_action_queue_warning'|trans }}</p>
         {% endif %}
         {% if task.status.value != 'active' %}
             <p class="system-muted">{{ 'admin.scheduler.detail.run_now_inactive'|trans }}</p>
@@ -57,11 +57,11 @@
             <input type="hidden" name="_csrf_token" value="{{ csrf_token('scheduler-task-' ~ task.identifier) }}">
             <label class="system-form-field">
                 <span>{{ 'admin.scheduler.form.enabled'|trans }}</span>
-                <input type="checkbox" name="enabled" value="1" {{ task.status.value == 'active' ? 'checked' }}>
+                <input type="checkbox" name="enabled" value="1" {{ task.status.value == 'active' ? 'checked' }}{% if not scheduler_mutable %} disabled{% endif %}>
             </label>
             <label class="system-form-field">
                 <span>{{ 'admin.scheduler.form.cron_expression'|trans }}</span>
-                <input type="text" name="cron_expression" value="{{ task.cronExpression }}" required>
+                <input type="text" name="cron_expression" value="{{ task.cronExpression }}" required{% if not scheduler_mutable %} disabled{% endif %}>
             </label>
             <details class="system-muted">
                 <summary>{{ 'admin.scheduler.legend.summary'|trans }}</summary>
@@ -71,11 +71,11 @@
             </details>
             {% if task.type.value == 'action_queue' and not task.trusted %}
                 <label class="system-form-field">
-                    <span>{{ 'admin.scheduler.form.confirm_package_action_queue'|trans }}</span>
-                    <input type="checkbox" name="confirm_package_action_queue" value="1">
+                    <span>{{ 'admin.scheduler.form.confirm_extension_action_queue'|trans }}</span>
+                    <input type="checkbox" name="confirm_extension_action_queue" value="1"{% if not scheduler_mutable %} disabled{% endif %}>
                 </label>
             {% endif %}
-            <button class="system-backend-button system-button-primary" type="submit">{{ 'ui.actions.save'|trans }}</button>
+            <button class="system-backend-button system-button-primary" type="submit"{% if not scheduler_mutable %} disabled{% endif %}>{{ 'ui.actions.save'|trans }}</button>
         </form>
     </section>
 

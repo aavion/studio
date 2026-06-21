@@ -685,6 +685,24 @@ html {
     border-bottom: 0;
 }
 
+.system-acl-group-grid {
+    display: grid;
+    gap: 0.5rem;
+    min-width: min(100%, 22rem);
+}
+
+.system-acl-group-row {
+    align-items: center;
+    display: grid;
+    gap: 0.5rem;
+    grid-template-columns: minmax(10rem, 1fr) minmax(8rem, 12rem);
+}
+
+.system-acl-group-row code {
+    display: block;
+    margin-top: 0.125rem;
+}
+
 .system-markdown,
 .system-rich-text {
     @apply text-base leading-7;

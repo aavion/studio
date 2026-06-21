@@ -195,16 +195,16 @@ final class NavigationBuilderTest extends KernelTestCase
                 ));
                 $event->addItem(new NavigationItem(
                     '30000000-0000-7000-8000-000000000993',
-                    'Packages',
+                    'Extensions',
                     'url',
-                    '/packages',
+                    '/extensions',
                     sortOrder: 25,
                 ));
                 $event->addItem(new NavigationItem(
                     '30000000-0000-7000-8000-000000000994',
-                    'Package Child',
+                    'Extension Child',
                     'url',
-                    '/packages/child',
+                    '/extensions/child',
                     '30000000-0000-7000-8000-000000000993',
                     10,
                 ));
@@ -213,9 +213,9 @@ final class NavigationBuilderTest extends KernelTestCase
 
         $navigation = self::getContainer()->get(NavigationBuilder::class)->build('main', 'en', actor: AccessActor::anonymous());
 
-        self::assertSame(['Home', 'About', 'Packages', 'News', 'ui.user.login.title'], array_column($navigation, 'label'));
+        self::assertSame(['Home', 'About', 'Extensions', 'News', 'ui.user.login.title'], array_column($navigation, 'label'));
         self::assertSame(['Alpha', 'Beta'], array_column($navigation[1]['children'], 'label'));
-        self::assertSame('Package Child', $navigation[2]['children'][0]['label']);
+        self::assertSame('Extension Child', $navigation[2]['children'][0]['label']);
     }
 
     public function testItExposesCollectedFlatItemsForCustomBuilders(): void
@@ -359,13 +359,13 @@ final class NavigationBuilderTest extends KernelTestCase
         $navigation = self::getContainer()->get(NavigationBuilder::class)->build(
             'backend.admin',
             actor: AccessActor::fromAccess(8),
-            activeUrl: '/admin/packages',
+            activeUrl: '/admin/extensions',
             activeRoute: 'backend_admin_route',
         );
 
         self::assertSame([
             'admin.navigation.dashboard',
-            'admin.navigation.packages',
+            'admin.navigation.extensions',
             'admin.navigation.themes',
             'admin.navigation.users',
             'admin.navigation.scheduler',
@@ -377,7 +377,7 @@ final class NavigationBuilderTest extends KernelTestCase
         ], array_column($navigation, 'label'));
         self::assertSame([
             '/admin',
-            '/admin/packages',
+            '/admin/extensions',
             '/admin/themes',
             '/admin/users',
             '/admin/scheduler',
@@ -394,13 +394,34 @@ final class NavigationBuilderTest extends KernelTestCase
             'admin.navigation.dashboard_settings',
             'admin.navigation.user_settings',
             'admin.navigation.mail_settings',
-            'admin.navigation.security_settings',
             'admin.navigation.statistics_settings',
-            'admin.navigation.api_settings',
-            'admin.navigation.package_settings',
+            'admin.navigation.logging_settings',
+            'admin.navigation.extension_settings',
             'admin.navigation.scheduler_settings',
             'admin.navigation.system_info',
         ], array_column($navigation[9]['children'], 'label'));
+
+        $ownerNavigation = self::getContainer()->get(NavigationBuilder::class)->build(
+            'backend.admin',
+            actor: AccessActor::fromAccess(9),
+            activeUrl: '/admin/settings',
+            activeRoute: 'backend_admin_route',
+        );
+
+        self::assertSame([
+            'admin.navigation.general_settings',
+            'admin.navigation.dashboard_settings',
+            'admin.navigation.user_settings',
+            'admin.navigation.mail_settings',
+            'admin.navigation.security_settings',
+            'admin.navigation.statistics_settings',
+            'admin.navigation.logging_settings',
+            'admin.navigation.api_settings',
+            'admin.navigation.acl_settings',
+            'admin.navigation.extension_settings',
+            'admin.navigation.scheduler_settings',
+            'admin.navigation.system_info',
+        ], array_column($ownerNavigation[9]['children'], 'label'));
     }
 
     public function testItFiltersNavigationItemsByAccessLevel(): void

@@ -1,0 +1,74 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Tests\Security\Abuse;
+
+use App\Security\Abuse\ActionCostCatalogue;
+use App\Security\Abuse\RequestIntentClassifier;
+use PHPUnit\Framework\TestCase;
+use Symfony\Component\HttpFoundation\Request;
+
+final class ActionCostCatalogueTest extends TestCase
+{
+    public function testItKeepsLiveAndPrefetchTrafficOutOfOrdinaryEnforcement(): void
+    {
+        $classifier = new RequestIntentClassifier();
+        $catalogue = new ActionCostCatalogue();
+
+        $live = $catalogue->costFor($classifier->classify(Request::create('/api/live/alerts')));
+        $prefetch = $catalogue->costFor($classifier->classify(Request::create('/docs', server: [
+            'HTTP_SEC_PURPOSE' => 'prefetch',
+        ])));
+
+        self::assertSame('live_api', $live->bucketFamily());
+        self::assertSame(0, $live->credits());
+        self::assertFalse($live->ordinaryEnforcement());
+        self::assertSame('website_prefetch', $prefetch->bucketFamily());
+        self::assertFalse($prefetch->ordinaryEnforcement());
+    }
+
+    public function testItAssignsHigherSymbolicCostsToSuspiciousAndMutatingTraffic(): void
+    {
+        $classifier = new RequestIntentClassifier();
+        $catalogue = new ActionCostCatalogue();
+
+        $probe = $catalogue->costFor($classifier->classify(Request::create('/.env')));
+        $apiWrite = $catalogue->costFor($classifier->classify(Request::create('/api/v1/content/items', 'POST')));
+        $adminApiWrite = $catalogue->costFor($classifier->classify(Request::create('/api/v1/admin/operations/cleanup', 'POST')));
+        $schedulerTrigger = $catalogue->costFor($classifier->classify(Request::create('/cron/run')));
+        $schedulerNotFound = $catalogue->costFor($classifier->classify(Request::create('/cron/not-found')));
+        $setupWizard = $catalogue->costFor($classifier->classify(Request::create('/setup/database', 'POST', [
+            '_setup_action' => 'test_database',
+        ])));
+        $setupApply = $catalogue->costFor($classifier->classify(Request::create('/setup/review', 'POST', [
+            '_setup_action' => 'apply',
+        ])));
+
+        self::assertSame('suspicious_probe', $probe->bucketFamily());
+        self::assertSame(10, $probe->credits());
+        self::assertSame('api_write', $apiWrite->bucketFamily());
+        self::assertSame(5, $apiWrite->credits());
+        self::assertSame('admin_mutation', $adminApiWrite->bucketFamily());
+        self::assertSame(8, $adminApiWrite->credits());
+        self::assertSame('scheduler', $schedulerTrigger->bucketFamily());
+        self::assertSame('website', $schedulerNotFound->bucketFamily());
+        self::assertSame('setup', $setupWizard->bucketFamily());
+        self::assertSame(1, $setupWizard->credits());
+        self::assertSame('setup_apply', $setupApply->bucketFamily());
+        self::assertSame(8, $setupApply->credits());
+    }
+
+    public function testItExposesUniqueBucketFamilyCostsForPolicyBudgets(): void
+    {
+        $catalogue = new ActionCostCatalogue();
+        $costs = $catalogue->uniqueCreditsByBucketFamily();
+
+        self::assertSame(5, $costs['registration']);
+        self::assertSame(3, $costs['password_reset']);
+        self::assertSame(5, $costs['api_write']);
+        self::assertSame(10, $costs['suspicious_probe']);
+        self::assertArrayNotHasKey('live_api', $costs);
+        self::assertArrayNotHasKey('api_preflight', $costs);
+    }
+}

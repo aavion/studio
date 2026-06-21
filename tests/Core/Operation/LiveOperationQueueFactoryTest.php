@@ -18,12 +18,12 @@ final class LiveOperationQueueFactoryTest extends KernelTestCase
             'environment' => 'test',
             'trigger' => 'admin_ui',
         ]);
-        $packageDiscovery = $factory->create(LiveOperationQueueFactory::PACKAGE_DISCOVERY, [
+        $extensionDiscovery = $factory->create(LiveOperationQueueFactory::EXTENSION_DISCOVERY, [
             'environment' => 'test',
             'trigger' => 'admin_ui',
         ]);
-        $packageLifecycle = $factory->create(LiveOperationQueueFactory::PACKAGE_LIFECYCLE, [
-            'package' => 'demo-module',
+        $extensionLifecycle = $factory->create(LiveOperationQueueFactory::EXTENSION_LIFECYCLE, [
+            'extension' => 'demo-module',
             'action' => 'activate',
             'environment' => 'test',
             'trigger' => 'admin_ui',
@@ -45,32 +45,39 @@ final class LiveOperationQueueFactoryTest extends KernelTestCase
             ],
             'trigger' => 'setup_wizard',
         ]);
-        $packageInstallVerify = $factory->create(LiveOperationQueueFactory::PACKAGE_INSTALL_VERIFY, [
+        $extensionInstallVerify = $factory->create(LiveOperationQueueFactory::EXTENSION_INSTALL_VERIFY, [
             'install_id' => 'aaaaaaaaaaaaaaaaaaaaaaaa',
             'trigger' => 'admin_ui',
         ]);
-        $packageInstallApply = $factory->create(LiveOperationQueueFactory::PACKAGE_INSTALL_APPLY, [
+        $extensionInstallApply = $factory->create(LiveOperationQueueFactory::EXTENSION_INSTALL_APPLY, [
             'install_id' => 'aaaaaaaaaaaaaaaaaaaaaaaa',
-            'package' => 'demo-module',
+            'extension' => 'demo-module',
+            'trigger' => 'admin_ui',
+        ]);
+        $geoIpUpdate = $factory->create(LiveOperationQueueFactory::GEOIP_DATABASE_UPDATE, [
+            'environment' => 'test',
             'trigger' => 'admin_ui',
         ]);
 
         self::assertTrue($backendCacheClear->isSuccess());
         self::assertSame('backend cache clear', $backendCacheClear->value()?->name());
         self::assertSame('test', $backendCacheClear->value()?->context()['environment']);
-        self::assertTrue($packageDiscovery->isSuccess());
-        self::assertSame('package discovery', $packageDiscovery->value()?->name());
-        self::assertSame('admin_ui', $packageDiscovery->value()?->context()['trigger']);
-        self::assertTrue($packageLifecycle->isSuccess());
-        self::assertSame('activate', $packageLifecycle->value()?->context()['action']);
+        self::assertTrue($extensionDiscovery->isSuccess());
+        self::assertSame('extension discovery', $extensionDiscovery->value()?->name());
+        self::assertSame('admin_ui', $extensionDiscovery->value()?->context()['trigger']);
+        self::assertTrue($extensionLifecycle->isSuccess());
+        self::assertSame('activate', $extensionLifecycle->value()?->context()['action']);
         self::assertTrue($aclGroupApply->isSuccess());
         self::assertSame('Delete ACL group and clean references', $aclGroupApply->value()?->actions()[0]->label());
         self::assertTrue($setupApply->isSuccess());
         self::assertSame('select_language', $setupApply->value()?->actions()[0]->label());
-        self::assertTrue($packageInstallVerify->isSuccess());
-        self::assertSame('package install verification', $packageInstallVerify->value()?->name());
-        self::assertTrue($packageInstallApply->isSuccess());
-        self::assertSame('demo-module', $packageInstallApply->value()?->context()['package']);
+        self::assertTrue($extensionInstallVerify->isSuccess());
+        self::assertSame('extension install verification', $extensionInstallVerify->value()?->name());
+        self::assertTrue($extensionInstallApply->isSuccess());
+        self::assertSame('demo-module', $extensionInstallApply->value()?->context()['extension']);
+        self::assertTrue($geoIpUpdate->isSuccess());
+        self::assertSame('geoip database update', $geoIpUpdate->value()?->name());
+        self::assertSame('admin_ui', $geoIpUpdate->value()?->context()['trigger']);
     }
 
     public function testItRejectsUnknownOperationsAndInvalidPayloads(): void
@@ -79,8 +86,8 @@ final class LiveOperationQueueFactoryTest extends KernelTestCase
         $factory = $this->factory();
 
         $unknown = $factory->create('missing.operation');
-        $invalidLifecycle = $factory->create(LiveOperationQueueFactory::PACKAGE_LIFECYCLE, [
-            'package' => 'demo-module',
+        $invalidLifecycle = $factory->create(LiveOperationQueueFactory::EXTENSION_LIFECYCLE, [
+            'extension' => 'demo-module',
         ]);
         $invalidAclGroupApply = $factory->create(LiveOperationQueueFactory::ACL_GROUP_APPLY, [
             'group_uid' => 'aaaaaaaa-aaaa-7aaa-aaaa-aaaaaaaaaaaa',

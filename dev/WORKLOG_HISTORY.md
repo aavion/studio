@@ -1,7 +1,7 @@
 # Developer Worklog History
 
 > **Status**: Active  
-> **Updated**: 2026-06-13  
+> **Updated**: 2026-06-18  
 > **Owner**: Core  
 > **Purpose:** Preserve compacted branch/PR history moved out of `dev/WORKLOG.md` at branch boundaries.
 
@@ -9,6 +9,55 @@
 Move completed branch or PR logs from `dev/WORKLOG.md` into this file when switching branches or after a PR is merged. Keep the active worklog focused on the current branch so reviewers can see the full PR context while older project history stays available.
 
 ## Archived Branches
+### 2026-06-18 feat-security-auto-ban
+- Implemented the auto-ban slice: retained source-risk Security signals now feed Visitor/IP score aggregation from the signal-write path; active bans use cache-flock TTL state with an indexed active-ban list, Visitor-before-IP selection, reset cutoffs, retained trigger/reset context, escalated `1h`/`3h`/`24h`/`7d` TTLs, forced bare `403` responses with `Retry-After`, and Owner-gated list/detail/reset UI plus Admin API endpoints.
+- Added policy/configuration and operator surfaces for auto-ban enablement, trusted-user access level, score threshold, Owner alerts, active-ban detail enrichment from access-log GeoIP context, manual release/reset signals, fail-open setup/config/storage behavior, and the documented `/user/login?bypass=1` recovery render/submission flow while keeping trusted users and trusted-user-owned API keys out of source-ban lockouts.
+- Hardened the branch through 31 Codex Cloud Review findings: serialized active-ban index/reset state, verified cache deletion failures, avoided duplicate trigger signals/alerts, aligned API endpoint access contracts, fixed recovery-login/auth ordering, covered API/scheduler/browser pre-auth and response-phase error fallbacks, prevented auto-ban responses from creating new signals, bounded suspicious payload scanning, handled scheduler trusted-key contexts, enforced retention/TTL compatibility, and recorded one scheduler-authorization finding as invalid because auto-ban only decides trusted-user bypass eligibility while scheduler authorization remains scheduler-owned.
+- Added adjacent hardening beyond direct findings: scoreable suspicious payload signals for obvious public/untrusted attack patterns, newest-first retained detail rows, forced access-log entries for bare auto-ban responses, request-ID/GeoIP correlation for ban detail, config validation guards for bounded persisted settings, and documentation/worklog/class-map updates. Closed the branch with full verification: `php bin/phpunit`, `bin/jstest`, and `bin/lint` passed before merge.
+
+### 2026-06-17 to 2026-06-18 feat-security-rate-enforcement
+- Implemented the rate-enforcement slice: descriptor-backed Symfony RateLimiter facade, Owner-gated mode setting (`off`, `standard`, `strict`, `panic`), action-cost-derived policy catalogue, Website/API/Scheduler/Auth/Setup/Probe buckets, fail-open storage diagnostics through the Message layer, authenticated multipliers, Owner ordinary exemption, recovery-login handling, active-profile scoped resets, dormant captcha reset contract, and redacted HTML/JSON `429`/probe responses.
+- Hardened the branch through 39 resolved Cloud Review findings: unsafe-only workflow charging, authentication-failure ordering, generated/static exclusions, active-profile resets, recovery buckets, account/token subjects, API/CORS/read-only preflight handling, Owner and scheduler exceptions, exact technical path scopes, probe ordering before package/API/setup/maintenance gates, setup-final-apply safety, multi-bucket pre-check/commit semantics, website fallback for descriptor gaps, and segment-bound API/Cron guards.
+- Added shared path helpers, HTTP error-renderer bare/resolve behavior, `render:route` diagnostics hardening, rate-limit Security settings translations, future cache-panic documentation, worklog/class-map/draft updates, PR-readiness/review-fix project rules, and final review notes showing full `bin/phpunit`, `bin/jstest`, and `bin/lint` passed before merge.
+
+### 2026-06-16 to 2026-06-17 feat-security-admin-acl-enforcement
+- Implemented the Admin ACL enforcement slice: domain-owned feature registry, denied/visible/mutable states, surface inference from feature keys, seeded Owner-configurable defaults, ACL-group override states, Owner-gated `Settings/ACL` matrix, dynamic active-package settings rows, and feature-matrix caching with explicit invalidation.
+- Wired Admin ACL feature checks through protected settings fields, Admin navigation/views, package/theme actions, package lifecycle and settings, GeoIP maintenance, operations continuations, scheduler, logs, statistics, users, user reviews, ACL group management, backup/status surfaces, and Admin API handlers while keeping visible-only controls rendered disabled where layout depends on them.
+- Hardened the slice through review rounds: separated ACL-group definition permissions from user group membership mutations, rechecked target-domain ACL for live-operation continuations, applied `admin.settings.security` to all Security settings fields including Captcha, gated the concrete Scheduler web controller, and documented policy decisions that pending account-token review actions use `admin.users.review` and trusted registered Scheduler tasks use `admin.scheduler`.
+- Closed the branch with updated translations, runtime catalogues, drafts, class map, worklog notes, focused regression coverage, full PHPUnit, JavaScript tests, lint, and container validation.
+
+### 2026-06-16 feat-security-abuse-foundation
+- Implemented the Abuse Foundation slice: passive security-signal model and recording, request intent/action-cost classification, suspicious probe matching, visitor/IP-bucket evidence handling, configurable probe patterns, session/visitor mismatch signals, and database/file-backed Admin log browsing refinements.
+- Hardened the slice through review passes: retention-aware signal/log reads, portable database search, source-aware Admin Log filters and pagination, safe path/token sanitization, locale-aware route classification, cache invalidation for probe patterns, and clearer rate-enforcement handoff policy for future limiter/ban branches.
+- Closed the branch with full verification: `bin/phpunit`, `bin/jstest`, and `bin/lint` passed, with only intentional Markdown metadata hardbreaks reported by raw Git whitespace checks.
+
+### 2026-06-15 to 2026-06-16 feat-security-geoip-observability
+- Implemented the GeoIP observability slice: provider-neutral resolver boundary, MaxMind/GeoIP2 local database provider, protected Statistics settings, safe provider diagnostics, Statistics/Admin status rendering, explicit setup defaults, manual Operations-backed database downloads, scheduler callable, and access log/statistics enrichment while preserving `n/a` fallbacks.
+- Hardened GeoIP secrets, file handling, and portability through review rounds: no real MaxMind credentials in tests, no logged license-key URLs, project-relative `var/geoip2/GeoLite2-City.mmdb` path, Windows/path traversal rejection, compressed TAR validation, unsafe archive-member rejection, symlink/hardlink rejection, atomic replacement with readable permissions, streamed downloads, unsupported non-City database rejection, and bounded location labels for strict SQL platforms.
+- Kept the slice narrow after product review: no latitude/longitude, no persistent GeoIP update-history store, no geo-blocking, no provider dropdown/account ID/locale settings, and no one-off Scheduler task ACL gates; task-level Scheduler policy is deferred to the Admin ACL enforcement matrix while direct GeoIP settings/download controls are Owner-only.
+- Closed the branch with full verification and review context: full PHPUnit, JavaScript, lint, container, focused GeoIP/API/UI tests, class-map/worklog/draft updates, and Codex Cloud Review follow-ups.
+
+### 2026-06-15 feat-security-policy-docs
+- Added `dev/draft/security-hardening/policy-defaults.md` as the central first-implementation policy source for Security hardening TTLs, rate-limit thresholds, auto-ban defaults, captcha defaults, privacy ceilings, logging projection posture, and configuration rules.
+- Linked policy defaults from the master Security hardening plan, the Security/API/Contact-Mail-Logging drafts, and the affected branch plans; then refined captcha TTLs, website burst/sustained budgets, scheduler trigger limits, high-signal probe limits, recovery login bypass behavior, captcha auto-success policy, and Admin/Owner protections.
+- Added cross-cutting Security policy decisions for deterministic enforcement order, block-response semantics, probe-pattern validation, configuration bounds, auditable exemptions, configuration-surface ownership, privacy/storage ceilings, and follow-up coverage for setup/install, CORS preflight, uploads, archives, exports, diagnostics, trusted proxy identity, browser storage, and HTTP security headers.
+- Added Admin-vs-Owner authority policy plus the detailed `feat-security-admin-acl-enforcement` branch plan, including default authority matrix, bounded Owner configurability, concrete domain defaults, enforcement boundaries, and test expectations.
+
+### 2026-06-15 feat-security-planning
+- Created the Security hardening planning package: master branch-tree plan plus detailed `feat-security-*` plans for policy docs, GeoIP observability, abuse foundations, rate enforcement, auto-ban, captcha contracts, IconCaptcha, mailer account delivery, and remember-me.
+- Recorded core product decisions for `/api/live/**` rate-limit exclusion, Turbo/browser prefetch classification, scoped `reset()` behavior, database-backed passive signals/auto-bans, Owner recovery protection, GeoIP observability, IconCaptcha asset/accessibility rules, PR-readiness checks, and the inspiration-only `sec-lookup` legacy reference.
+- Tightened privacy and architecture guardrails around shared client identity/trusted proxies, injectable clocks, degraded storage, race/idempotency, database-backed security event projection as an open question, and a 30-day maximum for queryable IP-derived data.
+
+### 2026-06-13 to 2026-06-14 feat-symfony-ux-integration
+- Added the Symfony UX/UI foundation: namespace-aware Twig components, shared alert stacks, reusable Stimulus/live-polling controllers, notification center behavior, package live endpoints, package-aware cookie consent, local Mercure tooling, and lazy UX integrations.
+- Hardened live/API/cookie/Mercure boundaries through repeated review passes, including exact-before-pattern dispatch, reserved live slugs, GET-only package live endpoints, alert topic scoping, consent cookie signing, protected Mercure env handling, URL/link sink validation, and safe fallback polling.
+- Added JavaScript behavior coverage and UI/operation overlay refinements while recording follow-ups for public privacy triggers, live endpoint docs/navigation, captcha seed flows, notification preferences, package callbacks, and future LiveComponent filter slices.
+
+### 2026-06-12 to 2026-06-13 docs-cleanup
+- Refreshed repository guidance and context docs: moved binding project rules into `AGENTS.md`, updated `.codex` environment/tooling notes, refreshed dependency recap for Symfony 8.1-era packages, and restored branch-oriented worklog archival rules.
+- Improved local developer tooling documentation and commands: expanded `bin/lint` with diff/staged/changed modes, Markdown parsing, extensionless PHP checks, Git whitespace handling, route rendering through `php bin/console render:route`, and Symfony UX icon reference checks.
+- Recorded Symfony UX integration notes, icon locking behavior, cache warmup/UX Translator expectations, production-only AssetMapper guidance, and ext-sodium platform requirements while archiving obsolete `.codex` helper context.
+
 ### 2026-06-07
 - Completed the API foundation and hardening slice: stateless Bearer API-key authentication, endpoint definitions/handlers, OpenAPI 3.2 generation, public/private navigation, admin/user/content/package endpoints, CORS, trace headers, feature policy settings, response/error schemas, and Message-layer localized feedback.
 - Hardened API access and review boundaries around disabled/setup/maintenance responses, package-owned route patterns, read-only method gates, endpoint permissions, API-key parsing, deleted users, ACL denial status, retained-deleted account mutations, content revisions, package slug identity, pagination/filtering/sorting, and public published-content status leakage.

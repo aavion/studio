@@ -11,11 +11,13 @@ use App\Backend\BackendArea;
 use App\Backend\BackendRouteResolver;
 use App\Backend\BackendViewDefinition;
 use App\Core\Access\AccessActor;
-use App\Core\Message\Message;
+use App\Core\AdminAcl\AdminFeatureAccessPolicy;
+use App\Core\AdminAcl\AdminAclSettingsFormHandler;
 use App\Core\Config\Settings\CoreSettingsFormHandler;
+use App\Core\Log\AdminLogBrowser;
+use App\Core\Message\Message;
 use App\Core\Log\AuditLoggerInterface;
-use App\Core\Log\LogFileBrowser;
-use App\Core\Package\Settings\PackageSettingsFormHandler;
+use App\Core\Extension\Settings\ExtensionSettingsFormHandler;
 use App\Entity\UserAccount;
 use App\Form\FormErrorKey;
 use App\Form\FormSubmissionResult;
@@ -39,10 +41,12 @@ final class BackendController extends AbstractController
         private readonly NavigationBuilder $navigationBuilder,
         private readonly HttpErrorRenderer $httpError,
         private readonly CoreSettingsFormHandler $coreSettingsFormHandler,
-        private readonly PackageSettingsFormHandler $packageSettingsFormHandler,
+        private readonly AdminFeatureAccessPolicy $adminAcl,
+        private readonly AdminAclSettingsFormHandler $adminAclSettingsFormHandler,
+        private readonly ExtensionSettingsFormHandler $extensionSettingsFormHandler,
         private readonly AdminViewContextProvider $adminViewContextProvider,
         private readonly BackendActionResponder $backendActionResponder,
-        private readonly LogFileBrowser $logFileBrowser,
+        private readonly AdminLogBrowser $logBrowser,
         private readonly AuditLoggerInterface $auditLogger,
         private readonly FormTokenValidator $formTokenValidator,
         private readonly UiAlertDispatcherInterface $alerts,
@@ -55,7 +59,7 @@ final class BackendController extends AbstractController
         return $this->handle($request, BackendArea::Admin);
     }
 
-    #[Route('/admin/logs/{entryId}', name: 'backend_admin_log_detail', requirements: ['entryId' => '[a-f0-9]{24}'], methods: ['GET'])]
+    #[Route('/admin/logs/{entryId}', name: 'backend_admin_log_detail', requirements: ['entryId' => '(?:[0-9a-fA-F]{24}|[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})'], methods: ['GET'])]
     public function logDetail(Request $request, string $entryId): Response
     {
         $access = $this->adminAccessResponse($request);
@@ -63,9 +67,24 @@ final class BackendController extends AbstractController
         if (null !== $access) {
             return $access;
         }
+        if (!$this->adminAcl->isVisible('admin.logs', $this->actor())) {
+            return $this->httpError->resolve(Response::HTTP_UNAUTHORIZED, $request, context: [
+                'feature' => 'admin.logs',
+                'required_state' => 'visible',
+            ]);
+        }
 
         $source = $request->query->get('source', 'message');
-        $entry = $this->logFileBrowser->entry(is_string($source) ? $source : 'message', $entryId);
+        $source = is_string($source) ? $source : 'message';
+        if (in_array($source, ['audit', 'security_signal'], true) && !$this->adminAcl->isMutable('admin.logs', $this->actor())) {
+            return $this->httpError->resolve(Response::HTTP_UNAUTHORIZED, $request, context: [
+                'feature' => 'admin.logs',
+                'required_state' => 'mutable',
+                'source' => $source,
+            ]);
+        }
+
+        $entry = $this->logBrowser->entry($source, $entryId);
 
         if (null === $entry) {
             return $this->httpError->notFound($request);
@@ -106,7 +125,7 @@ final class BackendController extends AbstractController
         $decision = $this->accessGuard->decide($area, $this->getUser());
 
         if (!$decision->isGranted()) {
-            return $this->httpError->render(Response::HTTP_UNAUTHORIZED, $request, context: [
+            return $this->httpError->resolve(Response::HTTP_UNAUTHORIZED, $request, context: [
                 'area' => $area->value,
                 'access_decision' => $decision->toArray(),
             ]);
@@ -120,7 +139,7 @@ final class BackendController extends AbstractController
         $view = $result->view();
 
         if (null !== $view && !$this->viewAllows($view, $actor)) {
-            return $this->httpError->render(Response::HTTP_UNAUTHORIZED, $request, context: [
+            return $this->httpError->resolve(Response::HTTP_UNAUTHORIZED, $request, context: [
                 'area' => $area->value,
                 'view' => $view->uid(),
             ]);
@@ -154,7 +173,7 @@ final class BackendController extends AbstractController
             return null;
         }
 
-        return $this->httpError->render(Response::HTTP_UNAUTHORIZED, $request, context: [
+        return $this->httpError->resolve(Response::HTTP_UNAUTHORIZED, $request, context: [
             'area' => BackendArea::Admin->value,
             'access_decision' => $decision->toArray(),
         ]);
@@ -187,6 +206,12 @@ final class BackendController extends AbstractController
 
     private function viewAllows(BackendViewDefinition $view, AccessActor $actor): bool
     {
+        $feature = $view->accessFeature();
+
+        if (is_string($feature) && !$this->adminAcl->isVisible($feature, $actor)) {
+            return false;
+        }
+
         if ($actor->accessLevel() >= $view->minimumAccessLevel()) {
             return true;
         }
@@ -218,27 +243,43 @@ final class BackendController extends AbstractController
             $expectedFormId = 'admin-settings-'.$context['settings_section'];
             $auditAction = 'settings.core.save';
             $auditContext = ['section' => $context['settings_section']];
+            if ($response = $this->mutationDeniedResponse($request, $view)) {
+                return $response;
+            }
             $result = $this->formTokenValidator->isValid($expectedFormId, $formId, $token)
-                ? $this->coreSettingsFormHandler->submit($context['settings_section'], $request->request->all(), $this->actor()->userUid())
+                ? $this->coreSettingsFormHandler->submit($context['settings_section'], $request->request->all(), $this->actor()->userUid(), $this->actor())
                 : $this->invalidCsrfResult($request);
-        } elseif ('backend-admin-settings-packages' === $view->uid()) {
-            $expectedFormId = 'admin-settings-packages';
+        } elseif ('backend-admin-settings-extensions' === $view->uid()) {
+            $expectedFormId = 'admin-settings-extensions';
             $auditAction = 'settings.core.save';
-            $auditContext = ['section' => 'packages'];
+            $auditContext = ['section' => 'extensions'];
+            if ($response = $this->mutationDeniedResponse($request, $view)) {
+                return $response;
+            }
             $result = $this->formTokenValidator->isValid($expectedFormId, $formId, $token)
-                ? $this->coreSettingsFormHandler->submit('packages', $request->request->all(), $this->actor()->userUid())
+                ? $this->coreSettingsFormHandler->submit('extensions', $request->request->all(), $this->actor()->userUid(), $this->actor())
                 : $this->invalidCsrfResult($request);
-        } elseif (isset($context['package_name']) && is_string($context['package_name'])) {
-            $expectedFormId = 'package-settings-'.preg_replace('/[^a-z0-9_]+/', '_', strtolower($context['package_name']));
-            $auditAction = 'settings.package.save';
-            $auditContext = ['package' => $context['package_name']];
+        } elseif ('backend-admin-settings-acl' === $view->uid()) {
+            $expectedFormId = 'admin-settings-acl';
+            $auditAction = 'settings.acl.save';
+            $auditContext = ['section' => 'acl'];
             $result = $this->formTokenValidator->isValid($expectedFormId, $formId, $token)
-                ? $this->packageSettingsFormHandler->submit($context['package_name'], $request->request->all(), $this->actor()->userUid())
+                ? $this->adminAclSettingsFormHandler->submit($request->request->all(), $this->actor()->userUid())
+                : $this->invalidCsrfResult($request);
+        } elseif (isset($context['extension_name']) && is_string($context['extension_name'])) {
+            $expectedFormId = 'extension-settings-'.preg_replace('/[^a-z0-9_]+/', '_', strtolower($context['extension_name']));
+            $auditAction = 'settings.extension.save';
+            $auditContext = ['extension' => $context['extension_name']];
+            if ($response = $this->mutationDeniedResponse($request, $view)) {
+                return $response;
+            }
+            $result = $this->formTokenValidator->isValid($expectedFormId, $formId, $token)
+                ? $this->extensionSettingsFormHandler->submit($context['extension_name'], $request->request->all(), $this->actor()->userUid())
                 : $this->invalidCsrfResult($request);
         }
 
         if (!$result instanceof FormSubmissionResult) {
-            return $this->httpError->render(Response::HTTP_METHOD_NOT_ALLOWED, $request, context: [
+            return $this->httpError->resolve(Response::HTTP_METHOD_NOT_ALLOWED, $request, context: [
                 'area' => $view->area()->value,
                 'view' => $view->uid(),
             ]);
@@ -259,8 +300,24 @@ final class BackendController extends AbstractController
 
         $request->attributes->set('_system_form_values', $result->values());
         $request->attributes->set('_system_form_errors', $result->errors());
+        $this->alerts->addAlert(UiAlertTranslation::error('admin.settings.form.errors.save_failed'), UiAlertDelivery::Direct);
 
         return null;
+    }
+
+    private function mutationDeniedResponse(Request $request, BackendViewDefinition $view): ?Response
+    {
+        $feature = $view->accessFeature();
+
+        if (!is_string($feature) || $this->adminAcl->isMutable($feature, $this->actor())) {
+            return null;
+        }
+
+        return $this->httpError->resolve(Response::HTTP_UNAUTHORIZED, $request, context: [
+            'area' => $view->area()->value,
+            'view' => $view->uid(),
+            'access_feature' => $feature,
+        ]);
     }
 
     /**
@@ -268,12 +325,17 @@ final class BackendController extends AbstractController
      */
     private function auditFormSubmission(string $action, FormSubmissionResult $result, array $context = []): void
     {
-        $settingKeys = array_keys($result->values());
+        $settingKeys = array_filter(
+            array_keys($result->values()),
+            static fn (string $key): bool => !str_starts_with($key, '_'),
+        );
         sort($settingKeys);
+        $auditContext = $result->value('_audit');
 
         try {
             $this->auditLogger->log($this->actor(), $action, [
                 ...$context,
+                ...(is_array($auditContext) ? $auditContext : []),
                 'result_status' => 'success',
                 'setting_keys' => $settingKeys,
             ]);

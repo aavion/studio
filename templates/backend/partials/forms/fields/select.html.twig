@@ -9,6 +9,7 @@
         class="system-backend-select"
         name="{{ name }}"
         {% if required|default(false) %}required{% endif %}
+        {% if disabled|default(false) %}disabled{% endif %}
         {{ html_attributes(attributes|default({})) }}
         {{ autocomplete_attributes }}
     >

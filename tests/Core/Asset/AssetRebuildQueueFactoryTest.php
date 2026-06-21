@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Tests\Core\Asset;
 
 use App\Core\Asset\AssetRebuildQueueFactory;
-use App\Core\Package\PackageAssetSyncPackage;
-use App\Core\Package\PackageAssetSyncer;
-use App\Core\Package\PackageScope;
+use App\Core\Extension\ExtensionAssetSyncTarget;
+use App\Core\Extension\ExtensionAssetSyncer;
+use App\Core\Extension\ExtensionScope;
 use App\Core\Translation\TranslationCatalogueAggregator;
 use App\Tests\Support\FilesystemTestHelper;
 use PHPUnit\Framework\TestCase;
@@ -34,12 +34,12 @@ final class AssetRebuildQueueFactoryTest extends TestCase
     public function testItBuildsDevelopmentRebuildQueueWithCacheClearAsFinalAction(): void
     {
         $queue = $this->factory()->create('dev', [
-            new PackageAssetSyncPackage('demo', 'packages/demo', [PackageScope::Module]),
+            new ExtensionAssetSyncTarget('demo', 'extensions/demo', [ExtensionScope::Module]),
         ]);
         $actions = $queue->actions();
 
         self::assertCount(8, $actions);
-        self::assertSame('package_asset_sync', $actions[0]->type());
+        self::assertSame('extension_asset_sync', $actions[0]->type());
         self::assertSame('translation_aggregate', $actions[1]->type());
         self::assertStringContainsString('assets:install', $actions[2]->label());
         self::assertStringContainsString('importmap:install', $actions[3]->label());
@@ -74,6 +74,6 @@ final class AssetRebuildQueueFactoryTest extends TestCase
 
     private function factory(): AssetRebuildQueueFactory
     {
-        return new AssetRebuildQueueFactory($this->root, new PackageAssetSyncer($this->root), new TranslationCatalogueAggregator($this->root));
+        return new AssetRebuildQueueFactory($this->root, new ExtensionAssetSyncer($this->root), new TranslationCatalogueAggregator($this->root));
     }
 }

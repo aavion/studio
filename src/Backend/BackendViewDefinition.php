@@ -106,4 +106,11 @@ final readonly class BackendViewDefinition
     {
         return $this->context;
     }
+
+    public function accessFeature(): ?string
+    {
+        $feature = $this->context['access_feature'] ?? null;
+
+        return is_string($feature) && '' !== $feature ? $feature : null;
+    }
 }

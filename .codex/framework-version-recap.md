@@ -67,7 +67,7 @@ Versions were checked against the installed Composer packages, `composer.json`, 
 
 - Before `1.0.0`, update the current baseline migration instead of growing a long development migration chain.
 - Keep entities, baseline migration, tests, docs, and class map aligned when database shape changes.
-- Package/module migrations may be planned as validated package contributions, but execution should remain core-owned.
+- Extension migrations may be planned as validated extension contributions, but execution should remain core-owned.
 
 ## Twig 3.27 Notes
 
@@ -76,7 +76,7 @@ Versions were checked against the installed Composer packages, `composer.json`, 
 - Do not call old internal Twig extension functions such as `twig_escape_filter()` directly. Use runtime APIs such as `EscaperRuntime` where lower-level escaping is genuinely needed.
 - Do not pass `Twig\Template` where public APIs expect `TemplateWrapper`.
 - Keep templates small; move behavior to Twig extensions, components, or services only when the boundary is clear.
-- Use TwigBundle `paths`, `form_themes`, globals, and strict variable settings intentionally for package/theme/template work.
+- Use TwigBundle `paths`, `form_themes`, globals, and strict variable settings intentionally for extension/theme/template work.
 
 ## Tailwind CSS v4 And TailwindBundle Notes
 

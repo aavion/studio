@@ -184,7 +184,7 @@ final class SetupRunner
             ['seed_admin_user', fn (): array => $this->databaseEnvironmentScope->run($environment, fn (): array => $this->databaseSeeder->seedAdminUser($this->projectDir, $input, $databaseUrl))],
             ['seed_initial_content', fn (): array => $this->databaseEnvironmentScope->run($environment, fn (): array => $this->databaseSeeder->seedInitialContent($this->projectDir, $input, $databaseUrl))],
             ['clear_cache', fn (): array => $this->runtimeCommands->clearCache($this->projectDir, $input, $environment, $this->commandExecutor)],
-            ['run_package_discovery', fn (): array => $this->runtimeCommands->runPackageDiscovery($this->projectDir, $input, $environment, $this->commandExecutor)],
+            ['run_extension_discovery', fn (): array => $this->runtimeCommands->runExtensionDiscovery($this->projectDir, $input, $environment, $this->commandExecutor)],
             ['run_asset_rebuild', fn (): array => $this->runtimeCommands->runAssetRebuild($this->projectDir, $input, $environment, $this->commandExecutor)],
             ['run_mercure_health', fn (): array => $this->runtimeCommands->runMercureHealth($this->projectDir, $input, $environment, $this->commandExecutor)],
             ['mark_setup_completed', fn (): array => $this->completionMarker->markComplete($this->projectDir, $input->appEnv())],

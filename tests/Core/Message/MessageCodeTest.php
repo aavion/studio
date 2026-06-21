@@ -19,7 +19,7 @@ use App\Core\Messenger\MessengerMessageCode;
 use App\Core\Operation\Filesystem\FilesystemMessageCode;
 use App\Core\Operation\OperationMessageCode;
 use App\Core\Operation\Process\ProcessMessageCode;
-use App\Core\Package\PackageMessageCode;
+use App\Core\Extension\ExtensionMessageCode;
 use App\Core\Routing\RoutingMessageCode;
 use App\Core\Security\SystemSecurityMessageCode;
 use App\Core\Translation\TranslationMessageCode;
@@ -100,12 +100,12 @@ final class MessageCodeTest extends TestCase
             FilesystemMessageCode::class => ['FILESYSTEM_'],
             OperationMessageCode::class => ['OPERATION_'],
             ProcessMessageCode::class => ['PROCESS_'],
-            PackageMessageCode::class => ['PACKAGE_'],
+            ExtensionMessageCode::class => ['EXTENSION_'],
             RoutingMessageCode::class => ['ABSOLUTE_URI_'],
             SystemSecurityMessageCode::class => ['SYSTEM_'],
             TranslationMessageCode::class => ['TRANSLATION_'],
             SchedulerMessageCode::class => ['SCHEDULER_'],
-            SecurityMessageCode::class => ['ACL_', 'USER_', 'ACCOUNT_', 'API_KEY_'],
+            SecurityMessageCode::class => ['ACL_', 'USER_', 'ACCOUNT_', 'API_KEY_', 'RATE_LIMIT_', 'AUTO_BAN_'],
             SetupMessageCode::class => ['SETUP_'],
             ViewMessageCode::class => ['VIEW_'],
         ];
@@ -131,12 +131,12 @@ final class MessageCodeTest extends TestCase
             FilesystemMessageCode::class => ['filesystem.'],
             OperationMessageCode::class => ['operation.'],
             ProcessMessageCode::class => ['process.'],
-            PackageMessageCode::class => ['package.'],
+            ExtensionMessageCode::class => ['extension.'],
             RoutingMessageCode::class => ['routing.'],
             SystemSecurityMessageCode::class => ['system.'],
             TranslationMessageCode::class => ['translation.'],
             SchedulerMessageCode::class => ['scheduler.'],
-            SecurityMessageCode::class => ['acl.', 'user.', 'account.', 'api_key.'],
+            SecurityMessageCode::class => ['acl.', 'user.', 'account.', 'api_key.', 'rate_limit.', 'auto_ban.'],
             SetupMessageCode::class => ['setup.'],
             ViewMessageCode::class => ['view.'],
         ];

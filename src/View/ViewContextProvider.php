@@ -10,8 +10,8 @@ use App\Core\Event\PublicEventDispatcher;
 final readonly class ViewContextProvider
 {
     public function __construct(
-        private SystemPackageMetadataProvider $systemPackage,
-        private PackageMacroRegistry $macroRegistry,
+        private SystemExtensionMetadataProvider $systemExtension,
+        private ExtensionMacroRegistry $macroRegistry,
         private ContentRouteLocalization $localization,
         private PublicEventDispatcher $eventDispatcher,
     ) {
@@ -23,7 +23,7 @@ final readonly class ViewContextProvider
     public function context(): array
     {
         $event = new ViewContextEvent([
-            'system_package' => $this->systemPackage->metadata(),
+            'system_extension' => $this->systemExtension->metadata(),
             'active_frontend_theme' => null,
             'active_backend_theme' => null,
             'default_locale' => $this->localization->defaultLanguage(),

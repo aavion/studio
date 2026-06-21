@@ -14,7 +14,7 @@ final class Version20260531000000 extends AbstractMigration
 {
     public function getDescription(): string
     {
-        return 'Create the initial core configuration, ACL, package, menu, content schema, revision, and field value tables.';
+        return 'Create the initial core configuration, ACL, extension, menu, content schema, revision, and field value tables.';
     }
 
     public function up(Schema $schema): void
@@ -49,16 +49,16 @@ final class Version20260531000000 extends AbstractMigration
         $config->addColumn('modified_by', 'string', ['length' => 180, 'notnull' => false]);
         $this->addPrimaryKey($config, 'config_key');
 
-        $packageSetting = $schema->createTable('package_setting_entry');
-        $packageSetting->addColumn('package_name', 'string', ['length' => 120]);
-        $packageSetting->addColumn('setting_key', 'string', ['length' => 160]);
-        $packageSetting->addColumn('value', 'json');
-        $packageSetting->addColumn('value_type', 'string', ['length' => 255]);
-        $packageSetting->addColumn('metadata', 'json');
-        $packageSetting->addColumn('modified_at', 'datetime_immutable');
-        $packageSetting->addColumn('modified_by', 'string', ['length' => 180, 'notnull' => false]);
-        $this->addPrimaryKey($packageSetting, 'package_name', 'setting_key');
-        $this->addIndex($packageSetting, ['package_name'], 'idx_package_setting_package');
+        $extensionSetting = $schema->createTable('extension_setting_entry');
+        $extensionSetting->addColumn('extension_name', 'string', ['length' => 120]);
+        $extensionSetting->addColumn('setting_key', 'string', ['length' => 160]);
+        $extensionSetting->addColumn('value', 'json');
+        $extensionSetting->addColumn('value_type', 'string', ['length' => 255]);
+        $extensionSetting->addColumn('metadata', 'json');
+        $extensionSetting->addColumn('modified_at', 'datetime_immutable');
+        $extensionSetting->addColumn('modified_by', 'string', ['length' => 180, 'notnull' => false]);
+        $this->addPrimaryKey($extensionSetting, 'extension_name', 'setting_key');
+        $this->addIndex($extensionSetting, ['extension_name'], 'idx_extension_setting_extension');
 
         $schedulerTask = $schema->createTable('scheduler_task');
         $schedulerTask->addColumn('identifier', 'string', ['length' => 160]);
@@ -155,6 +155,104 @@ final class Version20260531000000 extends AbstractMigration
         $this->addIndex($accessStatistic, ['country', 'occurred_at'], 'idx_access_statistic_country_at');
         $this->addIndex($accessStatistic, ['continent', 'occurred_at'], 'idx_access_statistic_continent_at');
 
+        $messageLog = $schema->createTable('message_log_entry');
+        $messageLog->addColumn('uid', 'string', ['length' => 36]);
+        $messageLog->addColumn('occurred_at', 'datetime_immutable');
+        $messageLog->addColumn('level', 'string', ['length' => 16]);
+        $messageLog->addColumn('message', 'string', ['length' => 255]);
+        $messageLog->addColumn('code', 'string', ['length' => 160, 'notnull' => false]);
+        $messageLog->addColumn('context', 'json');
+        $this->addPrimaryKey($messageLog, 'uid');
+        $this->addIndex($messageLog, ['occurred_at'], 'idx_message_log_occurred_at');
+        $this->addIndex($messageLog, ['level', 'occurred_at'], 'idx_message_log_level_at');
+        $this->addIndex($messageLog, ['code', 'occurred_at'], 'idx_message_log_code_at');
+
+        $auditLog = $schema->createTable('audit_log_entry');
+        $auditLog->addColumn('uid', 'string', ['length' => 36]);
+        $auditLog->addColumn('occurred_at', 'datetime_immutable');
+        $auditLog->addColumn('user_name', 'string', ['length' => 180]);
+        $auditLog->addColumn('user_uid', 'string', ['length' => 36, 'notnull' => false]);
+        $auditLog->addColumn('user_access_level', 'integer');
+        $auditLog->addColumn('action', 'string', ['length' => 160]);
+        $auditLog->addColumn('request_id', 'string', ['length' => 64]);
+        $auditLog->addColumn('visitor_id', 'string', ['length' => 64]);
+        $auditLog->addColumn('requested_path', 'string', ['length' => 1024]);
+        $auditLog->addColumn('resolved_route', 'string', ['length' => 190]);
+        $auditLog->addColumn('context', 'json');
+        $this->addPrimaryKey($auditLog, 'uid');
+        $this->addIndex($auditLog, ['occurred_at'], 'idx_audit_log_occurred_at');
+        $this->addIndex($auditLog, ['action', 'occurred_at'], 'idx_audit_log_action_at');
+        $this->addIndex($auditLog, ['user_uid', 'occurred_at'], 'idx_audit_log_user_at');
+        $this->addIndex($auditLog, ['request_id'], 'idx_audit_log_request_id');
+
+        $accessLog = $schema->createTable('access_log_entry');
+        $accessLog->addColumn('uid', 'string', ['length' => 36]);
+        $accessLog->addColumn('occurred_at', 'datetime_immutable');
+        $accessLog->addColumn('request_id', 'string', ['length' => 64]);
+        $accessLog->addColumn('correlation_id', 'string', ['length' => 64]);
+        $accessLog->addColumn('method', 'string', ['length' => 16]);
+        $accessLog->addColumn('path', 'string', ['length' => 1024]);
+        $accessLog->addColumn('requested_path', 'string', ['length' => 1024]);
+        $accessLog->addColumn('route', 'string', ['length' => 190]);
+        $accessLog->addColumn('resolved_route', 'string', ['length' => 190]);
+        $accessLog->addColumn('surface', 'string', ['length' => 40]);
+        $accessLog->addColumn('query_string', 'string', ['length' => 1024]);
+        $accessLog->addColumn('http_status', 'integer');
+        $accessLog->addColumn('duration_ms', 'integer', ['notnull' => false]);
+        $accessLog->addColumn('visitor_id', 'string', ['length' => 64]);
+        $accessLog->addColumn('scheme', 'string', ['length' => 10]);
+        $accessLog->addColumn('host', 'string', ['length' => 255]);
+        $accessLog->addColumn('client_ip', 'string', ['length' => 45]);
+        $accessLog->addColumn('proxy_client_ip', 'string', ['length' => 45]);
+        $accessLog->addColumn('user_agent', 'string', ['length' => 500]);
+        $accessLog->addColumn('referrer', 'string', ['length' => 1024]);
+        $accessLog->addColumn('referrer_host', 'string', ['length' => 255]);
+        $accessLog->addColumn('accept_language', 'string', ['length' => 255]);
+        $accessLog->addColumn('preferred_language', 'string', ['length' => 20]);
+        $accessLog->addColumn('request_content_type', 'string', ['length' => 120]);
+        $accessLog->addColumn('response_content_type', 'string', ['length' => 120]);
+        $accessLog->addColumn('response_size', 'integer', ['notnull' => false]);
+        $accessLog->addColumn('city', 'string', ['length' => 80]);
+        $accessLog->addColumn('state', 'string', ['length' => 80]);
+        $accessLog->addColumn('country', 'string', ['length' => 80]);
+        $accessLog->addColumn('continent', 'string', ['length' => 80]);
+        $accessLog->addColumn('context', 'json');
+        $this->addPrimaryKey($accessLog, 'uid');
+        $this->addIndex($accessLog, ['occurred_at'], 'idx_access_log_occurred_at');
+        $this->addIndex($accessLog, ['request_id'], 'idx_access_log_request_id');
+        $this->addIndex($accessLog, ['visitor_id', 'occurred_at'], 'idx_access_log_visitor_at');
+        $this->addIndex($accessLog, ['surface', 'occurred_at'], 'idx_access_log_surface_at');
+        $this->addIndex($accessLog, ['resolved_route', 'occurred_at'], 'idx_access_log_route_at');
+        $this->addIndex($accessLog, ['http_status', 'occurred_at'], 'idx_access_log_status_at');
+        $this->addIndex($accessLog, ['client_ip', 'occurred_at'], 'idx_access_log_client_ip_at');
+
+        $securitySignalLog = $schema->createTable('security_signal_event');
+        $securitySignalLog->addColumn('uid', 'string', ['length' => 36]);
+        $securitySignalLog->addColumn('occurred_at', 'datetime_immutable');
+        $securitySignalLog->addColumn('expires_at', 'datetime_immutable');
+        $securitySignalLog->addColumn('signal_type', 'string', ['length' => 80]);
+        $securitySignalLog->addColumn('reason_code', 'string', ['length' => 120]);
+        $securitySignalLog->addColumn('severity', 'string', ['length' => 16]);
+        $securitySignalLog->addColumn('confidence', 'integer');
+        $securitySignalLog->addColumn('subject_type', 'string', ['length' => 40]);
+        $securitySignalLog->addColumn('subject_identifier', 'string', ['length' => 190]);
+        $securitySignalLog->addColumn('ip_derived', 'boolean');
+        $securitySignalLog->addColumn('request_family', 'string', ['length' => 40]);
+        $securitySignalLog->addColumn('request_intent', 'string', ['length' => 80]);
+        $securitySignalLog->addColumn('request_id', 'string', ['length' => 64]);
+        $securitySignalLog->addColumn('visitor_id', 'string', ['length' => 64]);
+        $securitySignalLog->addColumn('path', 'string', ['length' => 1024]);
+        $securitySignalLog->addColumn('route', 'string', ['length' => 190]);
+        $securitySignalLog->addColumn('http_status', 'integer', ['notnull' => false]);
+        $securitySignalLog->addColumn('context', 'json');
+        $this->addPrimaryKey($securitySignalLog, 'uid');
+        $this->addIndex($securitySignalLog, ['occurred_at'], 'idx_security_signal_occurred_at');
+        $this->addIndex($securitySignalLog, ['expires_at'], 'idx_security_signal_expires_at');
+        $this->addIndex($securitySignalLog, ['subject_type', 'subject_identifier', 'occurred_at'], 'idx_security_signal_subject_at');
+        $this->addIndex($securitySignalLog, ['signal_type', 'occurred_at'], 'idx_security_signal_type_at');
+        $this->addIndex($securitySignalLog, ['reason_code', 'occurred_at'], 'idx_security_signal_reason_at');
+        $this->addIndex($securitySignalLog, ['request_id', 'reason_code'], 'idx_security_signal_request_reason');
+
         $aclGroup = $schema->createTable('acl_group');
         $aclGroup->addColumn('uid', 'string', ['length' => 36]);
         $aclGroup->addColumn('identifier', 'string', ['length' => 80]);
@@ -224,10 +322,10 @@ final class Version20260531000000 extends AbstractMigration
         $this->addIndex($apiKey, ['user_uid', 'status'], 'idx_api_key_user_status');
         $apiKey->addForeignKeyConstraint('user_account', ['user_uid'], ['uid'], ['onDelete' => 'CASCADE'], $this->schemaObjectName('fk_api_key_user'));
 
-        $extension = $schema->createTable('extension_package');
+        $extension = $schema->createTable('extension');
         $extension->addColumn('uid', 'string', ['length' => 36]);
-        $extension->addColumn('package_scopes', 'json');
-        $extension->addColumn('package_name', 'string', ['length' => 120]);
+        $extension->addColumn('extension_scopes', 'json');
+        $extension->addColumn('extension_name', 'string', ['length' => 120]);
         $extension->addColumn('path', 'string', ['length' => 512]);
         $extension->addColumn('manifest_version', 'string', ['length' => 40, 'notnull' => false]);
         $extension->addColumn('installed_version', 'string', ['length' => 40, 'notnull' => false]);
@@ -236,8 +334,8 @@ final class Version20260531000000 extends AbstractMigration
         $extension->addColumn('metadata', 'json');
         $extension->addColumn('modified_at', 'datetime_immutable');
         $this->addPrimaryKey($extension, 'uid');
-        $this->addUniqueIndex($extension, ['package_name'], 'uniq_extension_package_name');
-        $this->addIndex($extension, ['status'], 'idx_extension_package_status');
+        $this->addUniqueIndex($extension, ['extension_name'], 'uniq_extension_name');
+        $this->addIndex($extension, ['status'], 'idx_extension_status');
 
         $menu = $schema->createTable('site_menu');
         $menu->addColumn('uid', 'string', ['length' => 36]);
@@ -384,15 +482,19 @@ final class Version20260531000000 extends AbstractMigration
             'content_schema',
             'site_menu_item',
             'site_menu',
-            'extension_package',
+            'extension',
             'api_key',
             'account_token',
             'user_acl_group',
             'user_account',
             'acl_group',
+            'security_signal_event',
+            'access_log_entry',
+            'audit_log_entry',
+            'message_log_entry',
             'scheduler_task_run',
             'scheduler_task',
-            'package_setting_entry',
+            'extension_setting_entry',
             'config_entry',
             'access_statistic_event',
             'state_marker',

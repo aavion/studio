@@ -9,10 +9,10 @@ use App\Core\Id\UuidFactory;
 use App\Core\Log\MessageLoggerInterface;
 use App\Core\Message\Message;
 use App\Core\Message\MessageException;
-use App\Core\Package\ActivePackageProviderInterface;
-use App\Core\Package\ExtensionPackageStatus;
-use App\Core\Package\PackageScope;
-use App\Entity\ExtensionPackage;
+use App\Core\Extension\ActiveExtensionProviderInterface;
+use App\Core\Extension\ExtensionStatus;
+use App\Core\Extension\ExtensionScope;
+use App\Entity\Extension;
 use App\Entity\SchedulerTask;
 use App\Entity\SchedulerTaskRun;
 use App\Scheduler\SchedulerLockFactory;
@@ -66,20 +66,20 @@ final class SchedulerRunnerTest extends KernelTestCase
         self::assertNotNull($tasks[0]->nextDueAt());
     }
 
-    public function testItHidesUntrustedPackageActionQueuesWhenDisabled(): void
+    public function testItHidesUntrustedExtensionActionQueuesWhenDisabled(): void
     {
-        $tasks = $this->synchronizer(new TestPackageActionQueueSchedulerTaskProvider())->synchronize();
+        $tasks = $this->synchronizer(new TestExtensionActionQueueSchedulerTaskProvider())->synchronize();
 
         self::assertSame([], $tasks);
     }
 
-    public function testItReportsForcedPackageActionQueueTaskAsSkippedWhenPolicyBlocksIt(): void
+    public function testItReportsForcedExtensionActionQueueTaskAsSkippedWhenPolicyBlocksIt(): void
     {
         $task = new SchedulerTask(new SchedulerTaskDefinition(
             'demo.action_queue',
             'admin.scheduler.tasks.demo.label',
             'admin.scheduler.tasks.demo.description',
-            'demo-package',
+            'demo-extension',
             SchedulerTaskType::ActionQueue,
             'demo.queue',
             '* * * * *',
@@ -91,8 +91,8 @@ final class SchedulerRunnerTest extends KernelTestCase
 
         $payload = $this->runner(
             new TestSchedulerTaskExecutor(true),
-            new TestPackageActionQueueSchedulerTaskProvider(),
-            new MutableActivePackageProvider(['demo-package']),
+            new TestExtensionActionQueueSchedulerTaskProvider(),
+            new MutableActiveExtensionProvider(['demo-extension']),
         )->run('demo.action_queue', true)->toArray();
 
         self::assertSame('completed', $payload['status']);
@@ -105,20 +105,20 @@ final class SchedulerRunnerTest extends KernelTestCase
     public function testSystemSchedulerTaskDefinitionsWinIdentifierCollisions(): void
     {
         $registry = new SchedulerTaskRegistry([
-            new TestCollidingPackageSchedulerTaskProvider(),
+            new TestCollidingExtensionSchedulerTaskProvider(),
             new TestSchedulerTaskProvider(),
         ]);
 
         self::assertSame('system', $registry->definition('system.test_task')?->source());
     }
 
-    public function testItDoesNotShowTasksWhosePackageNoLongerRegistersThem(): void
+    public function testItDoesNotShowTasksWhoseExtensionNoLongerRegistersThem(): void
     {
         $staleTask = new SchedulerTask(new SchedulerTaskDefinition(
             'demo.stale_task',
             'admin.scheduler.tasks.demo.label',
             'admin.scheduler.tasks.demo.description',
-            'demo-package',
+            'demo-extension',
             SchedulerTaskType::Command,
             'demo:test',
             '* * * * *',
@@ -133,15 +133,15 @@ final class SchedulerRunnerTest extends KernelTestCase
         self::assertSame(['system.test_task'], array_map(static fn (SchedulerTask $task): string => $task->identifier(), $tasks));
     }
 
-    public function testItDoesNotRunActiveDueTasksFromInactivePackages(): void
+    public function testItDoesNotRunActiveDueTasksFromInactiveExtensions(): void
     {
-        $this->synchronizer(new TestPackageCommandSchedulerTaskProvider())->synchronize();
+        $this->synchronizer(new TestExtensionCommandSchedulerTaskProvider())->synchronize();
         $task = $this->entityManager->find(SchedulerTask::class, 'demo.command');
         self::assertInstanceOf(SchedulerTask::class, $task);
         $task->activate('* * * * *');
         $this->entityManager->flush();
 
-        $payload = $this->runner(new TestSchedulerTaskExecutor(true), new TestPackageCommandSchedulerTaskProvider())->run()->toArray();
+        $payload = $this->runner(new TestSchedulerTaskExecutor(true), new TestExtensionCommandSchedulerTaskProvider())->run()->toArray();
 
         self::assertSame('completed', $payload['status']);
         self::assertSame([], $payload['tasks']);
@@ -208,7 +208,7 @@ final class SchedulerRunnerTest extends KernelTestCase
 
     public function testItRechecksTaskEligibilityBeforeExecutingStaleDueTasks(): void
     {
-        $activePackages = new MutableActivePackageProvider(['demo-package']);
+        $activeExtensions = new MutableActiveExtensionProvider(['demo-extension']);
         $this->synchronizer(new TestMixedSchedulerTaskProvider())->synchronize();
 
         foreach (['system.first_task' => '-2 minutes', 'demo.command' => '-1 minute'] as $identifier => $dueAt) {
@@ -220,9 +220,9 @@ final class SchedulerRunnerTest extends KernelTestCase
         $this->entityManager->flush();
 
         $payload = $this->runner(
-            new TestPackageDeactivatingSchedulerTaskExecutor($activePackages),
+            new TestExtensionDeactivatingSchedulerTaskExecutor($activeExtensions),
             new TestMixedSchedulerTaskProvider(),
-            $activePackages,
+            $activeExtensions,
         )->run()->toArray();
 
         self::assertSame('completed', $payload['status']);
@@ -249,7 +249,13 @@ final class SchedulerRunnerTest extends KernelTestCase
         $this->entityManager->flush();
 
         $this->runner(new TestDelayedSchedulerTaskExecutor(), new TestMultipleSchedulerTaskProvider())->run();
-        $runs = $this->entityManager->getRepository(SchedulerTaskRun::class)->findBy([], ['startedAt' => 'ASC']);
+        $runs = array_values(array_filter(
+            $this->entityManager->getRepository(SchedulerTaskRun::class)->findBy([], ['startedAt' => 'ASC']),
+            static fn (SchedulerTaskRun $run): bool => in_array($run->task()->identifier(), [
+                'system.first_task',
+                'system.second_task',
+            ], true),
+        ));
 
         self::assertCount(2, $runs);
         self::assertGreaterThan(
@@ -360,7 +366,7 @@ final class SchedulerRunnerTest extends KernelTestCase
             'admin.scheduler.tasks.sync.description',
             'demo:test',
             '* * * * *',
-            'demo-package',
+            'demo-extension',
             false,
         ));
         $task->activate('* * * * *');
@@ -369,7 +375,7 @@ final class SchedulerRunnerTest extends KernelTestCase
             'demo.sync_task',
             'admin.scheduler.tasks.sync.label',
             'admin.scheduler.tasks.sync.description',
-            'demo-package',
+            'demo-extension',
             SchedulerTaskType::ActionQueue,
             'demo.queue',
             '* * * * *',
@@ -388,7 +394,7 @@ final class SchedulerRunnerTest extends KernelTestCase
             'demo.sync_task',
             'admin.scheduler.tasks.sync.label',
             'admin.scheduler.tasks.sync.description',
-            'demo-package',
+            'demo-extension',
             SchedulerTaskType::ActionQueue,
             'demo.old_queue',
             '* * * * *',
@@ -400,7 +406,7 @@ final class SchedulerRunnerTest extends KernelTestCase
             'demo.sync_task',
             'admin.scheduler.tasks.sync.label',
             'admin.scheduler.tasks.sync.description',
-            'demo-package',
+            'demo-extension',
             SchedulerTaskType::ActionQueue,
             'demo.new_queue',
             '* * * * *',
@@ -440,7 +446,7 @@ final class SchedulerRunnerTest extends KernelTestCase
         );
     }
 
-    public function testTaskDefinitionsAcceptShortPackageSources(): void
+    public function testTaskDefinitionsAcceptShortExtensionSources(): void
     {
         $definition = SchedulerTaskDefinition::command(
             'ai.cleanup',
@@ -484,11 +490,11 @@ final class SchedulerRunnerTest extends KernelTestCase
     private function runner(
         SchedulerTaskExecutorInterface $executor,
         ?SchedulerTaskProviderInterface $provider = null,
-        ?ActivePackageProviderInterface $activePackageProvider = null,
+        ?ActiveExtensionProviderInterface $activeExtensionProvider = null,
     ): SchedulerRunner
     {
         $settings = new SchedulerSettings(new Config($this->entityManager->getConnection()));
-        $activePackages = $activePackageProvider ?? new TestActivePackageProvider();
+        $activeExtensions = $activeExtensionProvider ?? new TestActiveExtensionProvider();
         $messageLogger = new TestSchedulerMessageLogger();
         $reporter = new SchedulerRunReporter($messageLogger);
 
@@ -499,7 +505,7 @@ final class SchedulerRunnerTest extends KernelTestCase
                 new LockFactory(new FlockStore(sys_get_temp_dir().'/system-scheduler-test-'.bin2hex(random_bytes(4)))),
                 'test',
             ),
-            new SchedulerDueTaskSelector($settings, $activePackages),
+            new SchedulerDueTaskSelector($settings, $activeExtensions),
             new SchedulerTaskRunRecorder($this->entityManager, [$executor], new UuidFactory(), $reporter),
             $reporter,
         );
@@ -561,7 +567,7 @@ final readonly class TestMixedSchedulerTaskProvider implements SchedulerTaskProv
                 'demo.command',
                 'admin.scheduler.tasks.demo.label',
                 'admin.scheduler.tasks.demo.description',
-                'demo-package',
+                'demo-extension',
                 SchedulerTaskType::Command,
                 'demo:test',
                 '* * * * *',
@@ -620,9 +626,9 @@ final readonly class TestInvalidContextSchedulerTaskExecutor implements Schedule
     }
 }
 
-final readonly class TestPackageDeactivatingSchedulerTaskExecutor implements SchedulerTaskExecutorInterface
+final readonly class TestExtensionDeactivatingSchedulerTaskExecutor implements SchedulerTaskExecutorInterface
 {
-    public function __construct(private MutableActivePackageProvider $activePackageProvider)
+    public function __construct(private MutableActiveExtensionProvider $activeExtensionProvider)
     {
     }
 
@@ -634,14 +640,14 @@ final readonly class TestPackageDeactivatingSchedulerTaskExecutor implements Sch
     public function execute(SchedulerTask $task): SchedulerTaskExecution
     {
         if ('system.first_task' === $task->identifier()) {
-            $this->activePackageProvider->deactivate('demo-package');
+            $this->activeExtensionProvider->deactivate('demo-extension');
         }
 
         return SchedulerTaskExecution::success(['test' => true]);
     }
 }
 
-final readonly class TestPackageActionQueueSchedulerTaskProvider implements SchedulerTaskProviderInterface
+final readonly class TestExtensionActionQueueSchedulerTaskProvider implements SchedulerTaskProviderInterface
 {
     public function schedulerTasks(): array
     {
@@ -650,7 +656,7 @@ final readonly class TestPackageActionQueueSchedulerTaskProvider implements Sche
                 'demo.action_queue',
                 'admin.scheduler.tasks.demo.label',
                 'admin.scheduler.tasks.demo.description',
-                'demo-package',
+                'demo-extension',
                 SchedulerTaskType::ActionQueue,
                 'demo.queue',
                 '* * * * *',
@@ -660,7 +666,7 @@ final readonly class TestPackageActionQueueSchedulerTaskProvider implements Sche
     }
 }
 
-final readonly class TestPackageCommandSchedulerTaskProvider implements SchedulerTaskProviderInterface
+final readonly class TestExtensionCommandSchedulerTaskProvider implements SchedulerTaskProviderInterface
 {
     public function schedulerTasks(): array
     {
@@ -669,7 +675,7 @@ final readonly class TestPackageCommandSchedulerTaskProvider implements Schedule
                 'demo.command',
                 'admin.scheduler.tasks.demo.label',
                 'admin.scheduler.tasks.demo.description',
-                'demo-package',
+                'demo-extension',
                 SchedulerTaskType::Command,
                 'demo:test',
                 '* * * * *',
@@ -679,7 +685,7 @@ final readonly class TestPackageCommandSchedulerTaskProvider implements Schedule
     }
 }
 
-final readonly class TestCollidingPackageSchedulerTaskProvider implements SchedulerTaskProviderInterface
+final readonly class TestCollidingExtensionSchedulerTaskProvider implements SchedulerTaskProviderInterface
 {
     public function schedulerTasks(): array
     {
@@ -688,7 +694,7 @@ final readonly class TestCollidingPackageSchedulerTaskProvider implements Schedu
                 'system.test_task',
                 'admin.scheduler.tasks.demo.label',
                 'admin.scheduler.tasks.demo.description',
-                'demo-package',
+                'demo-extension',
                 SchedulerTaskType::Command,
                 'demo:test',
                 '* * * * *',
@@ -709,52 +715,52 @@ final class TestSchedulerMessageLogger implements MessageLoggerInterface
     }
 }
 
-final readonly class TestActivePackageProvider implements ActivePackageProviderInterface
+final readonly class TestActiveExtensionProvider implements ActiveExtensionProviderInterface
 {
-    public function packages(?PackageScope $scope = null): array
+    public function extensions(?ExtensionScope $scope = null): array
     {
         return [];
     }
 
-    public function package(string $packageName): ?ExtensionPackage
+    public function extension(string $extensionName): ?Extension
     {
         return null;
     }
 }
 
-final class MutableActivePackageProvider implements ActivePackageProviderInterface
+final class MutableActiveExtensionProvider implements ActiveExtensionProviderInterface
 {
     /**
-     * @param list<string> $packageNames
+     * @param list<string> $extensionNames
      */
-    public function __construct(private array $packageNames)
+    public function __construct(private array $extensionNames)
     {
     }
 
-    public function deactivate(string $packageName): void
+    public function deactivate(string $extensionName): void
     {
-        $this->packageNames = array_values(array_filter(
-            $this->packageNames,
-            static fn (string $activePackage): bool => $activePackage !== $packageName,
+        $this->extensionNames = array_values(array_filter(
+            $this->extensionNames,
+            static fn (string $activeExtension): bool => $activeExtension !== $extensionName,
         ));
     }
 
-    public function packages(?PackageScope $scope = null): array
+    public function extensions(?ExtensionScope $scope = null): array
     {
-        return array_map(static fn (string $packageName): ExtensionPackage => new ExtensionPackage(
-            self::uuidFor($packageName),
-            [PackageScope::Module],
-            $packageName,
-            'packages/'.str_replace('.', '-', $packageName),
-            ExtensionPackageStatus::Active,
-        ), $this->packageNames);
+        return array_map(static fn (string $extensionName): Extension => new Extension(
+            self::uuidFor($extensionName),
+            [ExtensionScope::Module],
+            $extensionName,
+            'extensions/'.str_replace('.', '-', $extensionName),
+            ExtensionStatus::Active,
+        ), $this->extensionNames);
     }
 
-    public function package(string $packageName): ?ExtensionPackage
+    public function extension(string $extensionName): ?Extension
     {
-        foreach ($this->packages() as $package) {
-            if ($package->packageName() === $packageName) {
-                return $package;
+        foreach ($this->extensions() as $extension) {
+            if ($extension->extensionName() === $extensionName) {
+                return $extension;
             }
         }
 

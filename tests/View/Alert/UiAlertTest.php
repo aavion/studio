@@ -56,21 +56,21 @@ final class UiAlertTest extends TestCase
     public function testItDoesNotSerializeDiagnosticContext(): void
     {
         $alert = UiAlert::translated(
-            'Package failed.',
+            'Extension failed.',
             'error',
-            'package.runtime.failure',
-            'message.package.runtime_failure',
+            'extension.runtime.failure',
+            'message.extension.runtime_failure',
             ['path' => '/srv/example/private.log', 'exception' => 'RuntimeException'],
         );
 
         self::assertArrayNotHasKey('context', $alert->toArray());
-        self::assertSame('message.package.runtime_failure', $alert->toArray()['translation_key']);
+        self::assertSame('message.extension.runtime_failure', $alert->toArray()['translation_key']);
     }
 
     public function testPresentationFiltersUnsafeActionLinks(): void
     {
         $alert = UiAlert::fromLevel('info', 'Saved')->withPresentation(UiAlertPresentation::persistent(actions: [
-            UiAlertAction::link('Open', '/admin/packages', '_blank'),
+            UiAlertAction::link('Open', '/admin/extensions', '_blank'),
             UiAlertAction::link('Script', 'javascript:alert(1)'),
             ['label' => 'Data', 'href' => 'data:text/html,boom'],
             ['label' => 'Protocol-relative', 'href' => '//evil.example.test/path'],
@@ -80,7 +80,7 @@ final class UiAlertTest extends TestCase
         ]));
 
         self::assertSame([
-            ['label' => 'Open', 'href' => '/admin/packages', 'target' => '_blank'],
+            ['label' => 'Open', 'href' => '/admin/extensions', 'target' => '_blank'],
             ['label' => 'External', 'href' => 'https://example.test/privacy', 'target' => '_self'],
             ['label' => 'Event', 'event' => 'operation-overlay:show', 'detail' => ['id' => 'operation-1']],
         ], $alert->toArray()['actions']);
@@ -89,13 +89,13 @@ final class UiAlertTest extends TestCase
     public function testDirectAlertActionsUseTheSameLinkPolicy(): void
     {
         $alert = UiAlert::fromLevel('info', 'Saved', actions: [
-            ['label' => 'Open', 'href' => '/admin/packages'],
+            ['label' => 'Open', 'href' => '/admin/extensions'],
             ['label' => 'Script', 'href' => 'javascript:alert(1)'],
             ['label' => 'Event', 'event' => 'operation-overlay:show'],
         ]);
 
         self::assertSame([
-            ['label' => 'Open', 'href' => '/admin/packages'],
+            ['label' => 'Open', 'href' => '/admin/extensions'],
             ['label' => 'Event', 'event' => 'operation-overlay:show'],
         ], $alert->toArray()['actions']);
     }

@@ -8,6 +8,7 @@
             :type="action.type|default(null)"
             :variant="action.variant|default('secondary')"
             :class="action.class|default('')"
+            :disabled="action.disabled|default(false)"
         />
     {% endfor %}
 </div>

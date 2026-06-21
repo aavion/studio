@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\View\Twig;
 
+use App\Core\Manifest\ManifestParser;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Twig\Environment;
 
@@ -14,11 +15,12 @@ final class ViewTwigExtensionTest extends KernelTestCase
         self::bootKernel();
 
         $twig = self::getContainer()->get(Environment::class);
+        $systemVersion = $this->rootManifestVersion();
         $html = $twig->createTemplate(
-            '{{ view_context().system_package.name }}|{{ macro_template("core", "ui") }}|{{ event_hooks()|length }}|{{ navigation("main")|length }}|{{ debug_info().hooks is defined ? "debug" : "missing" }}|{{ package_setting("demo-module", "missing.key", "fallback") }}|{{ footer_copyright("backend") }}|{{ "**ok**"|render_markdown }}',
+            '{{ view_context().system_extension.name }}|{{ macro_template("core", "ui") }}|{{ event_hooks()|length }}|{{ navigation("main")|length }}|{{ debug_info().hooks is defined ? "debug" : "missing" }}|{{ extension_setting("demo-module", "missing.key", "fallback") }}|{{ footer_copyright("backend") }}|{{ "**ok**"|render_markdown }}',
         )->render();
 
-        self::assertSame('Studio|@root/macros/core/ui.html.twig|11|4|debug|fallback|Powered by [Studio](https://www.aavion.media) 0.2.4|<p><strong>ok</strong></p>', $html);
+        self::assertSame('Studio|@root/macros/core/ui.html.twig|11|4|debug|fallback|Powered by [Studio](https://www.aavion.media) '.$systemVersion.'|<p><strong>ok</strong></p>', $html);
     }
 
     public function testItRendersSafeHtmlAttributes(): void
@@ -62,6 +64,16 @@ final class ViewTwigExtensionTest extends KernelTestCase
         self::assertStringContainsString('id="json-editor"', $html);
         self::assertStringContainsString('data-code-editor-language-value="json"', $html);
         self::assertStringContainsString('data-code-editor-tab-size-value="2"', $html);
+    }
+
+    private function rootManifestVersion(): string
+    {
+        $projectDir = (string) self::getContainer()->getParameter('kernel.project_dir');
+        $result = (new ManifestParser())->parse((string) file_get_contents($projectDir.'/.manifest'));
+
+        self::assertTrue($result->isSuccess(), json_encode($result->toArray(), JSON_THROW_ON_ERROR));
+
+        return (string) $result->value()->get('APP_VERSION');
     }
 
     public function testItRendersGranularFormAndActionPartials(): void

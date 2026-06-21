@@ -19,11 +19,13 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Index(name: 'idx_content_schema_active_version', columns: ['active_version_uid'])]
 class ContentSchema
 {
+    public const MAX_IDENTIFIER_LENGTH = 120;
+
     #[ORM\Id]
     #[ORM\Column(length: 36)]
     private string $uid;
 
-    #[ORM\Column(length: 120)]
+    #[ORM\Column(length: self::MAX_IDENTIFIER_LENGTH)]
     private string $identifier;
 
     #[ORM\Column(enumType: ContentSchemaSource::class)]

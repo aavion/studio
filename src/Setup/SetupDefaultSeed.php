@@ -6,13 +6,19 @@ namespace App\Setup;
 
 use App\Api\ApiFeaturePolicy;
 use App\Core\Access\AccessLevel;
+use App\Core\AdminAcl\AdminFeatureDefaults;
+use App\Core\AdminAcl\AdminFeatureOverrideStore;
 use App\Core\Config\ConfigDefaultProviderInterface;
 use App\Core\Config\ConfigValueType;
+use App\Core\Geo\MaxMindGeoIpConfig;
 use App\Core\Log\ConfigAuditLogPolicy;
+use App\Core\Log\DatabaseLogRetentionPolicy;
 use App\Content\Routing\ContentRouteLocalization;
 use App\Core\Statistics\AccessStatisticsPolicy;
 use App\Localization\LocaleToken;
 use App\Scheduler\SchedulerSettings;
+use App\Security\Abuse\SuspiciousProbePathMatcher;
+use App\Security\AutoBan\AutoBanPolicy;
 use App\Security\UserFlowConfig;
 
 final readonly class SetupDefaultSeed
@@ -22,7 +28,7 @@ final readonly class SetupDefaultSeed
     }
 
     /**
-     * @return list<array{key: string, value: mixed, type: ConfigValueType}>
+     * @return list<array{key: string, value: mixed, type: ConfigValueType, sensitive?: bool}>
      */
     public function configEntries(SetupInput $input): array
     {
@@ -44,21 +50,39 @@ final readonly class SetupDefaultSeed
             ['key' => UserFlowConfig::REGISTRATION_MODE_KEY, 'value' => $this->setting($input, UserFlowConfig::REGISTRATION_MODE_KEY, UserFlowConfig::REGISTRATION_DISABLED), 'type' => ConfigValueType::String],
             ['key' => ConfigAuditLogPolicy::ENABLED_KEY, 'value' => $this->setting($input, ConfigAuditLogPolicy::ENABLED_KEY, true), 'type' => ConfigValueType::Boolean],
             ['key' => ConfigAuditLogPolicy::EVENTS_KEY, 'value' => $this->setting($input, ConfigAuditLogPolicy::EVENTS_KEY, ConfigAuditLogPolicy::DEFAULT_CATEGORIES), 'type' => ConfigValueType::Json],
+            ['key' => DatabaseLogRetentionPolicy::MESSAGE_LOG_RETENTION_DAYS_KEY, 'value' => $this->setting($input, DatabaseLogRetentionPolicy::MESSAGE_LOG_RETENTION_DAYS_KEY, DatabaseLogRetentionPolicy::DEFAULT_LOG_RETENTION_DAYS), 'type' => ConfigValueType::Integer],
+            ['key' => DatabaseLogRetentionPolicy::AUDIT_LOG_RETENTION_DAYS_KEY, 'value' => $this->setting($input, DatabaseLogRetentionPolicy::AUDIT_LOG_RETENTION_DAYS_KEY, DatabaseLogRetentionPolicy::DEFAULT_LOG_RETENTION_DAYS), 'type' => ConfigValueType::Integer],
+            ['key' => DatabaseLogRetentionPolicy::ACCESS_LOG_RETENTION_DAYS_KEY, 'value' => $this->setting($input, DatabaseLogRetentionPolicy::ACCESS_LOG_RETENTION_DAYS_KEY, DatabaseLogRetentionPolicy::DEFAULT_LOG_RETENTION_DAYS), 'type' => ConfigValueType::Integer],
+            ['key' => DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY, 'value' => $this->setting($input, DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY, DatabaseLogRetentionPolicy::defaultSecuritySignalRetentionDays()), 'type' => ConfigValueType::Integer],
+            ['key' => SuspiciousProbePathMatcher::PATTERNS_KEY, 'value' => $this->setting($input, SuspiciousProbePathMatcher::PATTERNS_KEY, SuspiciousProbePathMatcher::defaultPatternText()), 'type' => ConfigValueType::String],
+            ['key' => AutoBanPolicy::ENABLED_KEY, 'value' => $this->setupSetting($input, AutoBanPolicy::ENABLED_KEY, AutoBanPolicy::SETUP_ENABLED), 'type' => ConfigValueType::Boolean],
+            ['key' => AutoBanPolicy::TRUSTED_ACCESS_LEVEL_KEY, 'value' => $this->setting($input, AutoBanPolicy::TRUSTED_ACCESS_LEVEL_KEY, AutoBanPolicy::DEFAULT_TRUSTED_ACCESS_LEVEL), 'type' => ConfigValueType::Integer],
+            ['key' => AutoBanPolicy::SCORE_THRESHOLD_KEY, 'value' => $this->setting($input, AutoBanPolicy::SCORE_THRESHOLD_KEY, AutoBanPolicy::DEFAULT_SCORE_THRESHOLD), 'type' => ConfigValueType::Integer],
+            ['key' => AutoBanPolicy::NEW_BAN_OWNER_ALERTS_KEY, 'value' => $this->setting($input, AutoBanPolicy::NEW_BAN_OWNER_ALERTS_KEY, AutoBanPolicy::DEFAULT_NEW_BAN_OWNER_ALERTS), 'type' => ConfigValueType::Boolean],
             ['key' => AccessStatisticsPolicy::ENABLED_KEY, 'value' => $this->setting($input, AccessStatisticsPolicy::ENABLED_KEY, true), 'type' => ConfigValueType::Boolean],
             ['key' => AccessStatisticsPolicy::RESPECT_DO_NOT_TRACK_KEY, 'value' => $this->setting($input, AccessStatisticsPolicy::RESPECT_DO_NOT_TRACK_KEY, true), 'type' => ConfigValueType::Boolean],
+            ['key' => MaxMindGeoIpConfig::ENABLED_KEY, 'value' => $this->setting($input, MaxMindGeoIpConfig::ENABLED_KEY, false), 'type' => ConfigValueType::Boolean],
+            ['key' => MaxMindGeoIpConfig::DATABASE_PATH_KEY, 'value' => $this->setting($input, MaxMindGeoIpConfig::DATABASE_PATH_KEY, MaxMindGeoIpConfig::DEFAULT_DATABASE_PATH), 'type' => ConfigValueType::String],
+            ['key' => MaxMindGeoIpConfig::LICENSE_KEY_KEY, 'value' => $this->setting($input, MaxMindGeoIpConfig::LICENSE_KEY_KEY, ''), 'type' => ConfigValueType::String, 'sensitive' => true],
             ['key' => ApiFeaturePolicy::ENABLED_KEY, 'value' => $this->setting($input, ApiFeaturePolicy::ENABLED_KEY, true), 'type' => ConfigValueType::Boolean],
             ['key' => ApiFeaturePolicy::CORS_ENABLED_KEY, 'value' => $this->setting($input, ApiFeaturePolicy::CORS_ENABLED_KEY, false), 'type' => ConfigValueType::Boolean],
             ['key' => ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY, 'value' => $this->setting($input, ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY, []), 'type' => ConfigValueType::Json],
             ['key' => SchedulerSettings::ENABLED_KEY, 'value' => $this->setting($input, SchedulerSettings::ENABLED_KEY, true), 'type' => ConfigValueType::Boolean],
             ['key' => SchedulerSettings::GET_AUTH_ENABLED_KEY, 'value' => $this->setting($input, SchedulerSettings::GET_AUTH_ENABLED_KEY, false), 'type' => ConfigValueType::Boolean],
-            ['key' => SchedulerSettings::PACKAGE_ACTION_QUEUES_ENABLED_KEY, 'value' => $this->setting($input, SchedulerSettings::PACKAGE_ACTION_QUEUES_ENABLED_KEY, false), 'type' => ConfigValueType::Boolean],
+            ['key' => SchedulerSettings::EXTENSION_ACTION_QUEUES_ENABLED_KEY, 'value' => $this->setting($input, SchedulerSettings::EXTENSION_ACTION_QUEUES_ENABLED_KEY, false), 'type' => ConfigValueType::Boolean],
             ['key' => SchedulerSettings::WEB_TRIGGER_ENABLED_KEY, 'value' => $this->setting($input, SchedulerSettings::WEB_TRIGGER_ENABLED_KEY, false), 'type' => ConfigValueType::Boolean],
+            ['key' => AdminFeatureOverrideStore::CONFIG_KEY, 'value' => $this->setting($input, AdminFeatureOverrideStore::CONFIG_KEY, (new AdminFeatureDefaults())->overrides()), 'type' => ConfigValueType::Json],
         ];
     }
 
     private function setting(SetupInput $input, string $key, mixed $default): mixed
     {
         return $input->siteSettings()[$key] ?? $this->default($key, $default);
+    }
+
+    private function setupSetting(SetupInput $input, string $key, mixed $default): mixed
+    {
+        return $input->siteSettings()[$key] ?? $default;
     }
 
     private function default(string $key, mixed $fallback): mixed

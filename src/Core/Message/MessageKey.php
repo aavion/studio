@@ -17,7 +17,7 @@ use App\Core\Messenger\MessengerMessageKey;
 use App\Core\Operation\Filesystem\FilesystemMessageKey;
 use App\Core\Operation\OperationMessageKey;
 use App\Core\Operation\Process\ProcessMessageKey;
-use App\Core\Package\PackageMessageKey;
+use App\Core\Extension\ExtensionMessageKey;
 use App\Core\Routing\RoutingMessageKey;
 use App\Core\Security\SystemSecurityMessageKey;
 use App\Core\State\StateMessageKey;
@@ -50,7 +50,7 @@ final class MessageKey
             MessengerMessageKey::class,
             NavigationMessageKey::class,
             OperationMessageKey::class,
-            PackageMessageKey::class,
+            ExtensionMessageKey::class,
             ProcessMessageKey::class,
             RoutingMessageKey::class,
             SchedulerMessageKey::class,

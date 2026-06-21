@@ -5,13 +5,12 @@ declare(strict_types=1);
 namespace App\Content\Routing;
 
 use App\Content\ContentMessageKey;
+use App\Core\Validation\IdentifierSpec;
 use App\Core\Message\MessageException;
 use Stringable;
 
 final readonly class ContentSlug implements Stringable
 {
-    private const PATTERN = '/^[a-z0-9]+(?:-[a-z0-9]+)*$/';
-
     private function __construct(private string $value)
     {
     }
@@ -29,7 +28,7 @@ final readonly class ContentSlug implements Stringable
 
     public static function isValid(string $slug): bool
     {
-        return 1 === preg_match(self::PATTERN, $slug);
+        return IdentifierSpec::isContentSlug($slug);
     }
 
     public function value(): string

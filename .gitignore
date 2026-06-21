@@ -55,3 +55,8 @@ $RECYCLE.BIN/
 /build/
 /dist/
 ###< release artifacts ###
+
+###> node_modules ###
+/node_modules/
+/assets/node_modules/
+###< node_modules ###

@@ -18,6 +18,7 @@ use App\Core\Log\AuditLoggerInterface;
 use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
 use App\Core\Message\MessageException;
+use App\Core\Routing\PathScopeMatcher;
 use App\Core\Validation\EmailAddress;
 use App\Entity\ApiKey;
 use App\Entity\UserAccount;
@@ -48,6 +49,7 @@ final readonly class SelfServiceApiHandler implements ApiEndpointHandlerInterfac
         private AuditLoggerInterface $auditLogger,
         private ApiAccessGuard $accessGuard,
         private ApiResponder $responder,
+        private PathScopeMatcher $paths = new PathScopeMatcher(),
     ) {
     }
 
@@ -68,7 +70,7 @@ final readonly class SelfServiceApiHandler implements ApiEndpointHandlerInterfac
             return $this->notFound($request);
         }
 
-        if (str_starts_with($request->getPathInfo(), '/api/v1/user/api-keys')) {
+        if ($this->paths->matchesSegments($request->getPathInfo(), 'api', 'v1', 'user', 'api-keys')) {
             return $this->handleApiKeys($request, $user);
         }
 

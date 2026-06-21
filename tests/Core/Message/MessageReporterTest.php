@@ -9,8 +9,8 @@ use App\Core\Manifest\ManifestMessageCode;
 use App\Core\Manifest\ManifestMessageKey;
 use App\Core\Message\Message;
 use App\Core\Message\MessageReporter;
-use App\Core\Package\PackageMessageCode;
-use App\Core\Package\PackageMessageKey;
+use App\Core\Extension\ExtensionMessageCode;
+use App\Core\Extension\ExtensionMessageKey;
 use PHPUnit\Framework\TestCase;
 
 final class MessageReporterTest extends TestCase
@@ -19,12 +19,12 @@ final class MessageReporterTest extends TestCase
     {
         $logger = new RecordingMessageLogger();
         $reporter = new MessageReporter($logger);
-        $message = Message::info(PackageMessageCode::PACKAGE_DISCOVERY_COMPLETED, PackageMessageKey::PACKAGE_DISCOVERY_COMPLETED);
+        $message = Message::info(ExtensionMessageCode::EXTENSION_DISCOVERY_COMPLETED, ExtensionMessageKey::EXTENSION_DISCOVERY_COMPLETED);
 
-        self::assertSame($message, $reporter->report($message, ['operation' => 'package.discovery']));
+        self::assertSame($message, $reporter->report($message, ['operation' => 'extension.discovery']));
         self::assertCount(1, $logger->records);
         self::assertSame($message, $logger->records[0]['message']);
-        self::assertSame(['operation' => 'package.discovery'], $logger->records[0]['context']);
+        self::assertSame(['operation' => 'extension.discovery'], $logger->records[0]['context']);
     }
 
     public function testItReturnsReportedBatchesUnchanged(): void
@@ -32,7 +32,7 @@ final class MessageReporterTest extends TestCase
         $logger = new RecordingMessageLogger();
         $reporter = new MessageReporter($logger);
         $first = Message::debug(ManifestMessageCode::MANIFEST_PARSED, ManifestMessageKey::MANIFEST_PARSED);
-        $second = Message::info(PackageMessageCode::PACKAGE_DISCOVERY_COMPLETED, PackageMessageKey::PACKAGE_DISCOVERY_COMPLETED);
+        $second = Message::info(ExtensionMessageCode::EXTENSION_DISCOVERY_COMPLETED, ExtensionMessageKey::EXTENSION_DISCOVERY_COMPLETED);
 
         $messages = $reporter->reportBatch([
             [

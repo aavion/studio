@@ -35,6 +35,7 @@ final readonly class AdminSchedulerApiHandler implements ApiEndpointHandlerInter
         private ApiJsonRequestParser $jsonRequests,
         private ApiAccessGuard $accessGuard,
         private ApiResponder $responder,
+        private AdminFeatureApiGuard $featureGuard,
     ) {
     }
 
@@ -47,6 +48,10 @@ final readonly class AdminSchedulerApiHandler implements ApiEndpointHandlerInter
     {
         $denied = $this->accessGuard->denyUnlessAccessLevel($request, AccessLevel::ADMIN);
         if (null !== $denied) {
+            return $denied;
+        }
+
+        if ($denied = $this->featureGuard->denyUnlessVisible($request, 'admin.scheduler', 'listAdminSchedulerTasks')) {
             return $denied;
         }
 
@@ -80,6 +85,10 @@ final readonly class AdminSchedulerApiHandler implements ApiEndpointHandlerInter
      */
     private function runTask(Request $request, SchedulerTask $task): Response
     {
+        if ($denied = $this->featureGuard->denyUnlessMutable($request, 'admin.scheduler', 'runAdminSchedulerTask')) {
+            return $denied;
+        }
+
         if (SchedulerTaskStatus::Active !== $task->status()) {
             return $this->operationUnavailable($request, 'runAdminSchedulerTask', [
                 'task_identifier' => $task->identifier(),
@@ -99,6 +108,10 @@ final readonly class AdminSchedulerApiHandler implements ApiEndpointHandlerInter
 
     private function updateTask(Request $request, SchedulerTask $task): Response
     {
+        if ($denied = $this->featureGuard->denyUnlessMutable($request, 'admin.scheduler', 'updateAdminSchedulerTask')) {
+            return $denied;
+        }
+
         try {
             $payload = $this->jsonRequests->object($request);
         } catch (JsonException $error) {
@@ -116,14 +129,14 @@ final readonly class AdminSchedulerApiHandler implements ApiEndpointHandlerInter
             $errors['cron_expression'] = ['admin.scheduler.form.errors.cron_invalid'];
         }
 
-        $confirmPackageActionQueue = true === ($payload['confirm_package_action_queue'] ?? false);
+        $confirmExtensionActionQueue = true === ($payload['confirm_extension_action_queue'] ?? false);
         if (
             true === $enabled
             && !$task->trusted()
             && SchedulerTaskType::ActionQueue === $task->type()
-            && !$confirmPackageActionQueue
+            && !$confirmExtensionActionQueue
         ) {
-            $errors['confirm_package_action_queue'] = ['admin.scheduler.form.errors.package_action_queue_confirmation_required'];
+            $errors['confirm_extension_action_queue'] = ['admin.scheduler.form.errors.extension_action_queue_confirmation_required'];
         }
 
         if ([] !== $errors) {

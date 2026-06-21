@@ -30,12 +30,14 @@
                 label: 'admin.users.fields.email'|trans,
                 type: 'email',
                 required: true,
+                disabled: not users_mutable,
             } only %}
             {% include '@backend/partials/forms/fields/select.html.twig' with {
                 id: 'invite_role',
                 name: 'role',
                 label: 'admin.users.fields.role'|trans,
                 value: 'user',
+                disabled: not users_mutable,
                 attributes: {
                     'data-invite-groups-target': 'role',
                     'data-action': 'invite-groups#refresh',
@@ -53,12 +55,13 @@
                             type="checkbox"
                             name="groups[]"
                             value="{{ group.identifier }}"
+                            {% if not users_mutable %}disabled{% endif %}
                         >
                         <span>{{ group.name }}</span>
                     </label>
                 {% endfor %}
             </fieldset>
-            {% include '@backend/partials/forms/fields/submit.html.twig' with {label: 'admin.users.invitation.submit'|trans} only %}
+            {% include '@backend/partials/forms/fields/submit.html.twig' with {label: 'admin.users.invitation.submit'|trans, disabled: not users_mutable} only %}
         </form>
     </section>
 
@@ -191,6 +194,7 @@
                 <tbody>
                     {% for token in pending_tokens %}
                         <tr>
+                            {% set token_revoke_mutable = reviews_mutable %}
                             <td>{{ token.email }}</td>
                             <td>{{ ('admin.users.token_type.' ~ token.type.value)|trans }}</td>
                             <td>{{ ('admin.users.roles.' ~ token.role.value)|trans }}</td>
@@ -200,17 +204,17 @@
                                 {% if token.status.value == 'pending_approval' %}
                                     <form method="post" action="{{ path('backend_admin_user_invitation_approve', {uid: token.uid}) }}" class="system-inline-form">
                                         <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_token_' ~ token.uid) }}">
-                                        <button class="system-button" type="submit">{{ 'admin.users.actions.approve'|trans }}</button>
+                                        <button class="system-button" type="submit"{% if not reviews_mutable %} disabled{% endif %}>{{ 'admin.users.actions.approve'|trans }}</button>
                                     </form>
                                 {% elseif token.status.value == 'pending' %}
                                     <form method="post" action="{{ path('backend_admin_user_invitation_reissue', {uid: token.uid}) }}" class="system-inline-form">
                                         <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_token_' ~ token.uid) }}">
-                                        <button class="system-button" type="submit">{{ 'admin.users.actions.reissue'|trans }}</button>
+                                        <button class="system-button" type="submit"{% if not reviews_mutable %} disabled{% endif %}>{{ 'admin.users.actions.reissue'|trans }}</button>
                                     </form>
                                 {% endif %}
                                 <form method="post" action="{{ path('backend_admin_user_invitation_revoke', {uid: token.uid}) }}" class="system-inline-form">
                                     <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_token_' ~ token.uid) }}">
-                                    <button class="system-button system-button-secondary" type="submit">{{ 'admin.users.actions.revoke'|trans }}</button>
+                                    <button class="system-button system-button-secondary" type="submit"{% if not token_revoke_mutable %} disabled{% endif %}>{{ 'admin.users.actions.revoke'|trans }}</button>
                                 </form>
                             </td>
                         </tr>

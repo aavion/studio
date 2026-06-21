@@ -16,6 +16,7 @@ final readonly class ApiAvailabilitySubscriber implements EventSubscriberInterfa
         private ApiAvailabilityCheckerInterface $availabilityChecker,
         private ApiUnavailableResponder $unavailableResponder,
         private ApiFeaturePolicy $apiFeaturePolicy,
+        private ApiRequestMethodPolicy $methodPolicy = new ApiRequestMethodPolicy(),
     ) {
     }
 
@@ -28,7 +29,7 @@ final readonly class ApiAvailabilitySubscriber implements EventSubscriberInterfa
 
     public function onKernelRequest(RequestEvent $event): void
     {
-        if (!$event->isMainRequest() || !str_starts_with($event->getRequest()->getPathInfo(), '/api/v1')) {
+        if (!$event->isMainRequest() || !$this->methodPolicy->isApiV1Request($event->getRequest())) {
             return;
         }
 

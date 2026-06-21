@@ -1,0 +1,9 @@
+[submodule "extensions/icon-captcha"]
+	path = extensions/icon-captcha
+	url = https://github.com/aavion/icon-captcha.git
+[submodule "extensions/demo-module"]
+	path = extensions/demo-module
+	url = https://github.com/aavion/demo-module.git
+[submodule "dev/extension-template"]
+	path = dev/extension-template
+	url = https://github.com/aavion/extension-template.git

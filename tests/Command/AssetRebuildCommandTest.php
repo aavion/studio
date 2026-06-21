@@ -5,16 +5,16 @@ declare(strict_types=1);
 namespace App\Tests\Command;
 
 use App\Command\AssetRebuildCommand;
-use App\Command\PackageAssetSyncCommand;
+use App\Command\ExtensionAssetSyncCommand;
 use App\Core\Asset\AssetRebuildQueueFactory;
 use App\Core\Console\ConsoleResultRenderer;
 use App\Core\Operation\OperationExecutor;
-use App\Core\Package\ActivePackageAssetProviderInterface;
-use App\Core\Package\PackageAssetRebuildDispatcher;
-use App\Core\Package\PackageAssetRebuildMessage;
-use App\Core\Package\PackageAssetSyncPackage;
-use App\Core\Package\PackageAssetSyncer;
-use App\Core\Package\PackageScope;
+use App\Core\Extension\ActiveExtensionAssetProviderInterface;
+use App\Core\Extension\ExtensionAssetRebuildDispatcher;
+use App\Core\Extension\ExtensionAssetRebuildMessage;
+use App\Core\Extension\ExtensionAssetSyncTarget;
+use App\Core\Extension\ExtensionAssetSyncer;
+use App\Core\Extension\ExtensionScope;
 use App\Core\Translation\TranslationCatalogueAggregator;
 use App\Tests\Support\FilesystemTestHelper;
 use App\Tests\Support\NullWorkflowResultMessageReporter;
@@ -42,14 +42,14 @@ final class AssetRebuildCommandTest extends TestCase
         $this->removeDirectory($this->root);
     }
 
-    public function testAssetRebuildDryRunSurvivesMissingPackageStorage(): void
+    public function testAssetRebuildDryRunSurvivesMissingExtensionStorage(): void
     {
         $command = new AssetRebuildCommand(
             $this->kernel('test'),
-            new FailingPackageAssetProvider(),
+            new FailingExtensionAssetProvider(),
             new AssetRebuildQueueFactory(
                 $this->root,
-                new PackageAssetSyncer($this->root),
+                new ExtensionAssetSyncer($this->root),
                 new TranslationCatalogueAggregator($this->root),
             ),
             new OperationExecutor(new NullWorkflowResultMessageReporter()),
@@ -64,15 +64,15 @@ final class AssetRebuildCommandTest extends TestCase
         self::assertSame(Command::SUCCESS, $exitCode);
         self::assertSame('asset rebuild', $payload['name']);
         self::assertCount(8, $payload['actions']);
-        self::assertSame(RuntimeException::class, $payload['context']['package_provider_error']['exception']);
+        self::assertSame(RuntimeException::class, $payload['context']['extension_provider_error']['exception']);
         self::assertFileDoesNotExist($this->root.'/.env.test.local');
     }
 
-    public function testPackageAssetSyncDoesNotMutateWhenPackageStorageIsUnavailable(): void
+    public function testExtensionAssetSyncDoesNotMutateWhenExtensionStorageIsUnavailable(): void
     {
-        $command = new PackageAssetSyncCommand(
-            new FailingPackageAssetProvider(),
-            new PackageAssetSyncer($this->root),
+        $command = new ExtensionAssetSyncCommand(
+            new FailingExtensionAssetProvider(),
+            new ExtensionAssetSyncer($this->root),
             new OperationExecutor(new NullWorkflowResultMessageReporter()),
             new ConsoleResultRenderer(),
         );
@@ -83,18 +83,18 @@ final class AssetRebuildCommandTest extends TestCase
 
         self::assertSame(Command::FAILURE, $exitCode);
         self::assertSame('failed', $payload['status']);
-        self::assertSame('package.asset_provider_failed', $payload['error']['code']);
-        self::assertDirectoryDoesNotExist($this->root.'/assets/packages');
+        self::assertSame('extension.asset_provider_failed', $payload['error']['code']);
+        self::assertDirectoryDoesNotExist($this->root.'/assets/extensions');
     }
 
-    public function testPackageAssetSyncPrintsActionIssuesInTextMode(): void
+    public function testExtensionAssetSyncPrintsActionIssuesInTextMode(): void
     {
-        $this->createUnsafePackageAssetRoot();
-        $command = new PackageAssetSyncCommand(
-            new StaticPackageAssetProvider([
-                new PackageAssetSyncPackage('broken', 'packages/broken', [PackageScope::Module]),
+        $this->createUnsafeExtensionAssetRoot();
+        $command = new ExtensionAssetSyncCommand(
+            new StaticExtensionAssetProvider([
+                new ExtensionAssetSyncTarget('broken', 'extensions/broken', [ExtensionScope::Module]),
             ]),
-            new PackageAssetSyncer($this->root),
+            new ExtensionAssetSyncer($this->root),
             new OperationExecutor(new NullWorkflowResultMessageReporter()),
             new ConsoleResultRenderer(),
         );
@@ -103,25 +103,25 @@ final class AssetRebuildCommandTest extends TestCase
         try {
             $exitCode = $tester->execute([]);
         } finally {
-            $this->removeUnsafePackageAssetRoot();
+            $this->removeUnsafeExtensionAssetRoot();
         }
 
         self::assertSame(Command::FAILURE, $exitCode);
-        self::assertStringContainsString('package.asset_sync_failed:message.package.asset_sync_failed', $this->compactConsoleDisplay($tester));
-        self::assertStringContainsString('Package asset sync failed.', $tester->getDisplay());
+        self::assertStringContainsString('extension.asset_sync_failed:message.extension.asset_sync_failed', $this->compactConsoleDisplay($tester));
+        self::assertStringContainsString('Extension asset sync failed.', $tester->getDisplay());
     }
 
     public function testAssetRebuildPrintsActionIssuesInTextMode(): void
     {
-        $this->createUnsafePackageAssetRoot();
+        $this->createUnsafeExtensionAssetRoot();
         $command = new AssetRebuildCommand(
             $this->kernel('test'),
-            new StaticPackageAssetProvider([
-                new PackageAssetSyncPackage('broken', 'packages/broken', [PackageScope::Module]),
+            new StaticExtensionAssetProvider([
+                new ExtensionAssetSyncTarget('broken', 'extensions/broken', [ExtensionScope::Module]),
             ]),
             new AssetRebuildQueueFactory(
                 $this->root,
-                new PackageAssetSyncer($this->root),
+                new ExtensionAssetSyncer($this->root),
                 new TranslationCatalogueAggregator($this->root),
             ),
             new OperationExecutor(new NullWorkflowResultMessageReporter()),
@@ -133,11 +133,11 @@ final class AssetRebuildCommandTest extends TestCase
         try {
             $exitCode = $tester->execute([]);
         } finally {
-            $this->removeUnsafePackageAssetRoot();
+            $this->removeUnsafeExtensionAssetRoot();
         }
 
         self::assertSame(Command::FAILURE, $exitCode);
-        self::assertStringContainsString('package.asset_sync_failed:message.package.asset_sync_failed', $this->compactConsoleDisplay($tester));
+        self::assertStringContainsString('extension.asset_sync_failed:message.extension.asset_sync_failed', $this->compactConsoleDisplay($tester));
         self::assertStringContainsString('Asset rebuild failed.', $tester->getDisplay());
     }
 
@@ -146,15 +146,15 @@ final class AssetRebuildCommandTest extends TestCase
         return preg_replace('/\s+/', '', $tester->getDisplay()) ?: '';
     }
 
-    public function testAssetRebuildCanBeQueuedWithoutLoadingPackages(): void
+    public function testAssetRebuildCanBeQueuedWithoutLoadingExtensions(): void
     {
         $messageBus = new RecordingMessageBus();
         $command = new AssetRebuildCommand(
             $this->kernel('test'),
-            new FailingPackageAssetProvider(),
+            new FailingExtensionAssetProvider(),
             new AssetRebuildQueueFactory(
                 $this->root,
-                new PackageAssetSyncer($this->root),
+                new ExtensionAssetSyncer($this->root),
                 new TranslationCatalogueAggregator($this->root),
             ),
             new OperationExecutor(new NullWorkflowResultMessageReporter()),
@@ -169,7 +169,7 @@ final class AssetRebuildCommandTest extends TestCase
         self::assertSame(Command::SUCCESS, $exitCode);
         self::assertSame('success', $payload['status']);
         self::assertCount(1, $messageBus->messages());
-        self::assertInstanceOf(PackageAssetRebuildMessage::class, $messageBus->messages()[0]);
+        self::assertInstanceOf(ExtensionAssetRebuildMessage::class, $messageBus->messages()[0]);
         self::assertSame('test', $messageBus->messages()[0]->environment());
         self::assertSame('setup', $messageBus->messages()[0]->trigger());
     }
@@ -182,54 +182,54 @@ final class AssetRebuildCommandTest extends TestCase
         return $kernel;
     }
 
-    private function assetRebuildDispatcher(?RecordingMessageBus $messageBus = null): PackageAssetRebuildDispatcher
+    private function assetRebuildDispatcher(?RecordingMessageBus $messageBus = null): ExtensionAssetRebuildDispatcher
     {
-        return new PackageAssetRebuildDispatcher(
+        return new ExtensionAssetRebuildDispatcher(
             $messageBus ?? new RecordingMessageBus(),
             new NullWorkflowResultMessageReporter(),
         );
     }
 
-    private function createUnsafePackageAssetRoot(): void
+    private function createUnsafeExtensionAssetRoot(): void
     {
-        mkdir($this->root.'/packages/broken', 0777, true);
+        mkdir($this->root.'/extensions/broken', 0777, true);
         mkdir($this->root.'/external-assets', 0777, true);
-        $this->createSymlinkOrSkip($this->root.'/external-assets', $this->root.'/packages/broken/assets');
+        $this->createSymlinkOrSkip($this->root.'/external-assets', $this->root.'/extensions/broken/assets');
     }
 
-    private function removeUnsafePackageAssetRoot(): void
+    private function removeUnsafeExtensionAssetRoot(): void
     {
-        if (is_link($this->root.'/packages/broken/assets')) {
-            unlink($this->root.'/packages/broken/assets');
+        if (is_link($this->root.'/extensions/broken/assets')) {
+            unlink($this->root.'/extensions/broken/assets');
         }
     }
 }
 
-final readonly class FailingPackageAssetProvider implements ActivePackageAssetProviderInterface
+final readonly class FailingExtensionAssetProvider implements ActiveExtensionAssetProviderInterface
 {
     /**
-     * @return list<PackageAssetSyncPackage>
+     * @return list<ExtensionAssetSyncTarget>
      */
-    public function packages(): array
+    public function extensions(): array
     {
-        throw new RuntimeException('Package storage is unavailable.');
+        throw new RuntimeException('Extension storage is unavailable.');
     }
 }
 
-final readonly class StaticPackageAssetProvider implements ActivePackageAssetProviderInterface
+final readonly class StaticExtensionAssetProvider implements ActiveExtensionAssetProviderInterface
 {
     /**
-     * @param list<PackageAssetSyncPackage> $packages
+     * @param list<ExtensionAssetSyncTarget> $extensions
      */
-    public function __construct(private array $packages)
+    public function __construct(private array $extensions)
     {
     }
 
     /**
-     * @return list<PackageAssetSyncPackage>
+     * @return list<ExtensionAssetSyncTarget>
      */
-    public function packages(): array
+    public function extensions(): array
     {
-        return $this->packages;
+        return $this->extensions;
     }
 }

@@ -1,0 +1,113 @@
+{% extends '@backend/admin.html.twig' %}
+
+{% block title %}{{ 'admin.settings.acl.title'|trans }}{% endblock %}
+
+{% block admin_sidebar %}
+    <nav aria-label="{{ 'ui.admin.navigation'|trans }}">
+        {% include '@backend/partials/navigation/_tree.html.twig' with {items: navigation} only %}
+    </nav>
+{% endblock %}
+
+{% block admin_body %}
+    {% include '@backend/admin/partials/_page-header.html.twig' with {
+        eyebrow: 'admin.settings.title'|trans,
+        title: 'admin.settings.acl.title'|trans,
+    } only %}
+
+    <nav class="system-tabs" aria-label="{{ 'admin.acl.surfaces.label'|trans }}">
+        {% for surface in acl_matrix.surfaces %}
+            <a class="system-tab{% if loop.first %} system-tab-active{% endif %}" href="#acl-surface-{{ surface.key }}">
+                {{ surface.label_key|trans }}
+            </a>
+        {% endfor %}
+    </nav>
+
+    <form id="admin-settings-acl" class="system-backend-form" method="post" action="">
+        <input type="hidden" name="_form_id" value="admin-settings-acl">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin-settings-acl') }}">
+
+        {% for surface in acl_matrix.surfaces %}
+            <section id="acl-surface-{{ surface.key }}" class="system-panel">
+                <div class="system-panel-header">
+                    <h2>{{ surface.label_key|trans }}</h2>
+                </div>
+
+                {% if surface.rows is empty %}
+                    <p class="system-muted">{{ 'admin.acl.empty'|trans }}</p>
+                {% else %}
+                    <div class="system-table-wrapper">
+                        <table class="system-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">{{ 'admin.acl.table.feature'|trans }}</th>
+                                    <th scope="col">{{ 'admin.acl.table.default'|trans }}</th>
+                                    <th scope="col">{{ 'admin.acl.table.admin_state'|trans }}</th>
+                                    <th scope="col">{{ 'admin.acl.table.groups'|trans }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in surface.rows %}
+                                    <tr>
+                                        <th scope="row">
+                                            <span class="system-badge system-badge-neutral">{{ row.category_key|trans }}</span>
+                                            <strong>{{ row.label_key|trans }}</strong>
+                                            <small class="system-muted"><code>{{ row.identifier }}</code></small>
+                                            {% if not row.configurable %}
+                                                <span class="system-badge system-badge-warning">{{ 'admin.acl.non_configurable'|trans }}</span>
+                                            {% endif %}
+                                        </th>
+                                        <td>{{ ('admin.acl.states.' ~ row.default_state)|trans }}</td>
+                                        <td>
+                                            <select
+                                                class="system-backend-select"
+                                                name="acl[{{ row.identifier }}][state]"
+                                                {% if not row.configurable %}disabled{% endif %}
+                                            >
+                                                {% for state in acl_matrix.states %}
+                                                    <option value="{{ state.value }}" {% if state.value == row.state %}selected{% endif %}>
+                                                        {{ state.label_key|trans }}
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                        </td>
+                                        <td>
+                                            {% if surface.groups is empty %}
+                                                <span class="system-muted">{{ 'admin.acl.groups.empty'|trans }}</span>
+                                            {% else %}
+                                                <div class="system-acl-group-grid">
+                                                    {% for group in row.groups %}
+                                                        <label class="system-acl-group-row">
+                                                            <span>
+                                                                <strong>{{ group.name }}</strong>
+                                                                <code>{{ group.identifier }}</code>
+                                                            </span>
+                                                            <select
+                                                                class="system-backend-select"
+                                                                name="acl[{{ row.identifier }}][groups][{{ group.identifier }}]"
+                                                                {% if not row.configurable %}disabled{% endif %}
+                                                            >
+                                                                {% for state in acl_matrix.group_states %}
+                                                                    <option value="{{ state.value }}" {% if state.value == group.state %}selected{% endif %}>
+                                                                        {{ state.label_key|trans }}
+                                                                    </option>
+                                                                {% endfor %}
+                                                            </select>
+                                                        </label>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endif %}
+            </section>
+        {% endfor %}
+
+        <button class="system-backend-button system-button-primary" type="submit">
+            {{ 'admin.acl.actions.save'|trans }}
+        </button>
+    </form>
+{% endblock %}

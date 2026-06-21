@@ -44,6 +44,7 @@ final readonly class BackendNavigationSubscriber implements EventSubscriberInter
                 [
                     'min_access_level' => $view->minimumAccessLevel(),
                     'access_groups' => $view->accessGroups(),
+                    'access_feature' => $view->accessFeature(),
                     'route_parameters' => $view->routeParameters(),
                     'link_attributes' => $view->linkAttributes(),
                 ],

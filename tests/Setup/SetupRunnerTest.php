@@ -7,6 +7,7 @@ namespace App\Tests\Setup;
 use App\Core\ActionLog\ActionLog;
 use App\Core\Asset\AssetMessageCode;
 use App\Core\Asset\AssetMessageKey;
+use App\Core\Geo\MaxMindGeoIpConfig;
 use App\Core\Process\PhpCliBinaryPreferenceStore;
 use App\Core\Process\PhpCliBinaryValidator;
 use App\Database\DatabaseReadyState;
@@ -113,7 +114,7 @@ final class SetupRunnerTest extends TestCase
             ['composer', 'dump-env', 'test'],
             [PHP_BINARY, $this->root.'/bin/console', 'doctrine:migrations:migrate', '--no-interaction', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'cache:clear', '--env=test'],
-            [PHP_BINARY, $this->root.'/bin/console', 'packages:discover', '--run-now', '--trigger=setup', '--env=test'],
+            [PHP_BINARY, $this->root.'/bin/console', 'extensions:discover', '--run-now', '--trigger=setup', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'assets:rebuild', '--trigger=setup', '--env=test', '--json'],
             [PHP_BINARY, $this->root.'/bin/console', 'mercure:stop', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'mercure:health', '--env=test'],
@@ -121,6 +122,10 @@ final class SetupRunnerTest extends TestCase
 
         $pdo = new PDO('sqlite:'.$databasePath);
         $configRows = $pdo->query('SELECT config_key, value FROM config_entry')->fetchAll(PDO::FETCH_KEY_PAIR);
+        $geoIpLicenseSensitive = $pdo->query(sprintf(
+            "SELECT sensitive FROM config_entry WHERE config_key = '%s'",
+            MaxMindGeoIpConfig::LICENSE_KEY_KEY,
+        ))->fetchColumn();
         $aclGroups = $pdo->query('SELECT identifier, min_role FROM acl_group WHERE json_extract(metadata, "$.seeded_by") = "setup" ORDER BY min_role')->fetchAll(PDO::FETCH_ASSOC);
         $adminUser = $pdo->query("SELECT password_hash, role FROM user_account WHERE username = 'admin'")->fetch(PDO::FETCH_ASSOC);
         $stateMarkers = $pdo->query("SELECT marker_key, marker_value FROM state_marker WHERE subject_type = 'user_account' ORDER BY marker_key")->fetchAll(PDO::FETCH_KEY_PAIR);
@@ -129,6 +134,7 @@ final class SetupRunnerTest extends TestCase
         $homeTitle = $pdo->query(sprintf("SELECT field_content FROM content_field_value WHERE revision_uid = '%s' AND field_identifier = 'title' AND language = '%s'", $seed->homeContentRevision()['uid'], $input->language()))->fetchColumn();
 
         self::assertSame($seed->configMap($input), $this->decodedConfigRows($configRows, array_keys($seed->configMap($input))));
+        self::assertSame(1, (int) $geoIpLicenseSensitive);
         self::assertSame(array_map(static fn (array $group): array => [
             'identifier' => $group['identifier'],
             'min_role' => $group['min_role'],
@@ -512,7 +518,7 @@ final class SetupRunnerTest extends TestCase
             ['composer', 'dump-env', 'test'],
             [PHP_BINARY, $this->root.'/bin/console', 'doctrine:migrations:migrate', '--no-interaction', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'cache:clear', '--env=test'],
-            [PHP_BINARY, $this->root.'/bin/console', 'packages:discover', '--run-now', '--trigger=setup', '--env=test'],
+            [PHP_BINARY, $this->root.'/bin/console', 'extensions:discover', '--run-now', '--trigger=setup', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'assets:rebuild', '--trigger=setup', '--env=test', '--json'],
             [PHP_BINARY, $this->root.'/bin/console', 'mercure:stop', '--env=test'],
             [PHP_BINARY, $this->root.'/bin/console', 'mercure:health', '--env=test'],
@@ -561,8 +567,8 @@ final class SetupRunnerTest extends TestCase
         self::assertSame($seed->contentSchema()['identifier'], $entries[6]['context']['schema']);
         self::assertSame('clear_cache', $entries[7]['name']);
         self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'cache:clear', '--env=test'], $entries[7]['context']['command']);
-        self::assertSame('run_package_discovery', $entries[8]['name']);
-        self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'packages:discover', '--run-now', '--trigger=setup', '--env=test'], $entries[8]['context']['command']);
+        self::assertSame('run_extension_discovery', $entries[8]['name']);
+        self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'extensions:discover', '--run-now', '--trigger=setup', '--env=test'], $entries[8]['context']['command']);
         self::assertSame('run_asset_rebuild', $entries[9]['name']);
         self::assertSame([PHP_BINARY, $this->root.'/bin/console', 'assets:rebuild', '--trigger=setup', '--env=test', '--json'], $entries[9]['context']['command']);
         self::assertSame('run_mercure_health', $entries[10]['name']);

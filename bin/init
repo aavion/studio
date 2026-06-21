@@ -7,8 +7,8 @@ ini_set('memory_limit', '512M');
 ini_set('max_execution_time', 0);
 
 use App\Localization\CoreTranslationBootstrapper;
-use App\Core\Package\PackageAssetFilesystem;
-use App\Core\Package\PackageAssetRegistryWriter;
+use App\Core\Extension\ExtensionAssetFilesystem;
+use App\Core\Extension\ExtensionAssetRegistryWriter;
 use Symfony\Component\Dotenv\Dotenv;
 
 final class InitReporter
@@ -102,6 +102,14 @@ final class InitCommand
             return 1;
         }
 
+        $this->syncGitSubmodules();
+
+        if ($this->reporter->hasFailures()) {
+            $this->reporter->printSummary();
+
+            return 1;
+        }
+
         $this->resetVendorDirectory();
 
         if ($this->reporter->hasFailures()) {
@@ -154,7 +162,7 @@ final class InitCommand
         }
 
         $console = [PHP_BINARY, $this->projectDir.'/bin/console'];
-        $this->ensurePackageAssetRegistries();
+        $this->ensureExtensionAssetRegistries();
         $this->runSymfonyAssetSetup($console);
 
         if ($this->reporter->hasFailures()) {
@@ -181,20 +189,20 @@ final class InitCommand
     {
         $this->runRequiredCommand([...$console, 'cache:clear', '--no-warmup'], 'Symfony cache is cleared without warmup.');
         $this->runRequiredCommand([...$console, 'assets:install', 'public'], 'Bundle assets are installed.');
-        $this->runRequiredCommand([...$console, 'importmap:install'], 'Importmap packages are installed.');
+        $this->runRequiredCommand([...$console, 'importmap:install'], 'Import map dependencies are installed.');
         $this->runOptionalCommand([...$console, 'ux:icons:lock'], 'Symfony UX icons are locked locally.');
         $this->runOptionalCommand([...$console, 'mercure:install'], 'Optional Mercure hub binary is installed when supported.');
         $this->runRequiredCommand([...$console, 'tailwind:build'], 'Tailwind CSS is built.');
         $this->runRequiredCommand([...$console, 'cache:warmup'], 'Symfony cache is warmed.');
     }
 
-    private function ensurePackageAssetRegistries(): void
+    private function ensureExtensionAssetRegistries(): void
     {
         try {
-            (new PackageAssetRegistryWriter(new PackageAssetFilesystem($this->projectDir)))->ensureRegistryFilesExist();
-            $this->reporter->success('Package asset registry files exist for Tailwind and AssetMapper.');
+            (new ExtensionAssetRegistryWriter(new ExtensionAssetFilesystem($this->projectDir)))->ensureRegistryFilesExist();
+            $this->reporter->success('Extension asset registry files exist for Tailwind and AssetMapper.');
         } catch (Throwable $throwable) {
-            $this->reporter->failure('Package asset registry files could not be prepared: '.$throwable->getMessage());
+            $this->reporter->failure('Extension asset registry files could not be prepared: '.$throwable->getMessage());
         }
     }
 
@@ -270,6 +278,37 @@ final class InitCommand
         $this->reporter->failure('Composer is unavailable. Install Composer or restore the bundled bin/composer fallback.');
 
         return null;
+    }
+
+    private function syncGitSubmodules(): void
+    {
+        if (!is_file($this->projectDir.'/.gitmodules')) {
+            $this->reporter->success('No Git submodules configured.');
+
+            return;
+        }
+
+        if (0 !== $this->runCommand(['git', '--version'], false)) {
+            $this->reporter->warning('Git is unavailable; skipping Git submodule initialization.');
+
+            return;
+        }
+
+        if (0 !== $this->runCommand(['git', 'rev-parse', '--is-inside-work-tree'], false)) {
+            $this->reporter->warning('Project is not a Git work tree; skipping Git submodule initialization.');
+
+            return;
+        }
+
+        $this->runRequiredCommand(
+            ['git', 'submodule', 'sync', '--recursive'],
+            'Git submodule URLs are synchronized.',
+        );
+
+        $this->runRequiredCommand(
+            ['git', 'submodule', 'update', '--init', '--recursive'],
+            'Git submodules are initialized.',
+        );
     }
 
     private function loadSymfonyEnvironment(): string
@@ -411,10 +450,12 @@ final class InitCommand
         }
 
         $lock = $this->readComposerLock();
-        foreach (($lock['packages'] ?? []) as $package) {
-            if (is_array($package)) {
-                foreach ($this->phpExtensionRequirements($package['require'] ?? []) as $extension) {
-                    $extensions[] = $extension;
+        foreach ($this->composerLockPackageSectionsForEarlyPlatformChecks() as $section) {
+            foreach (($lock[$section] ?? []) as $package) {
+                if (is_array($package)) {
+                    foreach ($this->phpExtensionRequirements($package['require'] ?? []) as $extension) {
+                        $extensions[] = $extension;
+                    }
                 }
             }
         }
@@ -432,9 +473,11 @@ final class InitCommand
 
         $lock = $this->readComposerLock();
         $versions[] = $lock['platform']['php'] ?? null;
-        foreach (($lock['packages'] ?? []) as $package) {
-            if (is_array($package)) {
-                $versions[] = $package['require']['php'] ?? null;
+        foreach ($this->composerLockPackageSectionsForEarlyPlatformChecks() as $section) {
+            foreach (($lock[$section] ?? []) as $package) {
+                if (is_array($package)) {
+                    $versions[] = $package['require']['php'] ?? null;
+                }
             }
         }
 
@@ -454,6 +497,23 @@ final class InitCommand
     }
 
     /**
+     * @return non-empty-list<string>
+     */
+    private function composerLockPackageSectionsForEarlyPlatformChecks(): array
+    {
+        return $this->includeDevComposerPackagesForEarlyPlatformChecks()
+            ? ['packages', 'packages-dev']
+            : ['packages'];
+    }
+
+    private function includeDevComposerPackagesForEarlyPlatformChecks(): bool
+    {
+        $environment = $_SERVER['APP_ENV'] ?? $_ENV['APP_ENV'] ?? getenv('APP_ENV');
+
+        return is_string($environment) && in_array($environment, ['dev', 'test'], true);
+    }
+
+    /**
      * @param mixed $requirements
      *
      * @return list<string>
@@ -465,9 +525,9 @@ final class InitCommand
         }
 
         $extensions = [];
-        foreach ($requirements as $package => $constraint) {
-            if (is_string($package) && str_starts_with($package, 'ext-')) {
-                $extensions[] = substr($package, 4);
+        foreach ($requirements as $extension => $constraint) {
+            if (is_string($extension) && str_starts_with($extension, 'ext-')) {
+                $extensions[] = substr($extension, 4);
             }
         }
 

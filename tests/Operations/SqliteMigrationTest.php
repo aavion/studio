@@ -38,6 +38,10 @@ final class SqliteMigrationTest extends TestCase
         self::assertContains('ui_alert_inbox', $tables);
         self::assertContains('config_entry', $tables);
         self::assertContains('state_marker', $tables);
+        self::assertContains('message_log_entry', $tables);
+        self::assertContains('audit_log_entry', $tables);
+        self::assertContains('access_log_entry', $tables);
+        self::assertContains('security_signal_event', $tables);
         self::assertContains('access_statistic_event', $tables);
         self::assertContains('content_schema', $tables);
         self::assertContains('content_revision', $tables);
@@ -99,6 +103,10 @@ final class SqliteMigrationTest extends TestCase
                 static fn ($index): string => $index->getName(),
                 $schema->getTable('ui_alert_inbox')->getIndexes(),
             );
+            $signalIndexes = array_map(
+                static fn ($index): string => $index->getName(),
+                $schema->getTable('security_signal_event')->getIndexes(),
+            );
             $userGroupForeignKeys = array_map(
                 static fn ($foreignKey): string => $foreignKey->getName(),
                 $schema->getTable('user_acl_group')->getForeignKeys(),
@@ -110,6 +118,9 @@ final class SqliteMigrationTest extends TestCase
             self::assertContains('studio_pk_ui_alert_inbox', $alertIndexes);
             self::assertContains('studio_idx_ui_alert_inbox_topic_cursor', $alertIndexes);
             self::assertContains('studio_idx_ui_alert_inbox_expires_at', $alertIndexes);
+            self::assertContains('studio_pk_security_signal_event', $signalIndexes);
+            self::assertContains('studio_idx_security_signal_subject_at', $signalIndexes);
+            self::assertContains('studio_idx_security_signal_request_reason', $signalIndexes);
             self::assertContains('studio_fk_user_acl_group_user', $userGroupForeignKeys);
             self::assertContains('studio_fk_user_acl_group_group', $userGroupForeignKeys);
         } finally {
@@ -195,9 +206,13 @@ final class SqliteMigrationTest extends TestCase
             'messenger_messages',
             'ui_alert_inbox',
             'config_entry',
-            'package_setting_entry',
+            'extension_setting_entry',
             'scheduler_task',
             'scheduler_task_run',
+            'message_log_entry',
+            'audit_log_entry',
+            'access_log_entry',
+            'security_signal_event',
             'state_marker',
             'access_statistic_event',
             'acl_group',
@@ -205,7 +220,7 @@ final class SqliteMigrationTest extends TestCase
             'user_acl_group',
             'account_token',
             'api_key',
-            'extension_package',
+            'extension',
             'site_menu',
             'site_menu_item',
             'content_schema',

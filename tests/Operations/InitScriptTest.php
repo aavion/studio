@@ -67,6 +67,10 @@ final class InitScriptTest extends TestCase
         self::assertStringContainsString("'tailwind:build'", $contents);
         self::assertStringContainsString("'cache:warmup'", $contents);
         self::assertStringContainsString("'asset-map:compile'", $contents);
+        self::assertStringContainsString('composerLockPackageSectionsForEarlyPlatformChecks()', $contents);
+        self::assertStringContainsString("['packages', 'packages-dev']", $contents);
+        self::assertStringContainsString("['packages']", $contents);
+        self::assertStringContainsString("in_array(\$environment, ['dev', 'test'], true)", $contents);
         self::assertStringNotContainsString("'doctrine:migrations:migrate'", $contents);
         self::assertStringNotContainsString("'doctrine:schema:validate'", $contents);
         self::assertStringContainsString('bootEnv($this->projectDir.\'/.env\')', $contents);

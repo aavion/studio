@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Core\Event;
 
 use App\Content\ContentEventHookProvider;
-use App\Core\Package\PackageEventHookProvider;
+use App\Core\Extension\ExtensionEventHookProvider;
 use App\Navigation\NavigationEventHookProvider;
 use App\View\Injection\ViewInjectionEventHookProvider;
 use App\View\ViewEventHookProvider;
@@ -20,7 +20,7 @@ final class SystemEventHookProviders
         return [
             new ContentEventHookProvider(),
             new NavigationEventHookProvider(),
-            new PackageEventHookProvider(),
+            new ExtensionEventHookProvider(),
             new ViewEventHookProvider(),
             new ViewInjectionEventHookProvider(),
         ];

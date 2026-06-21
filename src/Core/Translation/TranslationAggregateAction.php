@@ -7,17 +7,17 @@ namespace App\Core\Translation;
 use App\Core\DryRun\DryRunAction;
 use App\Core\DryRun\DryRunRisk;
 use App\Core\Operation\OperationActionInterface;
-use App\Core\Package\PackageAssetSyncPackage;
+use App\Core\Extension\ExtensionAssetSyncTarget;
 use App\Core\Workflow\WorkflowResult;
 
 final readonly class TranslationAggregateAction implements OperationActionInterface
 {
     /**
-     * @param list<PackageAssetSyncPackage> $packages
+     * @param list<ExtensionAssetSyncTarget> $extensions
      */
     public function __construct(
         private TranslationCatalogueAggregator $aggregator,
-        private array $packages,
+        private array $extensions,
     ) {
     }
 
@@ -36,15 +36,15 @@ final readonly class TranslationAggregateAction implements OperationActionInterf
         return DryRunAction::create($this->type(), $this->label(), DryRunRisk::Low, [
             'translations/runtime/{APP_ENV}/messages.*.yaml',
         ], context: [
-            'packages' => array_map(static fn (PackageAssetSyncPackage $package): string => $package->identifier(), $this->packages),
+            'extensions' => array_map(static fn (ExtensionAssetSyncTarget $extension): string => $extension->identifier(), $this->extensions),
         ]);
     }
 
     /**
-     * @return WorkflowResult<array{packages: int, locales: int, files: int, targets: list<string>}>
+     * @return WorkflowResult<array{extensions: int, locales: int, files: int, targets: list<string>}>
      */
     public function execute(): WorkflowResult
     {
-        return $this->aggregator->aggregate($this->packages);
+        return $this->aggregator->aggregate($this->extensions);
     }
 }

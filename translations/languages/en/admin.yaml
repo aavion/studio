@@ -16,7 +16,7 @@ admin:
     users: 'Users'
     user_groups: 'ACL groups'
     user_reviews: 'Reviews'
-    packages: 'Packages'
+    extensions: 'Extensions'
     themes: 'Themes'
     scheduler: 'Scheduler'
     backups: 'Backups'
@@ -29,32 +29,36 @@ admin:
     user_settings: 'Users'
     mail_settings: 'Mail'
     security_settings: 'Security'
-    package_settings: 'Packages'
+    logging_settings: 'Logs'
+    extension_settings: 'Extensions'
     statistics_settings: 'Statistics'
     api_settings: 'API'
+    acl_settings: 'ACL'
     scheduler_settings: 'Scheduler'
     system_info: 'System information'
   actions:
-    package_discovery:
+    extension_discovery:
       label: 'Update registry'
     asset_rebuild:
       label: 'Rebuild assets'
     cache_clear:
       label: 'Clear cache'
+    geoip_database_update:
+      label: 'Download GeoIP2 database'
   dashboard:
     title: 'Admin dashboard'
     foundation_title: 'Backend foundation'
     foundation_text: 'Administrative routes are now resolved through the native backend router. Functional pages can attach here once authentication, navigation, and access checks are ready.'
-  packages:
-    title: 'Package management'
-    foundation_title: 'Package view foundation'
-    foundation_text: 'Package management will attach here once install, update, activation, and cleanup workflows are wired.'
-    registry_title: 'Registered packages'
-    registry_text: 'Packages discovered in the registry are listed here. Lifecycle actions will attach once operation flows are wired.'
-    empty: 'No packages are registered yet.'
+  extensions:
+    title: 'Extension management'
+    foundation_title: 'Extension view foundation'
+    foundation_text: 'Extension management will attach here once install, update, activation, and cleanup workflows are wired.'
+    registry_title: 'Registered extensions'
+    registry_text: 'Extensions discovered in the registry are listed here. Lifecycle actions will attach once operation flows are wired.'
+    empty: 'No extensions are registered yet.'
     unknown_value: 'Unknown'
     table:
-      package: 'Package'
+      extension: 'Extension'
       status: 'Status'
       scopes: 'Scopes'
       version: 'Version'
@@ -78,59 +82,59 @@ admin:
       none: 'No actions'
     install:
       label: 'Install'
-      title: 'Install package'
-      text: 'Upload a package ZIP. The package manifest is verified first and the final installation waits for confirmation in the ActionLog.'
-      file: 'Package ZIP'
-      submit: 'Verify package'
+      title: 'Install extension'
+      text: 'Upload an extension ZIP. The extension manifest is verified first and the final installation waits for confirmation in the ActionLog.'
+      file: 'Extension ZIP'
+      submit: 'Verify extension'
       close: 'Close'
     meta:
       author: 'By %author%'
     detail:
-      overview_title: 'Package overview'
+      overview_title: 'Extension overview'
       immutable: 'Immutable'
       description: 'Description'
       author: 'Author'
       license: 'License'
       dependencies: 'Dependencies'
-      dependencies_empty: 'No package dependencies'
+      dependencies_empty: 'No extension dependencies'
       homepage: 'Homepage'
       source: 'Source'
       readme_title: 'README'
     lifecycle:
       review_title: 'Review changes'
-      immutable: 'This system package is immutable and cannot change lifecycle state.'
+      immutable: 'This system extension is immutable and cannot change lifecycle state.'
       unavailable: 'This lifecycle action is not available.'
-      no_changes: 'This action does not need to change package state.'
+      no_changes: 'This action does not need to change extension state.'
       cancel: 'Cancel'
       table:
         action: 'Action'
       activate:
         label: 'Activate'
-        title: 'Activate %package%'
-        text: 'Review dependency and conflict changes before activating this package.'
-        submit: 'Activate package'
+        title: 'Activate %extension%'
+        text: 'Review dependency and conflict changes before activating this extension.'
+        submit: 'Activate extension'
       deactivate:
         label: 'Deactivate'
-        title: 'Deactivate %package%'
-        text: 'Review the planned state change before deactivating this package.'
-        submit: 'Deactivate package'
+        title: 'Deactivate %extension%'
+        text: 'Review the planned state change before deactivating this extension.'
+        submit: 'Deactivate extension'
       reset_fault:
         label: 'Reset fault'
-        title: 'Reset fault for %package%'
-        text: 'The package will be validated again and returned to inactive if recovery succeeds.'
+        title: 'Reset fault for %extension%'
+        text: 'The extension will be validated again and returned to inactive if recovery succeeds.'
         submit: 'Reset fault'
       purge:
         label: 'Delete data'
-        title: 'Delete data for %package%'
-        text: 'Review package-owned data cleanup before resetting this package registration.'
-        warning: 'This step is irreversible. Package-owned settings and future package-owned data cleanup targets will be deleted.'
+        title: 'Delete data for %extension%'
+        text: 'Review extension-owned data cleanup before resetting this extension registration.'
+        warning: 'This step is irreversible. Extension-owned settings and future extension-owned data cleanup targets will be deleted.'
         submit: 'Delete data'
       delete:
-        label: 'Delete package'
-        title: 'Delete %package%'
-        text: 'Review the filesystem removal before deleting this package from disk.'
-        warning: 'This step is irreversible. The package files will be deleted and the registry row will stay as removed until data is deleted separately.'
-        submit: 'Delete package'
+        label: 'Delete extension'
+        title: 'Delete %extension%'
+        text: 'Review the filesystem removal before deleting this extension from disk.'
+        warning: 'This step is irreversible. The extension files will be deleted and the registry row will stay as removed until data is deleted separately.'
+        submit: 'Delete extension'
   themes:
     title: 'Theme management'
     foundation_title: 'Theme management foundation'
@@ -145,7 +149,7 @@ admin:
         text: 'Administration and editor shell themes plus the native system fallback are listed here.'
     type:
       system: 'System'
-      package: 'Package'
+      extension: 'Extension'
     quick:
       use: 'Use'
       active: 'Active'
@@ -472,9 +476,9 @@ admin:
       ui_alert_inbox_cleanup:
         label: 'UI alert inbox cleanup'
         description: 'Removes queued UI alerts after their delivery retention expires.'
-      package_discovery:
-        label: 'Package discovery'
-        description: 'Discovers packages and updates the package registry.'
+      extension_discovery:
+        label: 'Extension discovery'
+        description: 'Discovers extensions and updates the extension registry.'
       statistics_snapshot:
         label: 'Statistics snapshot'
         description: 'Refreshes the stored access statistics snapshot when statistics are enabled.'
@@ -484,6 +488,9 @@ admin:
       mercure_health:
         label: 'Mercure health'
         description: 'Checks the Mercure hub and starts the local hub when supported.'
+      geoip2_database_update:
+        label: 'GeoIP2 database update'
+        description: 'Downloads and atomically replaces the local MaxMind GeoIP2 City database when a license key is configured.'
     table:
       job: 'Job'
       source: 'Source'
@@ -511,17 +518,17 @@ admin:
       failure_count: 'Consecutive failures'
       run_url: 'Direct run URL'
       run_now_inactive: 'Activate this job before running it manually.'
-      package_action_queue_warning: 'This package job can run an ActionQueue and is controlled by the package ActionQueue scheduler setting.'
+      extension_action_queue_warning: 'This extension job can run an ActionQueue and is controlled by the extension ActionQueue scheduler setting.'
     form:
       title: 'Job settings'
       enabled: 'Run this job automatically'
       cron_expression: 'Cron expression'
-      confirm_package_action_queue: 'I understand that this package job can run an ActionQueue.'
+      confirm_extension_action_queue: 'I understand that this extension job can run an ActionQueue.'
       saved: 'Scheduler job saved.'
       errors:
         invalid_csrf: 'The scheduler form expired. Please try again.'
         cron_invalid: 'Enter a valid cron expression.'
-        package_action_queue_confirmation_required: 'Confirm the package ActionQueue warning before enabling this job.'
+        extension_action_queue_confirmation_required: 'Confirm the extension ActionQueue warning before enabling this job.'
     runs:
       title: 'Recent runs'
       empty: 'This job has not run yet.'
@@ -590,22 +597,24 @@ admin:
   logs:
     title: 'Logs'
     foundation_title: 'Log and audit foundation'
-    foundation_text: 'Operational logs, audit views, package diagnostics, and security-relevant events will attach here.'
+    foundation_text: 'Operational logs, audit views, extension diagnostics, and security-relevant events will attach here.'
     empty_value: 'n/a'
     sources:
+      label: 'Log sources'
       application: 'Application'
       message: 'Messages'
       audit: 'Audit'
       access: 'Access'
+      security_signal: 'Security signals'
     filters:
       title: 'Filters'
       source: 'Log'
       level: 'Level'
-      any_level: 'Any level'
       search: 'Search'
       window: 'Time window'
       match: 'Match'
       audit_action: 'Audit action'
+      signal_reason: 'Signal reason'
       per_page: 'Rows'
       limit: 'Limit'
       contains: 'Contains'
@@ -620,8 +629,6 @@ admin:
     entries:
       title: 'Entries'
       empty: 'No log entries match the current filters.'
-      no_files: 'No log file exists for this selection yet.'
-      files: 'Reading: %files%'
       open: 'Details'
       page_summary: 'Page %page% of %pages% · %total% entries'
       previous: 'Previous'
@@ -637,6 +644,8 @@ admin:
       location: 'Location'
       user: 'User'
       action: 'Action'
+      security_signal: 'Signal'
+      subject: 'Subject'
       channel: 'Channel'
       context: 'Context'
       details: 'Details'
@@ -645,6 +654,31 @@ admin:
       context: 'Context'
       no_context: 'No structured context is available.'
       raw: 'Raw line'
+  auto_bans:
+    active:
+      title: 'Active auto-bans'
+      empty: 'No active auto-bans.'
+      open: 'Review'
+      open_list: 'Open active auto-bans'
+      disabled: 'Auto-ban enforcement is disabled. Existing TTL states are retained until expiry but are not enforced.'
+    columns:
+      subject: 'Subject'
+      created_at: 'Created'
+      expires_at: 'Expires'
+      ttl: 'TTL seconds'
+      details: 'Details'
+    detail:
+      title: 'Auto-ban detail'
+      signals: 'Related security signals'
+      no_signals: 'No retained signals are available for this active ban.'
+      trigger_country: 'Trigger country'
+      trigger_continent: 'Trigger continent'
+    reset:
+      submit: 'Reset auto-ban'
+      saved: 'Auto-ban reset.'
+      failed: 'Auto-ban could not be reset.'
+    alerts:
+      triggered: 'Auto-ban created for %subject%.'
   statistics:
     title: 'Statistics'
     access_title: 'Access statistics'
@@ -675,8 +709,12 @@ admin:
       all: 'All stored events'
   settings:
     title: 'Settings'
+    acl:
+      title: 'ACL'
+      foundation_title: 'ACL matrix'
+      foundation_text: 'Owner-controlled feature permissions for administrative, editor, and future frontend surfaces.'
     redirect_title: 'Settings sections'
-    redirect_text: 'General settings are the first built-in settings section. Active packages with simple setting definitions appear under package settings.'
+    redirect_text: 'General settings are the first built-in settings section. Active extensions with simple setting definitions appear under extension settings.'
     general:
       title: 'General settings'
       foundation_title: 'General configuration foundation'
@@ -696,23 +734,41 @@ admin:
     security:
       title: 'Security settings'
       foundation_title: 'Security configuration foundation'
-      foundation_text: 'Security, captcha, logging, and abuse-control settings will attach here.'
+      foundation_text: 'Security, captcha, passive-signal retention, and abuse-control settings will attach here.'
+    logging:
+      title: 'Log settings'
+      foundation_title: 'Database log projections'
+      foundation_text: 'Message, audit, and access logs keep their fixed rotating file logs separately. These settings control how long the searchable database copies stay available.'
     statistics:
       title: 'Statistics settings'
       foundation_title: 'Statistics configuration'
-      foundation_text: 'Access statistics recording and display can be disabled independently from raw access logging. Raw access logs remain available for operational security and are retained for 30 days.'
+      foundation_text: 'Access statistics recording, display, and GeoIP enrichment can be disabled independently from raw access logging. Raw access logs remain available for operational security and are retained for 30 days.'
+    geoip:
+      status:
+        title: 'GeoIP2 status'
+        provider: 'Provider'
+        state: 'State'
+        database_edition: 'Database edition'
+        database_build_date: 'Database build date'
+        failure_code: 'Failure code'
+        values:
+          ready: 'Ready'
+          disabled: 'Disabled'
+          unconfigured: 'Unconfigured'
+          unavailable: 'Unavailable'
+          unknown: 'Unknown'
     api:
       title: 'API settings'
       foundation_title: 'API availability'
       foundation_text: 'API access can be disabled for normal users while owners keep key management available for operational integrations such as scheduler activation.'
-    packages:
-      title: 'Package settings'
-      foundation_title: 'Packages with settings'
-      empty: 'No active package exposes settings yet.'
-    package:
-      title: '%package% settings'
-      foundation_title: 'Package settings'
-      empty: 'This package does not expose configurable settings.'
+    extensions:
+      title: 'Extension settings'
+      foundation_title: 'Extensions with settings'
+      empty: 'No active extension exposes settings yet.'
+    extension:
+      title: '%extension% settings'
+      foundation_title: 'Extension settings'
+      empty: 'This extension does not expose configurable settings.'
       options: '%count% option(s)'
       validation: '%count% validation rule(s)'
     scheduler:
@@ -738,6 +794,153 @@ admin:
         required: 'This field is required.'
         save_failed: 'The settings could not be saved.'
         default_acl_group_unavailable: 'Enter an existing ACL group with minimum role User or lower, or leave the field empty.'
+    fields:
+      captcha_enabled:
+        label: 'Enable captcha'
+      captcha_provider:
+        label: 'Captcha provider'
+      captcha_preview:
+        label: 'Captcha preview'
+      rate_limit_mode:
+        label: 'Rate limiting'
+      auto_ban_enabled:
+        label: 'Enable auto-ban'
+        help: 'Temporarily blocks repeated suspicious Visitor/IP activity. Trusted users remain exempt.'
+      auto_ban_trusted_access_level:
+        label: 'Trusted user level'
+        help: 'Registered users at or above this access level are never auto-banned.'
+      auto_ban_score_threshold:
+        label: 'Auto-ban score threshold'
+        help: 'Score required within one hour before a new Visitor ban can be created. IP-only bans use a higher internal threshold.'
+      auto_ban_new_ban_owner_alerts:
+        label: 'Enable alerts for newly decided auto-bans'
+        help: 'Queues a hidden warning for Owner accounts when a new active auto-ban is created.'
+      audit_enabled:
+        label: 'Enable audit logging'
+      audit_events:
+        label: 'Audit event categories'
+      security_signal_retention_days:
+        label: 'Security signal retention'
+        help: 'Retention for passive security signals in days. Values above 30 days are not allowed because signals can contain request-derived identifiers.'
+      security_probe_path_patterns:
+        label: 'Suspicious probe path patterns'
+        help: 'One regular expression per line. Quoted CSV imports are accepted. Invalid or empty lists fall back to the protected defaults.'
+    options:
+      captcha:
+        none: 'No captcha provider'
+      rate_limit_mode:
+        off: 'Off'
+        standard: 'Standard'
+        strict: 'Strict'
+        panic: 'Panic'
+      access_level:
+        user: 'User'
+        moderator: 'Moderator'
+        author: 'Author'
+        publisher: 'Publisher'
+        curator: 'Curator'
+        manager: 'Manager'
+        director: 'Director'
+        admin: 'Admin'
+        owner: 'Owner'
+      audit:
+        authentication: 'Authentication events'
+        backend_actions: 'Backend maintenance actions'
+        operations: 'Operations maintenance actions'
+        extensions: 'Extension lifecycle actions'
+        settings: 'Settings changes'
+        other: 'Other future audit events'
+  acl:
+    actions:
+      save: 'Save ACL matrix'
+    categories:
+      diagnostics: 'Diagnostics'
+      operations: 'Operations'
+      extensions: 'Extensions'
+      extension_settings: 'Extension settings'
+      settings: 'Settings'
+      system: 'System'
+      users: 'Users'
+    empty: 'No feature flags are registered for this surface yet.'
+    groups:
+      empty: 'No ACL groups can grant this surface.'
+    non_configurable: 'Read-only'
+    read_only_action: 'You may review this action, but mutation is not allowed by the current ACL policy.'
+    states:
+      inherit: 'Inherit'
+      denied: 'Denied'
+      visible: 'Visible'
+      mutable: 'Mutable'
+    surfaces:
+      label: 'ACL surfaces'
+      admin: 'Admin'
+      admin_text: 'Administrative feature flags. ACL groups can grant permissions only to users that already pass the Admin surface gate.'
+      editor: 'Editor'
+      editor_text: 'Prepared for future editor feature flags. Editor providers can register rows here later.'
+      frontend: 'Frontend'
+      frontend_text: 'Reserved for explicitly designed future frontend features such as inline editing.'
+    table:
+      admin_state: 'Admin'
+      default: 'Default'
+      feature: 'Feature'
+      groups: 'ACL group grants'
+    features:
+      admin_settings_security:
+        label: 'Security settings'
+        description: 'Security policy, audit categories, signal retention, and suspicious probe patterns.'
+      admin_settings_logging:
+        label: 'Log retention settings'
+        description: 'Database lookup retention for message, audit, and access log projections.'
+      admin_settings_statistics:
+        label: 'Statistics settings'
+        description: 'Access statistics recording and display settings.'
+      admin_settings_statistics_geoip:
+        label: 'GeoIP settings'
+        description: 'GeoIP enablement, local database path, protected MaxMind license key, and status.'
+      admin_settings_api:
+        label: 'API settings'
+        description: 'Global API availability and CORS expansion settings.'
+      admin_settings_scheduler:
+        label: 'Scheduler settings'
+        description: 'Scheduler enablement, web triggering, GET authentication, and extension action queues.'
+      admin_settings_extensions:
+        label: 'Extension settings'
+        description: 'Core extension-update settings and extension-owned settings pages.'
+      admin_settings_extension:
+        description: 'Extension-owned settings page for an active extension.'
+      admin_logs:
+        label: 'Logs'
+        description: 'Administrative log review surfaces.'
+      admin_extensions:
+        label: 'Extensions and themes'
+        description: 'Extension and theme management, including install, activation, deactivation, repair, deletion, and purge workflows.'
+      admin_extensions_self_update:
+        label: 'System extension self-update'
+        description: 'Owner-only system extension self-update workflows.'
+      admin_backup_restore:
+        label: 'Backup, export, and restore'
+        description: 'Full-data backup, export, download, and restore workflows.'
+      admin_operations:
+        label: 'Operations'
+        description: 'Live operation inspection and operational status surfaces.'
+      admin_actions_maintenance:
+        label: 'Maintenance actions'
+        description: 'Manual maintenance actions such as cache clear and asset rebuild.'
+      admin_scheduler:
+        label: 'Scheduler'
+        description: 'Scheduler task inspection and run controls.'
+      admin_users:
+        label: 'Users'
+        description: 'User administration and account management.'
+      admin_users_acl:
+        label: 'User ACL groups'
+        description: 'ACL group administration and membership review.'
+      admin_users_review:
+        label: 'User reviews'
+        description: 'User invitation, registration, and review queues.'
+      admin_support:
+        label: 'Support bundles'
+        description: 'Diagnostic or support-bundle generation and download.'
     fields:
       site_title:
         label: 'Site title'
@@ -786,10 +989,50 @@ admin:
         label: 'Captcha provider'
       captcha_preview:
         label: 'Captcha preview'
+      rate_limit_mode:
+        label: 'Rate limiting'
+      auto_ban_enabled:
+        label: 'Enable auto-ban'
+        help: 'Temporarily blocks repeated suspicious Visitor/IP activity. Trusted users remain exempt.'
+      auto_ban_trusted_access_level:
+        label: 'Trusted user level'
+        help: 'Registered users at or above this access level are never auto-banned.'
+      auto_ban_score_threshold:
+        label: 'Auto-ban score threshold'
+        help: 'Score required within one hour before a new Visitor ban can be created. IP-only bans use a higher internal threshold.'
+      auto_ban_new_ban_owner_alerts:
+        label: 'Enable alerts for newly decided auto-bans'
+        help: 'Queues a hidden warning for Owner accounts when a new active auto-ban is created.'
       audit_enabled:
         label: 'Enable audit logging'
       audit_events:
         label: 'Audit event categories'
+      message_log_retention_days:
+        label: 'Message log database retention'
+        help: 'Database lookup copy retention in days. File logs keep their fixed 30-day rotation separately.'
+      audit_log_retention_days:
+        label: 'Audit log database retention'
+        help: 'Database lookup copy retention in days. Values above 30 days are not allowed because audit data can contain request-derived identifiers.'
+      access_log_retention_days:
+        label: 'Access log database retention'
+        help: 'Database lookup copy retention in days. Values above 30 days are not allowed because access logs can contain IP-derived data.'
+      security_signal_retention_days:
+        label: 'Security signal retention'
+        help: 'Retention for passive security signals in days. Values above 30 days are not allowed because signals can contain request-derived identifiers.'
+      security_probe_path_patterns:
+        label: 'Suspicious probe path patterns'
+        help: 'One regular expression per line. Quoted CSV imports are accepted. Invalid or empty lists fall back to the protected defaults.'
+      geoip_enabled:
+        label: 'Enable GeoIP lookups'
+        help: 'When disabled or unavailable, logs and statistics keep normalized n/a location values.'
+      geoip_license_link:
+        label: 'Get a free GeoLite2 license key from MaxMind'
+      geoip_database_path:
+        label: 'MaxMind database path'
+        help: 'Project-relative path to the local .mmdb database. Downloads are written atomically to this path.'
+      geoip_license_key:
+        label: 'MaxMind license key'
+        help: 'Stored as sensitive configuration. Saving a key enables the GeoIP2 database download action on this page.'
       statistics_enabled:
         label: 'Enable access statistics'
       statistics_respect_dnt:
@@ -803,34 +1046,44 @@ admin:
       api_cors_allowed_origins:
         label: 'Allowed API CORS origins'
         help: 'JSON array of exact origins such as ["https://client.example"]. The wildcard "*" should only be used intentionally.'
-      package_update_interval:
+      extension_update_interval:
         label: 'Update check interval'
-      package_auto_updates:
-        label: 'Allow automatic package updates'
+      extension_auto_updates:
+        label: 'Allow automatic extension updates'
       scheduler_enabled:
         label: 'Enable scheduler'
       scheduler_get_auth_enabled:
         label: 'Allow GET authentication for /cron/run'
         help: 'Bearer authentication remains preferred. Enable GET authentication only for hosting schedulers that cannot send headers.'
-      scheduler_package_action_queues_enabled:
-        label: 'Allow package scheduler action queues'
-        help: 'Package action queues may run filesystem or process operations. Core scheduler queues are trusted separately.'
+      scheduler_extension_action_queues_enabled:
+        label: 'Allow extension scheduler action queues'
+        help: 'Extension action queues may run filesystem or process operations. Core scheduler queues are trusted separately.'
       scheduler_web_trigger_enabled:
         label: 'Run scheduler from web traffic'
         help: 'Starts a detached scheduler run after eligible page requests at most once per minute. Use a real cron job when available.'
     options:
       dashboard:
         system_status: 'System status'
-        packages: 'Package status'
+        extensions: 'Extension status'
         recent_activity: 'Recent activity'
         setup_warnings: 'Setup warnings'
       captcha:
         none: 'No captcha provider'
+      rate_limit_mode:
+        off: 'Off'
+        standard: 'Standard'
+        strict: 'Strict'
+        panic: 'Panic'
+      access_level:
+        manager: 'Manager'
+        director: 'Director'
+        admin: 'Admin'
+        owner: 'Owner'
       audit:
         authentication: 'Authentication events'
         backend_actions: 'Backend maintenance actions'
         operations: 'Operations maintenance actions'
-        packages: 'Package lifecycle actions'
+        extensions: 'Extension lifecycle actions'
         settings: 'Settings changes'
         other: 'Other future audit events'
       registration:

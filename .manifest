@@ -3,10 +3,10 @@
 # APP_CHANNEL defines the target branch inside the specified repository.
 
 ##> aavion/studio manifest ###
-APP_VERSION=0.2.4
-APP_DATE=2026-06-14
+APP_VERSION=0.2.6
+APP_DATE=2026-06-20
 APP_NAME=Studio
-APP_AUTHOR=Dominik Letica
+APP_AUTHOR=aavion Media
 APP_DESCRIPTION=Symfony 8.1 based content-management system for structured project websites.
 APP_LICENSE=MIT
 APP_HOMEPAGE=https://www.aavion.media

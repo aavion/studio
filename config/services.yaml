@@ -41,6 +41,9 @@ services:
         App\Core\Event\EventHookDescriptorProviderInterface:
             tags:
                 - { name: 'system.event_hook_provider', priority: 0 }
+        App\Core\Geo\GeoIpProviderInterface:
+            tags:
+                - { name: 'system.geoip_provider', priority: 0 }
         App\Backend\BackendViewProviderInterface:
             tags:
                 - { name: 'system.backend_view_provider', priority: 0 }
@@ -50,9 +53,9 @@ services:
         App\View\Injection\DynamicViewInjectionProviderInterface:
             tags:
                 - { name: 'system.dynamic_view_injection_provider', priority: 0 }
-        App\Core\Package\Settings\PackageSettingProviderInterface:
+        App\Core\Extension\Settings\ExtensionSettingProviderInterface:
             tags:
-                - { name: 'system.package_setting_provider', priority: 0 }
+                - { name: 'system.extension_setting_provider', priority: 0 }
         App\Core\Operation\Live\LiveOperationQueueProviderInterface:
             tags:
                 - { name: 'system.live_operation_queue_provider', priority: 0 }
@@ -71,6 +74,9 @@ services:
         App\Security\AclGroupReferenceProviderInterface:
             tags:
                 - { name: 'system.acl_group_reference_provider', priority: 0 }
+        App\Core\AdminAcl\AdminFeatureProviderInterface:
+            tags:
+                - { name: 'system.admin_feature_provider', priority: 0 }
 
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name
@@ -97,7 +103,6 @@ services:
             - '../src/**/*Item.php'
             - '../src/**/*Message.php'
             - '../src/**/*Mode.php'
-            - '../src/**/*Package.php'
             - '../src/**/*Path.php'
             - '../src/**/*Plan.php'
             - '../src/**/*Queue.php'
@@ -106,7 +111,7 @@ services:
             - '../src/**/*Scope.php'
             - '../src/**/*Source.php'
             - '../src/Debug/RouteRenderOptions.php'
-            - '../src/Core/Package/PackageSpec.php'
+            - '../src/Core/Geo/GeoIp2MaxMindDatabaseReader.php'
             - '../src/**/*Spec.php'
             - '../src/**/*Status.php'
             - '../src/**/*Type.php'
@@ -160,9 +165,9 @@ services:
 
     App\Content\Api\ContentApiPath: ~
 
-    App\Core\Package\PackageTranslationNamespaceValidator:
+    App\Core\Extension\ExtensionDependencyManifestValidator:
         arguments:
-            $fallbackLocale: '%kernel.default_locale%'
+            $projectDir: '%kernel.project_dir%'
 
     App\Setup\SetupRunner:
         arguments:
@@ -171,6 +176,10 @@ services:
     App\Debug\RouteRenderer:
         arguments:
             $sessionFactory: '@session.factory'
+
+    App\Command\RenderRouteCommand:
+        arguments:
+            $environment: '%kernel.environment%'
 
     App\Setup\SetupRedirectSubscriber:
         arguments:
@@ -211,14 +220,18 @@ services:
         arguments:
             $providers: !tagged_iterator { tag: system.backend_view_provider }
 
+    App\Core\AdminAcl\AdminFeatureRegistry:
+        arguments:
+            $providers: !tagged_iterator { tag: system.admin_feature_provider }
+
     App\View\Injection\ViewInjectionRegistry:
         arguments:
             $staticProviders: !tagged_iterator { tag: system.static_view_injection_provider }
             $dynamicProviders: !tagged_iterator { tag: system.dynamic_view_injection_provider }
 
-    App\Core\Package\Settings\PackageSettingRegistry:
+    App\Core\Extension\Settings\ExtensionSettingRegistry:
         arguments:
-            $providers: !tagged_iterator { tag: system.package_setting_provider }
+            $providers: !tagged_iterator { tag: system.extension_setting_provider }
 
     App\Scheduler\SchedulerTaskRegistry:
         arguments:
@@ -249,6 +262,34 @@ services:
         arguments:
             $providers: !tagged_iterator { tag: system.acl_group_reference_provider }
 
+    App\Security\RateLimit\RateLimitLimiterFactory:
+        arguments:
+            $cachePool: '@cache.rate_limiter'
+            $lockFactory: '@lock.factory'
+
+    App\Security\AutoBan\AutoBanStore:
+        arguments:
+            $cache: '@cache.app'
+            $lockFactory: '@lock.factory'
+
+    App\Security\AutoBan\AutoBanSignalEvaluator:
+        arguments:
+            $environment: '%kernel.environment%'
+
+    App\Security\AutoBan\AutoBanRequestSubscriber:
+        arguments:
+            $environment: '%kernel.environment%'
+            $trustedApiKeys: '@App\Security\AutoBan\TrustedApiKeyAutoBanBypass'
+
+    App\Security\RateLimit\RateLimitRequestSubscriber:
+        arguments:
+            $environment: '%kernel.environment%'
+            $projectDir: '%kernel.project_dir%'
+
+    App\Security\RateLimit\RateLimitAuthenticationSubscriber:
+        arguments:
+            $environment: '%kernel.environment%'
+
     App\Localization\TranslationLanguageCatalog:
         arguments:
             $projectDir: '%kernel.project_dir%'
@@ -267,7 +308,7 @@ services:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
-    App\Core\Package\PackageAssetSyncer:
+    App\Core\Extension\ExtensionAssetSyncer:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
@@ -275,13 +316,13 @@ services:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
-    App\Core\Package\PackageRegistryHandler:
+    App\Core\Extension\ExtensionRegistryHandler:
         arguments:
             $projectDir: '%kernel.project_dir%'
             $environment: '%kernel.environment%'
             $validationSpec: null
 
-    App\Core\Package\PackageRegistrySyncFinalizer:
+    App\Core\Extension\ExtensionRegistrySyncFinalizer:
         arguments:
             $environment: '%kernel.environment%'
 
@@ -290,47 +331,51 @@ services:
             $projectDir: '%kernel.project_dir%'
             $environment: '%kernel.environment%'
 
-    App\Core\Package\PackageDiscoveryRunner:
+    App\Core\Extension\ExtensionDiscoveryRunner:
         arguments:
             $projectDir: '%kernel.project_dir%'
             $environment: '%kernel.environment%'
 
-    App\Core\Package\PackageRemover:
+    App\Core\Extension\ExtensionContributionReader:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
-    App\Core\Package\PackageFilesystemRemover:
+    App\Core\Extension\ExtensionRemover:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
-    App\Core\Package\Install\PackageInstallFilesystem:
+    App\Core\Extension\ExtensionFilesystemRemover:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
-    App\Core\Package\Install\PackageUploadStager:
+    App\Core\Extension\Install\ExtensionInstallFilesystem:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    App\Core\Extension\Install\ExtensionUploadStager:
         arguments:
             $environment: '%kernel.environment%'
 
-    App\Core\Package\Install\PackageInstallVerifier:
+    App\Core\Extension\Install\ExtensionInstallVerifier:
         arguments:
             $environment: '%kernel.environment%'
 
-    App\Core\Package\Install\PackageInstallApplier:
+    App\Core\Extension\Install\ExtensionInstallApplier:
         arguments:
             $environment: '%kernel.environment%'
 
-    App\Core\Package\PackageFaultResetter:
+    App\Core\Extension\ExtensionFaultResetter:
         arguments:
             $projectDir: '%kernel.project_dir%'
             $environment: '%kernel.environment%'
 
-    App\Core\Package\PackagePhpLoader:
+    App\Core\Extension\ExtensionPhpLoader:
         arguments:
             $projectDir: '%kernel.project_dir%'
             $environment: '%kernel.environment%'
-            $runtimeContributions: '@App\Core\Package\PackageRuntimeContributionRegistry'
+            $runtimeContributions: '@App\Core\Extension\ExtensionRuntimeContributionRegistry'
 
-    App\Core\Package\PackageRuntimeFailureHandler:
+    App\Core\Extension\ExtensionRuntimeFailureHandler:
         arguments:
             $environment: '%kernel.environment%'
 
@@ -338,17 +383,20 @@ services:
         arguments:
             $providers: !tagged_iterator { tag: system.event_hook_provider }
 
-    App\Core\Package\ActivePackageAssetProviderInterface:
-        alias: App\Core\Package\ActivePackageAssetProvider
+    App\Core\Extension\ActiveExtensionAssetProviderInterface:
+        alias: App\Core\Extension\ActiveExtensionAssetProvider
 
-    App\Core\Package\ActivePackageProviderInterface:
-        alias: App\Core\Package\ActivePackageProvider
+    App\Core\Extension\ActiveExtensionProviderInterface:
+        alias: App\Core\Extension\ActiveExtensionProvider
 
-    App\Core\Package\PackageLifecycleAssetRebuilderInterface:
-        alias: App\Core\Package\PackageLifecycleAssetRebuilder
+    App\Core\Extension\ExtensionLifecycleAssetRebuilderInterface:
+        alias: App\Core\Extension\ExtensionLifecycleAssetRebuilder
 
-    App\Core\Package\PackageLifecycleCleanupRunnerInterface:
-        alias: App\Core\Package\PackageLifecycleCleanupRunner
+    App\Core\Extension\ExtensionLifecycleCleanupRunnerInterface:
+        alias: App\Core\Extension\ExtensionLifecycleCleanupRunner
+
+    App\Core\Extension\ExtensionActivationContributionApplierInterface:
+        alias: App\Core\Extension\ExtensionActivationContributionApplier
 
     App\Core\Messenger\DeferredMessengerDrainStarterInterface:
         alias: App\Core\Messenger\DeferredMessengerDrainProcessStarter
@@ -372,7 +420,33 @@ services:
         alias: App\Core\Log\AccessLogger
 
     App\Core\Geo\GeoIpResolverInterface:
-        alias: App\Core\Geo\NullGeoIpResolver
+        alias: App\Core\Geo\GeoIpResolver
+
+    App\Core\Geo\GeoIpResolver:
+        arguments:
+            $providers: !tagged_iterator { tag: system.geoip_provider }
+            $fallbackProvider: '@App\Core\Geo\NullGeoIpProvider'
+
+    App\Core\Geo\MaxMindGeoIpDatabaseReaderFactoryInterface:
+        alias: App\Core\Geo\GeoIp2MaxMindDatabaseReaderFactory
+
+    App\Core\Geo\MaxMindGeoIpDownloadClientInterface:
+        alias: App\Core\Geo\HttpMaxMindGeoIpDownloadClient
+
+    App\Core\Geo\MaxMindGeoIpArchiveExtractorInterface:
+        alias: App\Core\Geo\MaxMindGeoIpArchiveExtractor
+
+    App\Core\Geo\HttpMaxMindGeoIpDownloadClient:
+        arguments:
+            $httpClient: null
+
+    App\Core\Geo\MaxMindGeoIpProvider:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    App\Core\Geo\MaxMindGeoIpDatabaseUpdater:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
 
     App\Core\Log\OperationLoggerInterface:
         alias: App\Core\Log\OperationLogger
@@ -406,6 +480,10 @@ services:
         arguments:
             $cacheDir: '%kernel.project_dir%/var/cache'
             $environment: '%kernel.environment%'
+
+    App\Security\Abuse\AbuseSubjectResolver:
+        arguments:
+            $secret: '%kernel.secret%'
 
     App\Core\Security\SecretPayloadProtector:
         arguments:
@@ -467,7 +545,7 @@ services:
         arguments:
             $maintenanceEnabled: '%env(bool:APP_MAINTENANCE)%'
 
-    App\View\SystemPackageMetadataProvider:
+    App\View\SystemExtensionMetadataProvider:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
@@ -475,7 +553,7 @@ services:
         arguments:
             $debug: '%kernel.debug%'
 
-    App\View\Template\PackageTemplatePathResolver:
+    App\View\Template\ExtensionTemplatePathResolver:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
@@ -511,6 +589,8 @@ services:
 
     App\View\Http\HttpErrorRenderer:
         arguments:
+            $projectDir: '%kernel.project_dir%'
+            $environment: '%kernel.environment%'
             $debug: '%kernel.debug%'
 
     App\View\Http\HttpErrorSubscriber:

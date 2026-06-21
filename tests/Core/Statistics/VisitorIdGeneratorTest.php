@@ -92,6 +92,55 @@ final class VisitorIdGeneratorTest extends TestCase
         );
     }
 
+    public function testItUsesForwardingHeaderEntropyOnlyForCookieLessVisitorFallbacks(): void
+    {
+        $generator = new VisitorIdGenerator('test-secret');
+        $baseServer = [
+            'REMOTE_ADDR' => '203.0.113.10',
+            'HTTP_USER_AGENT' => 'Shared Browser/1.0',
+        ];
+        $firstRequest = Request::create('/docs', server: [
+            ...$baseServer,
+            'HTTP_X_FORWARDED_FOR' => '198.51.100.10, 203.0.113.10',
+        ]);
+        $secondRequest = Request::create('/docs', server: [
+            ...$baseServer,
+            'HTTP_X_FORWARDED_FOR' => '198.51.100.11, 203.0.113.10',
+        ]);
+        $matchingRequest = Request::create('/docs', server: [
+            ...$baseServer,
+            'HTTP_X_FORWARDED_FOR' => '198.51.100.10, 203.0.113.10',
+        ]);
+
+        self::assertSame($generator->generate($firstRequest), $generator->generate($matchingRequest));
+        self::assertNotSame($generator->generate($firstRequest), $generator->generate($secondRequest));
+        self::assertSame('203.0.113.10', $generator->sourceIp($firstRequest));
+    }
+
+    public function testItSeparatesRecentFallbacksBehindSameIpWhenForwardingEntropyDiffers(): void
+    {
+        $generator = $this->generator();
+        $baseServer = [
+            'REMOTE_ADDR' => '203.0.113.10',
+            'HTTP_USER_AGENT' => 'Shared Browser/1.0',
+        ];
+        $firstRequest = Request::create('/docs', server: [
+            ...$baseServer,
+            'HTTP_X_FORWARDED_FOR' => '198.51.100.10, 203.0.113.10',
+        ]);
+        $secondRequest = Request::create('/docs', server: [
+            ...$baseServer,
+            'HTTP_X_FORWARDED_FOR' => '198.51.100.11, 203.0.113.10',
+        ]);
+        $matchingRequest = Request::create('/docs', server: [
+            ...$baseServer,
+            'HTTP_X_FORWARDED_FOR' => '198.51.100.10, 203.0.113.10',
+        ]);
+
+        self::assertSame($generator->generate($firstRequest), $generator->generate($matchingRequest));
+        self::assertNotSame($generator->generate($firstRequest), $generator->generate($secondRequest));
+    }
+
     public function testItUsesPendingCookieVisitorIdsWithoutAStore(): void
     {
         $request = Request::create('/docs', server: [

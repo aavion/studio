@@ -5,16 +5,15 @@ declare(strict_types=1);
 namespace App\View\Twig;
 
 use App\Backend\BackendActions;
+use App\Core\Access\AccessActor;
+use App\Core\AdminAcl\AdminFeatureAccessPolicy;
+use App\Core\AdminAcl\AdminPermissionState;
 use App\Core\Config\Config;
-use App\Core\Config\Settings\CoreSettingsRegistry;
-use App\Core\Package\PackageAdminOverview;
-use App\Core\Package\Settings\PackageSettingRegistry;
-use App\Core\Package\Settings\PackageSettings;
-use App\Core\Package\ThemeAdminOverview;
-use App\Form\FormBuilder;
-use App\View\SystemPackageMetadataProvider;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\RequestStack;
+use App\Core\Extension\ExtensionAdminOverview;
+use App\Core\Extension\ThemeAdminOverview;
+use App\Entity\UserAccount;
+use App\View\SystemExtensionMetadataProvider;
+use Symfony\Bundle\SecurityBundle\Security;
 use Throwable;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
@@ -23,15 +22,13 @@ final class AdminViewTwigExtension extends AbstractExtension
 {
     public function __construct(
         private readonly Config $config,
-        private readonly CoreSettingsRegistry $coreSettingsRegistry,
-        private readonly FormBuilder $formBuilder,
+        private readonly AdminSettingsFormViewFactory $settingsForms,
         private readonly BackendActions $backendActions,
-        private readonly PackageAdminOverview $packageAdminOverview,
+        private readonly ExtensionAdminOverview $extensionAdminOverview,
         private readonly ThemeAdminOverview $themeAdminOverview,
-        private readonly PackageSettings $packageSettings,
-        private readonly PackageSettingRegistry $packageSettingRegistry,
-        private readonly SystemPackageMetadataProvider $systemPackageMetadata,
-        private readonly RequestStack $requestStack,
+        private readonly SystemExtensionMetadataProvider $systemExtensionMetadata,
+        private readonly Security $security,
+        private readonly ?AdminFeatureAccessPolicy $adminAcl = null,
     ) {
     }
 
@@ -44,21 +41,24 @@ final class AdminViewTwigExtension extends AbstractExtension
             new TwigFunction('core_settings_form', $this->coreSettingsForm(...)),
             new TwigFunction('backend_actions', $this->backendActions(...)),
             new TwigFunction('footer_copyright', $this->footerCopyright(...)),
-            new TwigFunction('extension_packages', $this->extensionPackages(...)),
+            new TwigFunction('extensions', $this->extensions(...)),
             new TwigFunction('themes', $this->themes(...)),
-            new TwigFunction('package_setting', $this->packageSetting(...)),
-            new TwigFunction('package_settings', $this->packageSettings(...)),
-            new TwigFunction('package_settings_form', $this->packageSettingsForm(...)),
-            new TwigFunction('package_setting_packages', $this->packageSettingPackages(...)),
+            new TwigFunction('extension_setting', $this->extensionSetting(...)),
+            new TwigFunction('extension_settings', $this->extensionSettings(...)),
+            new TwigFunction('extension_settings_form', $this->extensionSettingsForm(...)),
+            new TwigFunction('extension_setting_extensions', $this->extensionSettingExtensions(...)),
+            new TwigFunction('admin_feature_state', $this->adminFeatureState(...)),
+            new TwigFunction('admin_feature_visible', $this->adminFeatureVisible(...)),
+            new TwigFunction('admin_feature_mutable', $this->adminFeatureMutable(...)),
         ];
     }
 
     /**
      * @return list<array<string, mixed>>
      */
-    public function extensionPackages(): array
+    public function extensions(): array
     {
-        return $this->packageAdminOverview->packages();
+        return $this->extensionAdminOverview->extensions();
     }
 
     /**
@@ -68,7 +68,34 @@ final class AdminViewTwigExtension extends AbstractExtension
      */
     public function backendActions(array $ids = []): array
     {
-        return $this->backendActions->definitions($ids);
+        return $this->backendActions->definitions($ids, $this->actor());
+    }
+
+    public function adminFeatureState(string $feature): string
+    {
+        if (null === $this->adminAcl) {
+            return AdminPermissionState::Mutable->value;
+        }
+
+        return $this->adminAcl->state($feature, $this->actor())->value;
+    }
+
+    public function adminFeatureVisible(string $feature): bool
+    {
+        if (null === $this->adminAcl) {
+            return true;
+        }
+
+        return $this->adminAcl->isVisible($feature, $this->actor());
+    }
+
+    public function adminFeatureMutable(string $feature): bool
+    {
+        if (null === $this->adminAcl) {
+            return true;
+        }
+
+        return $this->adminAcl->isMutable($feature, $this->actor());
     }
 
     /**
@@ -82,14 +109,14 @@ final class AdminViewTwigExtension extends AbstractExtension
     /**
      * @return list<array<string, mixed>>
      */
-    public function packageSettings(string $packageName): array
+    public function extensionSettings(string $extensionName): array
     {
-        return $this->packageSettings->viewRows($packageName, $this->packageSettingRegistry);
+        return $this->settingsForms->extensionSettings($extensionName);
     }
 
-    public function packageSetting(string $packageName, string $key, mixed $default = null): mixed
+    public function extensionSetting(string $extensionName, string $key, mixed $default = null): mixed
     {
-        return $this->packageSettings->get($packageName, $key, $default);
+        return $this->settingsForms->extensionSetting($extensionName, $key, $default);
     }
 
     public function footerCopyright(string $area = 'frontend'): string
@@ -114,67 +141,28 @@ final class AdminViewTwigExtension extends AbstractExtension
      */
     public function coreSettingsForm(string $section): array
     {
-        $definitions = $this->coreSettingsRegistry->definitions($section);
-        $values = [];
-        $request = $this->requestStack->getCurrentRequest();
-
-        foreach ($definitions as $definition) {
-            $values[$definition->key()] = $this->config->get($definition->key()) ?? $definition->defaultValue();
-        }
-
-        $values = array_replace($values, $this->requestFormValues($request));
-        $errors = $this->requestFormErrors($request);
-
-        return $this->formBuilder->build(
-            'admin-settings-'.$section,
-            'admin.settings.'.$section.'.title',
-            array_map(static fn ($definition) => $definition->formField(), $definitions),
-            $values,
-            $errors,
-            $errors['__form'] ?? [],
-        )->toArray();
+        return $this->settingsForms->coreSettingsForm($section);
     }
 
     /**
      * @return array<string, mixed>
      */
-    public function packageSettingsForm(string $packageName): array
+    public function extensionSettingsForm(string $extensionName): array
     {
-        $request = $this->requestStack->getCurrentRequest();
-        $errors = $this->requestFormErrors($request);
-
-        return $this->formBuilder->build(
-            'package-settings-'.preg_replace('/[^a-z0-9_]+/', '_', strtolower($packageName)),
-            $packageName,
-            $this->packageSettings->formFields($packageName, $this->packageSettingRegistry),
-            $this->requestFormValues($request),
-            $errors,
-            $errors['__form'] ?? [],
-        )->toArray();
+        return $this->settingsForms->extensionSettingsForm($extensionName);
     }
 
     /**
-     * @return list<array{package_name: string, label: string, description: string|null, path: string}>
+     * @return list<array{extension_name: string, label: string, description: string|null, path: string}>
      */
-    public function packageSettingPackages(): array
+    public function extensionSettingExtensions(): array
     {
-        $packages = [];
-
-        foreach ($this->packageSettingRegistry->packagesWithDefinitions() as $packageName => $metadata) {
-            $packages[] = [
-                'package_name' => $packageName,
-                'label' => $metadata['label'],
-                'description' => $metadata['description'],
-                'path' => $metadata['path'],
-            ];
-        }
-
-        return $packages;
+        return $this->settingsForms->extensionSettingExtensions();
     }
 
     private function defaultFooterCopyright(): string
     {
-        $metadata = $this->systemPackageMetadata->metadata();
+        $metadata = $this->systemExtensionMetadata->metadata();
         $name = trim((string) ($metadata['name'] ?? 'Studio'));
         $version = trim((string) ($metadata['version'] ?? ''));
         $homepage = trim((string) ($metadata['homepage'] ?? ''));
@@ -184,23 +172,11 @@ final class AdminViewTwigExtension extends AbstractExtension
         return trim(sprintf('Powered by %s %s', $linkedName, $version));
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    private function requestFormValues(?Request $request): array
+    private function actor(): AccessActor
     {
-        $values = $request?->attributes->get('_system_form_values');
+        $user = $this->security->getUser();
 
-        return is_array($values) ? $values : [];
+        return $user instanceof UserAccount ? AccessActor::fromUserAccount($user) : AccessActor::anonymous();
     }
 
-    /**
-     * @return array<string, list<string>>
-     */
-    private function requestFormErrors(?Request $request): array
-    {
-        $errors = $request?->attributes->get('_system_form_errors');
-
-        return is_array($errors) ? $errors : [];
-    }
 }

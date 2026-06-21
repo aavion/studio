@@ -21,4 +21,13 @@ final class SecurityMessageCode
     public const API_KEY_PERMISSION_DENIED = 'api_key.permission_denied';
     public const API_KEY_PERMISSION_WRITE_REQUIRED = 'api_key.permission_write_required';
     public const API_KEY_PERMISSION_REVOKED = 'api_key.permission_revoked';
+    public const RATE_LIMIT_EXCEEDED = 'rate_limit.exceeded';
+    public const RATE_LIMIT_REQUEST_REJECTED = 'rate_limit.request_rejected';
+    public const RATE_LIMIT_STORAGE_DEGRADED = 'rate_limit.storage_degraded';
+    public const RATE_LIMIT_RESET_DEGRADED = 'rate_limit.reset_degraded';
+    public const AUTO_BAN_STORAGE_DEGRADED = 'auto_ban.storage_degraded';
+    public const AUTO_BAN_EVALUATION_DEGRADED = 'auto_ban.evaluation_degraded';
+    public const AUTO_BAN_PAYLOAD_INVALID = 'auto_ban.payload_invalid';
+    public const AUTO_BAN_RESET_RELEASED = 'auto_ban.reset_released';
+    public const AUTO_BAN_ALERT_DELIVERY_DEGRADED = 'auto_ban.alert_delivery_degraded';
 }

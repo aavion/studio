@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Scheduler;
 
+use App\Core\Validation\IdentifierSpec;
 use App\Core\Message\MessageException;
 
 final readonly class SchedulerTaskDefinition
@@ -129,7 +130,7 @@ final readonly class SchedulerTaskDefinition
 
     public static function isValidIdentifier(string $identifier): bool
     {
-        return 1 === preg_match('/^[a-z0-9][a-z0-9_.:-]{2,159}$/', $identifier);
+        return IdentifierSpec::isMachineIdentifier($identifier, minLength: 3, maxLength: 160);
     }
 
     private function assertToken(string $value, string $label): void
@@ -144,7 +145,7 @@ final readonly class SchedulerTaskDefinition
 
     private function assertSource(string $value): void
     {
-        if (strlen($value) > 120 || 1 !== preg_match('/^[a-z0-9][a-z0-9_.-]*$/', $value)) {
+        if (strlen($value) > 120 || !IdentifierSpec::isHandlerKey($value)) {
             throw $this->invalidDefinition(SchedulerMessageKey::SCHEDULER_TASK_DEFINITION_SOURCE_INVALID, [
                 '%source%' => $value,
             ], ['field' => 'source']);
@@ -153,7 +154,7 @@ final readonly class SchedulerTaskDefinition
 
     private function assertTranslationKey(string $value, string $label): void
     {
-        if (strlen($value) > 160 || 1 !== preg_match('/^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)+$/', $value)) {
+        if (!IdentifierSpec::isDotPathIdentifier($value)) {
             throw $this->invalidDefinition(SchedulerMessageKey::SCHEDULER_TASK_DEFINITION_TRANSLATION_KEY_INVALID, [
                 '%label%' => $label,
                 '%value%' => $value,

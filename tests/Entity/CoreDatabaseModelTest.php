@@ -8,15 +8,15 @@ use App\Core\Access\AccessLevel;
 use App\Core\Access\AccessMessageKey;
 use App\Core\Config\ConfigValueType;
 use App\Core\Message\MessageException;
-use App\Core\Package\ExtensionPackageStatus;
-use App\Core\Package\PackageScope;
+use App\Core\Extension\ExtensionStatus;
+use App\Core\Extension\ExtensionScope;
 use App\Core\State\StateMessageKey;
 use App\Entity\AccountToken;
 use App\Entity\AclGroup;
 use App\Entity\ApiKey;
 use App\Entity\ConfigEntry;
-use App\Entity\ExtensionPackage;
-use App\Entity\PackageSettingEntry;
+use App\Entity\Extension;
+use App\Entity\ExtensionSettingEntry;
 use App\Entity\SiteMenu;
 use App\Entity\SiteMenuItem;
 use App\Entity\StateMarker;
@@ -189,16 +189,16 @@ final class CoreDatabaseModelTest extends TestCase
         );
     }
 
-    public function testItModelsConfigPackagesAndMenus(): void
+    public function testItModelsConfigExtensionsAndMenus(): void
     {
         $config = new ConfigEntry('content.cleanup.trash_retention_days', 30, ConfigValueType::Integer);
-        $packageSetting = new PackageSettingEntry('demo-package', 'theme.variant', 'green', ConfigValueType::String);
-        $package = new ExtensionPackage(
+        $extensionSetting = new ExtensionSettingEntry('demo-extension', 'theme.variant', 'green', ConfigValueType::String);
+        $extension = new Extension(
             '55555555-5555-7555-8555-555555555555',
-            [PackageScope::FrontendTheme, PackageScope::Module],
-            'demo-package',
-            'packages/demo',
-            ExtensionPackageStatus::Active,
+            [ExtensionScope::FrontendTheme, ExtensionScope::Module],
+            'demo-extension',
+            'extensions/demo',
+            ExtensionStatus::Active,
         );
         $menu = new SiteMenu('66666666-6666-7666-8666-666666666666', 'main', ['en' => 'Main']);
         $item = new SiteMenuItem(
@@ -217,14 +217,14 @@ final class CoreDatabaseModelTest extends TestCase
         $config->replaceValue(0.75, ConfigValueType::Float);
         self::assertSame(0.75, $config->value());
         self::assertSame(ConfigValueType::Float, $config->valueType());
-        self::assertSame('demo-package', $packageSetting->packageName());
-        self::assertSame('theme.variant', $packageSetting->key());
-        self::assertSame('green', $packageSetting->value());
-        self::assertSame(ConfigValueType::String, $packageSetting->valueType());
-        self::assertSame([PackageScope::FrontendTheme, PackageScope::Module], $package->scopes());
-        self::assertSame(['frontend-theme', 'module'], $package->scopeValues());
-        self::assertTrue($package->hasScope(PackageScope::FrontendTheme));
-        self::assertSame(ExtensionPackageStatus::Active, $package->status());
+        self::assertSame('demo-extension', $extensionSetting->extensionName());
+        self::assertSame('theme.variant', $extensionSetting->key());
+        self::assertSame('green', $extensionSetting->value());
+        self::assertSame(ConfigValueType::String, $extensionSetting->valueType());
+        self::assertSame([ExtensionScope::FrontendTheme, ExtensionScope::Module], $extension->scopes());
+        self::assertSame(['frontend-theme', 'module'], $extension->scopeValues());
+        self::assertTrue($extension->hasScope(ExtensionScope::FrontendTheme));
+        self::assertSame(ExtensionStatus::Active, $extension->status());
         self::assertSame('main', $menu->identifier());
         self::assertSame(NavigationTargetType::CONTENT, $item->targetType());
         self::assertSame(AccessLevel::PUBLIC, $item->viewMinLevel());

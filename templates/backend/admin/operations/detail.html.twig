@@ -90,7 +90,7 @@
             {% if report.result.can_continue|default(false) %}
                 <form method="post" action="/admin/operations/{{ report.operation_id }}/continue">
                     <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin-operations') }}">
-                    <button class="system-backend-button system-button-primary" type="submit">
+                    <button class="system-backend-button system-button-primary" type="submit"{% if not (operation_continuation_mutable is defined ? operation_continuation_mutable : operations_mutable) %} disabled{% endif %}>
                         {{ 'admin.operations.actions.continue'|trans }}
                     </button>
                 </form>

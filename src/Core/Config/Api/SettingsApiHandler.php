@@ -12,6 +12,7 @@ use App\Api\Http\ApiJsonRequestParser;
 use App\Api\Http\ApiRequestContext;
 use App\Api\Http\ApiResponder;
 use App\Api\Security\ApiAccessGuard;
+use App\Core\Access\AccessActor;
 use App\Core\Access\AccessLevel;
 use App\Core\Config\Settings\CoreSettingsFormHandler;
 use App\Core\Message\CommonMessageCode;
@@ -43,16 +44,17 @@ final readonly class SettingsApiHandler implements ApiEndpointHandlerInterface
             return $denied;
         }
 
+        $actor = $this->actor($request);
         $section = $this->sectionFromPath($request->getPathInfo());
         if ($request->isMethod(Request::METHOD_PATCH)) {
             return null === $section
                 ? $this->notFound($request, null)
-                : $this->updateSection($request, $section);
+                : $this->updateSection($request, $section, $actor);
         }
 
         $settings = null === $section
-            ? $this->readModel->sections()
-            : $this->readModel->settings($section);
+            ? $this->readModel->sections($actor)
+            : $this->readModel->settings($section, $actor);
         if (null !== $section && [] === $settings) {
             return $this->notFound($request, $section);
         }
@@ -75,9 +77,9 @@ final readonly class SettingsApiHandler implements ApiEndpointHandlerInterface
         return '' === $section ? null : $section;
     }
 
-    private function updateSection(Request $request, string $section): Response
+    private function updateSection(Request $request, string $section, AccessActor $actor): Response
     {
-        $currentValues = $this->readModel->values($section);
+        $currentValues = $this->readModel->values($section, $actor);
         if ([] === $currentValues) {
             return $this->notFound($request, $section);
         }
@@ -102,13 +104,13 @@ final readonly class SettingsApiHandler implements ApiEndpointHandlerInterface
         $result = $this->formHandler->submit($section, [
             ...$currentValues,
             ...$values,
-        ], $context?->actor()->username());
+        ], $context?->actor()->username(), $actor);
 
         if (!$result->isValid()) {
             return $this->validationFailed($request, $result->errors(), ['section' => $section]);
         }
 
-        $settings = $this->readModel->settings($section);
+        $settings = $this->readModel->settings($section, $actor);
 
         return $this->responder->data($settings, meta: [
             'count' => count($settings),
@@ -139,6 +141,11 @@ final readonly class SettingsApiHandler implements ApiEndpointHandlerInterface
             Response::HTTP_BAD_REQUEST,
             $request,
         );
+    }
+
+    private function actor(Request $request): AccessActor
+    {
+        return ApiRequestContext::fromRequest($request)?->actor() ?? AccessActor::anonymous();
     }
 
     /**

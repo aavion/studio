@@ -226,6 +226,9 @@ ui:
     403:
       title: 'Access denied'
       message: 'This route is protected or not available for direct access.'
+    400:
+      title: 'Bad request'
+      message: 'The request could not be accepted.'
     404:
       title: 'Page not found'
       message: 'The requested page could not be found or is not published.'

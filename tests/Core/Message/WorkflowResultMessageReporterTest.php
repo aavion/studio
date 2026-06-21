@@ -12,8 +12,8 @@ use App\Core\Message\MessageReporterInterface;
 use App\Core\Message\WorkflowResultMessageReporter;
 use App\Core\Operation\Process\ProcessMessageCode;
 use App\Core\Operation\Process\ProcessMessageKey;
-use App\Core\Package\PackageMessageCode;
-use App\Core\Package\PackageMessageKey;
+use App\Core\Extension\ExtensionMessageCode;
+use App\Core\Extension\ExtensionMessageKey;
 use App\Core\Workflow\WorkflowResult;
 use App\Setup\SetupMessageCode;
 use App\Setup\SetupMessageKey;
@@ -26,14 +26,14 @@ final class WorkflowResultMessageReporterTest extends TestCase
         $messageReporter = new RecordingMessageReporter();
         $reporter = new WorkflowResultMessageReporter($messageReporter);
         $result = WorkflowResult::success(messages: [
-            Message::info(PackageMessageCode::PACKAGE_DISCOVERY_COMPLETED, PackageMessageKey::PACKAGE_DISCOVERY_COMPLETED, [
+            Message::info(ExtensionMessageCode::EXTENSION_DISCOVERY_COMPLETED, ExtensionMessageKey::EXTENSION_DISCOVERY_COMPLETED, [
                 '%count%' => 1,
             ]),
         ]);
 
         self::assertSame($result, $reporter->report($result, ['operation' => 'test']));
         self::assertCount(1, $messageReporter->records);
-        self::assertSame(PackageMessageKey::PACKAGE_DISCOVERY_COMPLETED, $messageReporter->records[0]['message']->translationKey());
+        self::assertSame(ExtensionMessageKey::EXTENSION_DISCOVERY_COMPLETED, $messageReporter->records[0]['message']->translationKey());
         self::assertSame(['operation' => 'test'], $messageReporter->records[0]['context']['operation_context']);
         self::assertSame('message', $messageReporter->records[0]['context']['kind']);
     }
@@ -43,7 +43,7 @@ final class WorkflowResultMessageReporterTest extends TestCase
         $messageReporter = new RecordingMessageReporter();
         $reporter = new WorkflowResultMessageReporter($messageReporter);
         $result = WorkflowResult::success(messages: [
-            Message::info(PackageMessageCode::PACKAGE_DISCOVERY_COMPLETED, PackageMessageKey::PACKAGE_DISCOVERY_COMPLETED, [
+            Message::info(ExtensionMessageCode::EXTENSION_DISCOVERY_COMPLETED, ExtensionMessageKey::EXTENSION_DISCOVERY_COMPLETED, [
                 '%count%' => 1,
             ]),
         ]);

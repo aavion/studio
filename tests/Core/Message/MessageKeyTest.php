@@ -18,7 +18,7 @@ use App\Core\Messenger\MessengerMessageKey;
 use App\Core\Operation\Filesystem\FilesystemMessageKey;
 use App\Core\Operation\OperationMessageKey;
 use App\Core\Operation\Process\ProcessMessageKey;
-use App\Core\Package\PackageMessageKey;
+use App\Core\Extension\ExtensionMessageKey;
 use App\Core\Routing\RoutingMessageKey;
 use App\Core\Security\SystemSecurityMessageKey;
 use App\Core\State\StateMessageKey;
@@ -146,7 +146,7 @@ final class MessageKeyTest extends TestCase
             FilesystemMessageKey::class => ['FILESYSTEM_'],
             OperationMessageKey::class => ['OPERATION_'],
             ProcessMessageKey::class => ['PROCESS_'],
-            PackageMessageKey::class => ['PACKAGE_'],
+            ExtensionMessageKey::class => ['EXTENSION_'],
             RoutingMessageKey::class => ['ABSOLUTE_URI_'],
             SystemSecurityMessageKey::class => ['SYSTEM_'],
             StateMessageKey::class => ['STATE_'],
@@ -154,7 +154,7 @@ final class MessageKeyTest extends TestCase
             TranslationMessageKey::class => ['TRANSLATION_'],
             NavigationMessageKey::class => ['MENU_'],
             SchedulerMessageKey::class => ['SCHEDULER_'],
-            SecurityMessageKey::class => ['ACL_', 'USER_', 'ACCOUNT_', 'API_KEY_'],
+            SecurityMessageKey::class => ['ACL_', 'USER_', 'ACCOUNT_', 'API_KEY_', 'RATE_LIMIT_', 'AUTO_BAN_'],
             SetupMessageKey::class => ['SETUP_'],
             ViewMessageKey::class => ['VIEW_'],
         ];
@@ -179,7 +179,7 @@ final class MessageKeyTest extends TestCase
             FilesystemMessageKey::class => ['message.filesystem.'],
             OperationMessageKey::class => ['message.operation.'],
             ProcessMessageKey::class => ['message.process.'],
-            PackageMessageKey::class => ['message.package.'],
+            ExtensionMessageKey::class => ['message.extension.'],
             RoutingMessageKey::class => ['message.routing.'],
             SystemSecurityMessageKey::class => ['message.system.'],
             StateMessageKey::class => ['message.state.'],
@@ -187,7 +187,7 @@ final class MessageKeyTest extends TestCase
             TranslationMessageKey::class => ['message.translation.'],
             NavigationMessageKey::class => ['message.menu.'],
             SchedulerMessageKey::class => ['message.scheduler.'],
-            SecurityMessageKey::class => ['message.acl.', 'message.user.', 'message.account_', 'message.api_key.'],
+            SecurityMessageKey::class => ['message.acl.', 'message.user.', 'message.account_', 'message.api_key.', 'message.rate_limit.', 'message.auto_ban.'],
             SetupMessageKey::class => ['message.setup.'],
             ViewMessageKey::class => ['message.view.'],
         ];

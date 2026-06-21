@@ -1,9 +1,13 @@
-{% props label, href = null, type = null, variant = 'primary', class = '' %}
+{% props label, href = null, type = null, variant = 'primary', class = '', disabled = false %}
 {% set button_type = type|default(href ? null : 'button') %}
 {% set button_class = ['system-backend-button', 'system-button-' ~ variant, class]|filter(item => item is not empty)|join(' ') %}
 
 {% if href %}
-    <a {{ attributes.defaults({class: button_class, href: href}) }}>{{ label }}</a>
+    {% if disabled %}
+        <span {{ attributes.defaults({class: button_class, 'aria-disabled': 'true'}) }}>{{ label }}</span>
+    {% else %}
+        <a {{ attributes.defaults({class: button_class, href: href}) }}>{{ label }}</a>
+    {% endif %}
 {% else %}
-    <button {{ attributes.defaults({class: button_class, type: button_type}) }}>{{ label }}</button>
+    <button {{ attributes.defaults({class: button_class, type: button_type, disabled: disabled ? 'disabled' : false}) }}>{{ label }}</button>
 {% endif %}

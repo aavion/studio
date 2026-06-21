@@ -6,9 +6,11 @@
 
         {% include '@backend/partials/forms/_dynamic_fields.html.twig' with {fields: form.fields} only %}
 
-        {% include '@backend/partials/forms/fields/submit.html.twig' with {
-            label: 'admin.settings.form.save'|trans,
-            variant: 'primary',
-        } only %}
+        {% if not form.metadata.read_only|default(false) %}
+            {% include '@backend/partials/forms/fields/submit.html.twig' with {
+                label: 'admin.settings.form.save'|trans,
+                variant: 'primary',
+            } only %}
+        {% endif %}
     </form>
 {% endif %}

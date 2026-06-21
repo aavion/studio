@@ -211,6 +211,10 @@ setup:
       label: 'Website-URL'
     registration_mode:
       label: 'Benutzerregistrierung'
+      options:
+        disabled: 'Deaktiviert'
+        admin_approval: 'Admin-Freigabe'
+        auto_approval: 'Automatische Freigabe'
     username_change_enabled:
       label: 'Benutzernamenänderungen erlauben'
     route_prefixes_enabled:
@@ -279,7 +283,7 @@ setup:
       url: 'Gib eine gültige URL ein.'
   review:
     title: 'Setup prüfen'
-    text: 'Setup schreibt jetzt den Environment-Override, führt Migrationen aus, legt Standarddaten an, startet Paket-Discovery, baut Assets neu und sperrt die Setup-Route erst nach Erfolg.'
+    text: 'Setup schreibt jetzt den Environment-Override, führt Migrationen aus, legt Standarddaten an, startet Extension-Discovery, baut Assets neu und sperrt die Setup-Route erst nach Erfolg.'
     none: 'Keine'
     enabled: 'Aktiviert'
     disabled: 'Deaktiviert'
@@ -316,6 +320,6 @@ setup:
     seed_initial_content: 'Startinhalt anlegen'
     mark_setup_completed: 'Setup als abgeschlossen markieren'
     clear_cache: 'Cache leeren'
-    run_package_discovery: 'Paket-Discovery ausführen'
+    run_extension_discovery: 'Extension-Discovery ausführen'
     run_asset_rebuild: 'Assets neu bauen'
     run_mercure_health: 'Mercure-Hub prüfen'

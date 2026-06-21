@@ -9,18 +9,18 @@
 
 Action logs summarize operational workflows. Audit logs record security- and compliance-relevant facts. They may overlap, but they should not be treated as the same storage model until concrete requirements exist.
 
-The ActionLog model is a live operation overlay first. It should be able to display entries while a setup, package, asset, import, backup, or update workflow runs. The logger does not need to understand ActionLog semantics directly; anything that should be persisted as diagnostics should be emitted as structured `Message` objects with levels such as `success`, `error`, `warning`, `info`, and `debug`.
+The ActionLog model is a live operation overlay first. It should be able to display entries while a setup, extension, asset, import, backup, or update workflow runs. The logger does not need to understand ActionLog semantics directly; anything that should be persisted as diagnostics should be emitted as structured `Message` objects with levels such as `success`, `error`, `warning`, `info`, and `debug`.
 
 The future logger should start with an explicit recorder/service boundary. A generic operation-message event can be reconsidered after the logger exists, but it should not be the first logging design.
 
-Current logging baseline: callers that want to emit a single feedback item should use `MessageReporterInterface`: create a `Message`, report it, and receive the same structured message back for UI/API output. Operation boundaries should use `WorkflowResultMessageReporterInterface` before returning a `WorkflowResult`. That bridge lives in the message layer, extracts messages from workflow results and action-log payloads, logs through `MessageReporterInterface`, and returns the same result unchanged. `OperationExecutor` uses the bridge for action results; direct package lifecycle, setup, discovery, asset rebuild dispatch, PHP-loader, and public-hook failure boundaries use the same bridge instead of being forced through an `ActionQueue`.
+Current logging baseline: callers that want to emit a single feedback item should use `MessageReporterInterface`: create a `Message`, report it, and receive the same structured message back for UI/API output. Operation boundaries should use `WorkflowResultMessageReporterInterface` before returning a `WorkflowResult`. That bridge lives in the message layer, extracts messages from workflow results and action-log payloads, logs through `MessageReporterInterface`, and returns the same result unchanged. `OperationExecutor` uses the bridge for action results; direct extension lifecycle, setup, discovery, asset rebuild dispatch, PHP-loader, and public-hook failure boundaries use the same bridge instead of being forced through an `ActionQueue`.
 
 `MessageLoggerInterface` is backed by Monolog through the `message` channel. It writes translation keys as the log message, keeps structured message metadata in Monolog context, maps message levels to PSR log levels, and redacts sensitive context values before logging. Log-write failures are swallowed so reporting an issue cannot break the original recovery path. The channel uses a 30-day rotating file handler.
 
 Log entry shape:
 
 ```text
-[timestamp] message.LEVEL: message.translation.key {"kind":"message","code":"package.discovery_completed","parameters":{},"message_context":{},"result_status":"success","result_context":{},"operation_context":{}} []
+[timestamp] message.LEVEL: message.translation.key {"kind":"message","code":"extension.discovery_completed","parameters":{},"message_context":{},"result_status":"success","result_context":{},"operation_context":{}} []
 ```
 
 Sensitive context values such as passwords, secrets, tokens, cookies, authorization headers, HMAC values, encrypted keys, API keys, and private keys must be redacted before writing the file log.
@@ -32,8 +32,8 @@ Duplicate suppression has two narrow guards. The reporter records a given `Workf
 Use action logs for:
 
 - init and setup runs;
-- package imports;
-- package activation and deactivation;
+- extension imports;
+- extension activation and deactivation;
 - asset rebuilds;
 - backups;
 - restores;
@@ -77,16 +77,16 @@ Keep audit records for:
 - permission changes;
 - role/ACL updates;
 - destructive operations;
-- package activation or removal;
-- package ZIP verification or installation starts;
+- extension activation or removal;
+- extension ZIP verification or installation starts;
 - admin maintenance actions such as discovery, rebuild, and cache clearing;
 - Operations maintenance actions such as cleanup, stale-lock clearing, and stale-runner emergency handling;
 - backup and restore actions;
 - configuration changes.
 
-Built-in settings audit entries record only the actor, route, settings section or package name, result status, and changed setting keys. Submitted values are intentionally omitted.
+Built-in settings audit entries record only the actor, route, settings section or extension name, result status, and changed setting keys. Submitted values are intentionally omitted.
 
-Audit logging can be controlled from Security settings. The production default keeps the master switch enabled and records authentication, backend maintenance, Operations maintenance, package lifecycle, settings, and unknown future audit categories. Unknown categories stay enabled by default so newly introduced audit calls do not silently disappear before administrators review them.
+Audit logging can be controlled from Security settings. The production default keeps the master switch enabled and records authentication, backend maintenance, Operations maintenance, extension lifecycle, settings, and unknown future audit categories. Unknown categories stay enabled by default so newly introduced audit calls do not silently disappear before administrators review them.
 
 Access logs, audit logs, security logs, and operational action logs may share message levels or rendering helpers, but they should remain separate storage and retention concerns. The first built-in file channels are message, audit, and access, each configured as file-based Monolog channels with 30-day retention. Runtime file paths use `var/log/{APP_ENV}/{message|audit|access}-{rotation_date}.log` so log files stay environment-scoped and branding-neutral.
 
@@ -96,7 +96,7 @@ Live-operation terminal summaries are written into the message channel with `mes
 
 Raw access logging and access statistics are separate product surfaces. The access log keeps operational request traces for security and diagnostics, including IP address, proxy hints, user-agent, internally generated request id, optional inbound correlation id, first-party cookie-derived visitor id, requested path, resolved route, status, duration, content metadata, and GeoIP placeholders. Existing `X-Request-ID` and `X-Correlation-ID` values are never trusted as the internal request id; short safe inbound values are stored only as `correlation_id` for operator-side log matching. Known token-bearing query values, request path segments, and referrer path segments are redacted before logs, trace data, or statistics rows are written. The raw `system_visitor` cookie token is not stored; logs/statistics use a compact 128-bit `APP_SECRET`-derived visitor id so future visitor-based rate-limit buckets stay separate from IP-based buckets. The Monolog rotating handler keeps at most 30 daily files and should remain enabled because future rate-limit and suspicious-traffic features depend on this short-lived operational trail.
 
-The core `system_visitor` cookie is a first-party technical cookie used for visitor separation, statistics, and future security buckets. It has a 30-day lifetime and is refreshed on ordinary responses. Cookie values are signed with `APP_SECRET`; when no valid cookie is available, the current request uses an IP/user-agent fallback visitor ID so cookie-disabled clients do not create a new unique visitor for every request. Fresh responses still receive random signed visitor-cookie tokens so two same-network/same-browser users do not receive the same persistent cookie when their browsers accept cookies. A short-lived visitor identity store keeps cookie hashes and fallback hashes separate: a fresh fallback identity binds only the first issued cookie, while later fallback matches do not bind additional cookies that may belong to other same-network/same-browser clients. Core does not set or read cross-site advertising or external analytics cookies. Packages that add advertising or third-party analytics must provide their own consent-aware cookie policy and must not reuse the core technical visitor cookie for profiling. A future consent registry can let packages declare cookie purposes and required consent categories while keeping consent rendering and enforcement centralized.
+The core `system_visitor` cookie is a first-party technical cookie used for visitor separation, statistics, and future security buckets. It has a 30-day lifetime and is refreshed on ordinary responses. Cookie values are signed with `APP_SECRET`; when no valid cookie is available, the current request uses an IP/user-agent fallback visitor ID so cookie-disabled clients do not create a new unique visitor for every request. Fresh responses still receive random signed visitor-cookie tokens so two same-network/same-browser users do not receive the same persistent cookie when their browsers accept cookies. A short-lived visitor identity store keeps cookie hashes and fallback hashes separate: a fresh fallback identity binds only the first issued cookie, while later fallback matches do not bind additional cookies that may belong to other same-network/same-browser clients. Core does not set or read cross-site advertising or external analytics cookies. Extensions that add advertising or third-party analytics must provide their own consent-aware cookie policy and must not reuse the core technical visitor cookie for profiling. A future consent registry can let extensions declare cookie purposes and required consent categories while keeping consent rendering and enforcement centralized.
 
 Authenticated sessions are bound to the current visitor ID after login or, for already active legacy sessions, on the first authenticated request without an existing binding. If an established authenticated session appears with a different visitor ID, Studio records `auth.session_visitor_mismatch_terminated`, clears the security token, invalidates the Symfony session, and redirects to login. This catches copied session cookies while avoiding false positives for sessions that were created before the binding existed.
 

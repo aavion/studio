@@ -16,9 +16,10 @@
 
 ## Additional Checks
 - [ ] Security/privacy considerations, public entry points, sessions, secrets, and browser storage reviewed
-- [ ] Package/module boundaries, access levels, route/API/live endpoint scopes, and collision risks reviewed
+- [ ] Extension boundaries, access levels, route/API/live endpoint scopes, and collision risks reviewed
 - [ ] Setup/init/CI, cross-platform behavior, disabled-feature fallbacks, and process/env handling reviewed
 - [ ] Project-rules-, architecture-, naming- and documentation-drift reviewed (see #57 for details)
+- [ ] Codebase readability, naming, hierarchy, class map, frontend structure, and test-suite clarity reviewed (see #109 for details)
 - [ ] Follow-up tasks captured in WORKLOG
 - [ ] Updated / aligned translations and user-facing copy
 

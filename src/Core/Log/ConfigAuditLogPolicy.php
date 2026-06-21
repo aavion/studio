@@ -13,7 +13,7 @@ final readonly class ConfigAuditLogPolicy implements AuditLogPolicyInterface
     public const CATEGORY_AUTHENTICATION = 'authentication';
     public const CATEGORY_BACKEND_ACTIONS = 'backend_actions';
     public const CATEGORY_OPERATIONS = 'operations';
-    public const CATEGORY_PACKAGES = 'packages';
+    public const CATEGORY_EXTENSIONS = 'extensions';
     public const CATEGORY_SETTINGS = 'settings';
     public const CATEGORY_OTHER = 'other';
 
@@ -24,7 +24,7 @@ final readonly class ConfigAuditLogPolicy implements AuditLogPolicyInterface
         self::CATEGORY_AUTHENTICATION,
         self::CATEGORY_BACKEND_ACTIONS,
         self::CATEGORY_OPERATIONS,
-        self::CATEGORY_PACKAGES,
+        self::CATEGORY_EXTENSIONS,
         self::CATEGORY_SETTINGS,
         self::CATEGORY_OTHER,
     ];
@@ -54,7 +54,7 @@ final readonly class ConfigAuditLogPolicy implements AuditLogPolicyInterface
             str_starts_with($action, 'auth.') => self::CATEGORY_AUTHENTICATION,
             str_starts_with($action, 'backend.action.') => self::CATEGORY_BACKEND_ACTIONS,
             str_starts_with($action, 'operations.') => self::CATEGORY_OPERATIONS,
-            str_starts_with($action, 'package.') => self::CATEGORY_PACKAGES,
+            str_starts_with($action, 'extension.') => self::CATEGORY_EXTENSIONS,
             str_starts_with($action, 'settings.') => self::CATEGORY_SETTINGS,
             default => self::CATEGORY_OTHER,
         };

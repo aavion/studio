@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Core\Log;
 
+use App\Content\Routing\ContentRouteLocalization;
+use App\Core\Routing\RequestPathResolver;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -12,11 +14,18 @@ final readonly class AccessRequestMetadata
     public const REQUEST_ID_ATTRIBUTE = '_access_request_id';
     public const CORRELATION_ID_ATTRIBUTE = '_access_correlation_id';
     public const STARTED_AT_ATTRIBUTE = '_access_started_at';
+    public const FORCE_ACCESS_LOG_ATTRIBUTE = '_access_force_log';
     private const GENERATED_REQUEST_ID_BYTES = 12;
     private const MAX_REQUEST_ID_LENGTH = 64;
     private const MIN_REQUEST_ID_LENGTH = 8;
     private const REQUEST_ID_PATTERN = '/\A[A-Za-z0-9][A-Za-z0-9._:-]*\z/';
     private const REDACTED_SEGMENT = '[redacted]';
+    private RequestPathResolver $paths;
+
+    public function __construct(?ContentRouteLocalization $routeLocalization = null, ?RequestPathResolver $paths = null)
+    {
+        $this->paths = $paths ?? new RequestPathResolver($routeLocalization);
+    }
 
     public function markStarted(Request $request): void
     {
@@ -71,13 +80,13 @@ final readonly class AccessRequestMetadata
 
     public function surface(Request $request): string
     {
-        $path = $request->getPathInfo();
+        $segments = $this->segments($request);
 
         return match (true) {
-            str_starts_with($path, '/admin') => 'admin',
-            str_starts_with($path, '/editor') => 'editor',
-            str_starts_with($path, '/api') => 'api',
-            str_starts_with($path, '/setup') => 'setup',
+            $this->matchesSegments($segments, 'admin') => 'admin',
+            $this->matchesSegments($segments, 'editor') => 'editor',
+            $this->matchesSegments($segments, 'api') => 'api',
+            $this->matchesSegments($segments, 'setup') => 'setup',
             default => 'public',
         };
     }
@@ -177,6 +186,28 @@ final readonly class AccessRequestMetadata
             'requested_path' => $this->sanitizedPath($request),
             'resolved_route' => $this->resolvedRoute($request),
         ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function segments(Request $request): array
+    {
+        return $this->paths->segments($request);
+    }
+
+    /**
+     * @param list<string> $pathSegments
+     */
+    private function matchesSegments(array $pathSegments, string ...$segments): bool
+    {
+        foreach ($segments as $index => $segment) {
+            if (($pathSegments[$index] ?? null) !== $segment) {
+                return false;
+            }
+        }
+
+        return [] !== $segments;
     }
 
     /**

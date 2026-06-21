@@ -35,6 +35,9 @@
             {% if return_to|default(null) %}
                 <input type="hidden" name="_target_path" value="{{ return_to }}">
             {% endif %}
+            {% if auto_ban_recovery_login|default(false) %}
+                <input type="hidden" name="_auto_ban_recovery_token" value="{{ csrf_token('auto_ban_recovery_login') }}">
+            {% endif %}
             <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
             {% include '@frontend/partials/forms/fields/captcha.html.twig' %}
             {% include '@frontend/partials/forms/fields/submit.html.twig' with {label: 'ui.user.login.submit'|trans} only %}

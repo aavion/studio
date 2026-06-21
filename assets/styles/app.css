@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "./fonts.css";
 @import "./icons.css";
+@import "./emoji.css";
 @import "./illustrations.css";
 @import "./codemirror.css";
 @import "./tokens/base.css";
@@ -11,8 +12,8 @@
 @import "./backend/admin/base.css";
 @import "./backend/editor/base.css";
 @import "./backend/setup/base.css";
-@import "./packages/extension.css";
-@import "./packages/frontend-theme.css";
-@import "./packages/backend-theme.css";
+@import "./extensions/extension.css";
+@import "./extensions/frontend-theme.css";
+@import "./extensions/backend-theme.css";
 
 @custom-variant dark (&:where(.dark, .dark *));

@@ -142,6 +142,7 @@ final readonly class MercureAvailability
                 $this->runtime->logPath(),
                 $this->runtime->pidPath(),
                 $this->runtime->startEnvironment(),
+                closeInheritedFileDescriptors: true,
             );
         } catch (Throwable) {
             return false;

@@ -5,11 +5,17 @@ declare(strict_types=1);
 namespace App\Tests\Setup;
 
 use App\Api\ApiFeaturePolicy;
+use App\Core\AdminAcl\AdminFeatureDefaults;
+use App\Core\AdminAcl\AdminFeatureOverrideStore;
 use App\Core\Config\ConfigDefaultProviderInterface;
+use App\Core\Geo\MaxMindGeoIpConfig;
+use App\Core\Log\DatabaseLogRetentionPolicy;
 use App\Setup\DatabaseDriver;
 use App\Setup\SetupDefaultSeed;
 use App\Setup\SetupInput;
 use App\Scheduler\SchedulerSettings;
+use App\Security\Abuse\SuspiciousProbePathMatcher;
+use App\Security\AutoBan\AutoBanPolicy;
 use App\Security\UserFlowConfig;
 use PHPUnit\Framework\TestCase;
 
@@ -29,6 +35,17 @@ final class SetupDefaultSeedTest extends TestCase
         self::assertTrue($settings[ApiFeaturePolicy::ENABLED_KEY]);
         self::assertFalse($settings[ApiFeaturePolicy::CORS_ENABLED_KEY]);
         self::assertSame([], $settings[ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY]);
+        self::assertFalse($settings[MaxMindGeoIpConfig::ENABLED_KEY]);
+        self::assertSame(MaxMindGeoIpConfig::DEFAULT_DATABASE_PATH, $settings[MaxMindGeoIpConfig::DATABASE_PATH_KEY]);
+        self::assertSame('', $settings[MaxMindGeoIpConfig::LICENSE_KEY_KEY]);
+        self::assertSame(DatabaseLogRetentionPolicy::DEFAULT_LOG_RETENTION_DAYS, $settings[DatabaseLogRetentionPolicy::ACCESS_LOG_RETENTION_DAYS_KEY]);
+        self::assertSame(DatabaseLogRetentionPolicy::defaultSecuritySignalRetentionDays(), $settings[DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY]);
+        self::assertSame(SuspiciousProbePathMatcher::defaultPatternText(), $settings[SuspiciousProbePathMatcher::PATTERNS_KEY]);
+        self::assertTrue($settings[AutoBanPolicy::ENABLED_KEY]);
+        self::assertSame(AutoBanPolicy::DEFAULT_TRUSTED_ACCESS_LEVEL, $settings[AutoBanPolicy::TRUSTED_ACCESS_LEVEL_KEY]);
+        self::assertSame(AutoBanPolicy::DEFAULT_SCORE_THRESHOLD, $settings[AutoBanPolicy::SCORE_THRESHOLD_KEY]);
+        self::assertTrue($settings[AutoBanPolicy::NEW_BAN_OWNER_ALERTS_KEY]);
+        self::assertSame((new AdminFeatureDefaults())->overrides(), $settings[AdminFeatureOverrideStore::CONFIG_KEY]);
     }
 
     public function testItUsesCentralConfigDefaultsForSetupSeededSettings(): void
@@ -64,15 +81,28 @@ final class SetupDefaultSeedTest extends TestCase
             UserFlowConfig::REGISTRATION_MODE_KEY,
             \App\Core\Log\ConfigAuditLogPolicy::ENABLED_KEY,
             \App\Core\Log\ConfigAuditLogPolicy::EVENTS_KEY,
+            DatabaseLogRetentionPolicy::MESSAGE_LOG_RETENTION_DAYS_KEY,
+            DatabaseLogRetentionPolicy::AUDIT_LOG_RETENTION_DAYS_KEY,
+            DatabaseLogRetentionPolicy::ACCESS_LOG_RETENTION_DAYS_KEY,
+            DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY,
+            SuspiciousProbePathMatcher::PATTERNS_KEY,
+            AutoBanPolicy::ENABLED_KEY,
+            AutoBanPolicy::TRUSTED_ACCESS_LEVEL_KEY,
+            AutoBanPolicy::SCORE_THRESHOLD_KEY,
+            AutoBanPolicy::NEW_BAN_OWNER_ALERTS_KEY,
             \App\Core\Statistics\AccessStatisticsPolicy::ENABLED_KEY,
             \App\Core\Statistics\AccessStatisticsPolicy::RESPECT_DO_NOT_TRACK_KEY,
+            MaxMindGeoIpConfig::ENABLED_KEY,
+            MaxMindGeoIpConfig::DATABASE_PATH_KEY,
+            MaxMindGeoIpConfig::LICENSE_KEY_KEY,
             ApiFeaturePolicy::ENABLED_KEY,
             ApiFeaturePolicy::CORS_ENABLED_KEY,
             ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY,
             SchedulerSettings::ENABLED_KEY,
             SchedulerSettings::GET_AUTH_ENABLED_KEY,
-            SchedulerSettings::PACKAGE_ACTION_QUEUES_ENABLED_KEY,
+            SchedulerSettings::EXTENSION_ACTION_QUEUES_ENABLED_KEY,
             SchedulerSettings::WEB_TRIGGER_ENABLED_KEY,
+            AdminFeatureOverrideStore::CONFIG_KEY,
         ];
         $inputOnlyKeys = [
             'site.title',

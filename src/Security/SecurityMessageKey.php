@@ -39,4 +39,13 @@ final class SecurityMessageKey
     public const API_KEY_PERMISSION_DENIED = 'message.api_key.permission.denied';
     public const API_KEY_PERMISSION_WRITE_REQUIRED = 'message.api_key.permission.write_required';
     public const API_KEY_PERMISSION_REVOKED = 'message.api_key.permission.revoked';
+    public const RATE_LIMIT_EXCEEDED = 'message.rate_limit.exceeded';
+    public const RATE_LIMIT_REQUEST_REJECTED = 'message.rate_limit.request_rejected';
+    public const RATE_LIMIT_STORAGE_DEGRADED = 'message.rate_limit.storage_degraded';
+    public const RATE_LIMIT_RESET_DEGRADED = 'message.rate_limit.reset_degraded';
+    public const AUTO_BAN_STORAGE_DEGRADED = 'message.auto_ban.storage_degraded';
+    public const AUTO_BAN_EVALUATION_DEGRADED = 'message.auto_ban.evaluation_degraded';
+    public const AUTO_BAN_PAYLOAD_INVALID = 'message.auto_ban.payload_invalid';
+    public const AUTO_BAN_RESET_RELEASED = 'message.auto_ban.reset_released';
+    public const AUTO_BAN_ALERT_DELIVERY_DEGRADED = 'message.auto_ban.alert_delivery_degraded';
 }

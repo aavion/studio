@@ -1,7 +1,7 @@
 # Project Outline and Feature Drafts
 
 > **Status**: Draft  
-> **Updated**: 2026-05-20   
+> **Updated**: 2026-06-15   
 > **Owner**: Core  
 > **Purpose:** Description of planned features and technical specification drafts for use as guidance alongside implementation.  
 
@@ -19,7 +19,7 @@ Development should stay close to the Symfony application model. Prefer native Sy
 
 The core should provide stable boundaries and a small set of documented extension points instead of broad custom frameworks. Feature work should be split into reviewable vertical slices with nearby tests, documentation, class map entries, and worklog notes. Files should stay focused so future contributors and coding agents can inspect, change, and review behavior without loading a large part of the project into context.
 
-Packages should be able to integrate with the system through explicit extension categories:
+Extensions should be able to integrate with the system through explicit extension categories:
 
 - **Observe:** Modules may react to lifecycle events without changing the core result, for example audit logging, statistics, indexing, or notifications.
 - **Extend:** Modules may add behavior through documented hooks or tagged services, for example editor actions, export formats, form extensions, template candidates, or navigation entries.
@@ -47,8 +47,11 @@ The feature drafts should be created in dependency order. Start with architectur
 ### 0.2.x security and extension baseline drafts
 
 - [Security and access control](0.2.x-SecurityAccessControl.md)
+- [Security hardening implementation plan](0.2.x-SecurityHardeningPlan.md)
+- [Security policy defaults](security-hardening/policy-defaults.md)
+- [Security Admin ACL enforcement plan](security-hardening/admin-acl-enforcement.md)
 - [Admin interface and setup UI](0.2.x-AdminInterfaceSetupUi.md)
-- [Package modules and providers](0.2.x-PluginModules.md)
+- [Extension modules and providers](0.2.x-PluginModules.md)
 - [Event hooks and buses](0.2.x-EventHooksBuses.md)
 
 ### 0.3.x structured content and editor drafts
@@ -117,7 +120,7 @@ A release should be considered stable and presentable only when the implemented 
 - Setup works from CLI and web setup without hidden local state.
 - Admin login, ACL protection, and administrator-only configuration are enforced.
 - Public rendering uses published content only and respects language, variant, visibility, and ACL rules.
-- Package lifecycle workflows validate manifests, keep discovered packages inactive by default, rebuild assets, and recover from failures.
+- Extension lifecycle workflows validate manifests, keep discovered extensions inactive by default, rebuild assets, and recover from failures.
 - Content, schema, editor, draft/publish, resolver, media, navigation, import/export, backup/restore, and operational workflows have focused tests.
 - Operational actions expose understandable action logs, redacted diagnostics, and recovery paths.
 - Cache, asset, resolver/index, and delivery rebuilds are documented and available from admin or CLI workflows.

@@ -43,6 +43,7 @@
                 value: user_account.role.value,
                 options: role_options|reduce((carry, role) => carry|merge({(role.value): ('admin.users.roles.' ~ role.value)|trans}), {}),
                 required: true,
+                disabled: not users_mutable,
             } only %}
             {% include '@backend/partials/forms/fields/select.html.twig' with {
                 id: 'user_status',
@@ -55,6 +56,7 @@
                     deleted: 'admin.users.status.deleted'|trans,
                 },
                 required: true,
+                disabled: not users_mutable,
             } only %}
             {% include '@backend/partials/forms/fields/checkbox-group.html.twig' with {
                 id: 'user_groups',
@@ -62,8 +64,9 @@
                 label: 'admin.users.fields.groups'|trans,
                 values: user_account.groups|map(group => group.identifier),
                 options: groups|reduce((carry, group) => carry|merge({(group.identifier): group.name}), {}),
+                disabled: not users_mutable,
             } only %}
-            {% include '@backend/partials/forms/fields/submit.html.twig' with {label: 'admin.users.actions.save'|trans} only %}
+            {% include '@backend/partials/forms/fields/submit.html.twig' with {label: 'admin.users.actions.save'|trans, disabled: not users_mutable} only %}
         </form>
     </section>
 
@@ -72,7 +75,7 @@
         <p class="system-muted">{{ 'admin.users.password_reset.text'|trans }}</p>
         <form method="post" action="{{ path('backend_admin_user_password_reset', {username: user_account.username}) }}">
             <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_password_reset_' ~ user_account.username) }}">
-            <button class="system-button" type="submit">{{ 'admin.users.password_reset.submit'|trans }}</button>
+            <button class="system-button" type="submit"{% if not users_mutable %} disabled{% endif %}>{{ 'admin.users.password_reset.submit'|trans }}</button>
         </form>
     </section>
 

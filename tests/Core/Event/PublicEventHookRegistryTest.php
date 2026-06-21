@@ -12,8 +12,8 @@ use App\Core\Event\EventHookDescriptorProviderInterface;
 use App\Core\Event\EventHookMode;
 use App\Core\Event\EventMessageKey;
 use App\Core\Event\PublicEventHookRegistry;
-use App\Core\Package\Event\PackageAssetRegistryBuildEvent;
-use App\Core\Package\PackageEventHookProvider;
+use App\Core\Extension\Event\ExtensionAssetRegistryBuildEvent;
+use App\Core\Extension\ExtensionEventHookProvider;
 use App\Navigation\Event\NavigationBuilderEvent;
 use App\Navigation\NavigationEventHookProvider;
 use App\View\Event\OutputGeneratedEvent;
@@ -39,7 +39,7 @@ final class PublicEventHookRegistryTest extends TestCase
         self::assertArrayHasKey(DynamicViewInjectionRegistryEvent::class, $hooks);
         self::assertArrayHasKey(ResponseHeadersEvent::class, $hooks);
         self::assertArrayHasKey(OutputGeneratedEvent::class, $hooks);
-        self::assertArrayHasKey(PackageAssetRegistryBuildEvent::class, $hooks);
+        self::assertArrayHasKey(ExtensionAssetRegistryBuildEvent::class, $hooks);
         self::assertSame(EventHookMode::Extend, $hooks[ViewContextEvent::class]->mode());
         self::assertTrue($hooks[ViewContextEvent::class]->mutable());
         self::assertSame(EventMessageKey::EVENT_HOOK_VIEW_CONTEXT_SUMMARY, $hooks[ViewContextEvent::class]->summaryKey());
@@ -57,8 +57,8 @@ final class PublicEventHookRegistryTest extends TestCase
         self::assertTrue($hooks[ResponseHeadersEvent::class]->mutable());
         self::assertSame('view', $hooks[OutputGeneratedEvent::class]->domain());
         self::assertTrue($hooks[OutputGeneratedEvent::class]->mutable());
-        self::assertSame('package', $hooks[PackageAssetRegistryBuildEvent::class]->domain());
-        self::assertTrue($hooks[PackageAssetRegistryBuildEvent::class]->mutable());
+        self::assertSame('extension', $hooks[ExtensionAssetRegistryBuildEvent::class]->domain());
+        self::assertTrue($hooks[ExtensionAssetRegistryBuildEvent::class]->mutable());
     }
 
     public function testItAggregatesHookDescriptorProviders(): void
@@ -66,7 +66,7 @@ final class PublicEventHookRegistryTest extends TestCase
         $hooks = (new PublicEventHookRegistry([
             new ContentEventHookProvider(),
             new NavigationEventHookProvider(),
-            new PackageEventHookProvider(),
+            new ExtensionEventHookProvider(),
             new ViewEventHookProvider(),
             new ViewInjectionEventHookProvider(),
         ]))->hooks();
@@ -95,7 +95,7 @@ final class PublicEventHookRegistryTest extends TestCase
                 {
                     yield new EventHookDescriptor(
                         ViewContextEvent::class,
-                        'package',
+                        'extension',
                         EventHookMode::Observe,
                         EventMessageKey::EVENT_HOOK_VIEW_CONTEXT_SUMMARY,
                         false,

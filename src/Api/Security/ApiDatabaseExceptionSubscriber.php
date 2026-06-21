@@ -11,8 +11,10 @@ use Symfony\Component\HttpKernel\KernelEvents;
 
 final readonly class ApiDatabaseExceptionSubscriber implements EventSubscriberInterface
 {
-    public function __construct(private ApiUnavailableResponder $unavailableResponder)
-    {
+    public function __construct(
+        private ApiUnavailableResponder $unavailableResponder,
+        private ApiRequestMethodPolicy $methodPolicy = new ApiRequestMethodPolicy(),
+    ) {
     }
 
     public static function getSubscribedEvents(): array
@@ -24,7 +26,7 @@ final readonly class ApiDatabaseExceptionSubscriber implements EventSubscriberIn
 
     public function onKernelException(ExceptionEvent $event): void
     {
-        if (!$event->isMainRequest() || !str_starts_with($event->getRequest()->getPathInfo(), '/api/v1')) {
+        if (!$event->isMainRequest() || !$this->methodPolicy->isApiV1Request($event->getRequest())) {
             return;
         }
 

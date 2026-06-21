@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Backend\BackendAccessGuard;
 use App\Backend\BackendArea;
 use App\Core\Access\AccessActor;
+use App\Core\AdminAcl\AdminFeatureAccessPolicy;
 use App\Core\Log\AuditLoggerInterface;
 use App\Core\Message\CommonMessageCode;
 use App\Core\Message\Message;
@@ -53,6 +54,7 @@ final class AdminUserReviewController extends AbstractController
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly StateMarkerRecorder $stateMarkers,
         private readonly UiAlertDispatcherInterface $alerts,
+        private readonly AdminFeatureAccessPolicy $adminAcl,
     ) {
     }
 
@@ -62,11 +64,16 @@ final class AdminUserReviewController extends AbstractController
         if ($response = $this->adminAccessResponse($request)) {
             return $response;
         }
+        if ($response = $this->featureResponse($request, mutable: false)) {
+            return $response;
+        }
 
         $reviewView = $this->adminUserReviews->reviewView($request);
+        $mutable = $this->adminAcl->isMutable('admin.users.review', $this->actor());
 
         return $this->render('@backend/admin/users/reviews.html.twig', [
             'navigation' => $this->navigation($request),
+            'reviews_mutable' => $mutable,
             'review_items' => $reviewView['items'],
             'review_filter' => $reviewView['filters']['filter'],
             'review_view' => $reviewView,
@@ -78,6 +85,9 @@ final class AdminUserReviewController extends AbstractController
     public function reactivate(Request $request, string $username): Response
     {
         if ($response = $this->adminAccessResponse($request)) {
+            return $response;
+        }
+        if ($response = $this->featureResponse($request, mutable: true)) {
             return $response;
         }
 
@@ -124,6 +134,9 @@ final class AdminUserReviewController extends AbstractController
     public function delete(Request $request, string $username): Response
     {
         if ($response = $this->adminAccessResponse($request)) {
+            return $response;
+        }
+        if ($response = $this->featureResponse($request, mutable: true)) {
             return $response;
         }
 
@@ -180,9 +193,25 @@ final class AdminUserReviewController extends AbstractController
             return null;
         }
 
-        return $this->httpError->render(Response::HTTP_UNAUTHORIZED, $request, context: [
+        return $this->httpError->resolve(Response::HTTP_UNAUTHORIZED, $request, context: [
             'area' => BackendArea::Admin->value,
             'access_decision' => $decision->toArray(),
+        ]);
+    }
+
+    private function featureResponse(Request $request, bool $mutable): ?Response
+    {
+        $allowed = $mutable
+            ? $this->adminAcl->isMutable('admin.users.review', $this->actor())
+            : $this->adminAcl->isVisible('admin.users.review', $this->actor());
+
+        if ($allowed) {
+            return null;
+        }
+
+        return $this->httpError->resolve(Response::HTTP_UNAUTHORIZED, $request, context: [
+            'feature' => 'admin.users.review',
+            'required_state' => $mutable ? 'mutable' : 'visible',
         ]);
     }
 

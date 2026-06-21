@@ -27,8 +27,8 @@ final class LogFileBrowserTest extends TestCase
     public function testItReadsAndFiltersSelectedLogFiles(): void
     {
         $this->writeTestFile($this->logDir, 'test/message-2099-01-01.log', implode(PHP_EOL, [
-            '[2099-01-01T10:00:00.000000+00:00] message.INFO: message.package.discovery_completed {"code":"package.discovery_completed"} []',
-            '[2099-01-01T10:01:00.000000+00:00] message.ERROR: message.process.command_failed {"code":"process.command_failed","package":"demo-module"} []',
+            '[2099-01-01T10:00:00.000000+00:00] message.INFO: message.extension.discovery_completed {"code":"extension.discovery_completed"} []',
+            '[2099-01-01T10:01:00.000000+00:00] message.ERROR: message.process.command_failed {"code":"process.command_failed","extension":"demo-module"} []',
             '',
         ]));
 
@@ -66,5 +66,41 @@ final class LogFileBrowserTest extends TestCase
         self::assertCount(1, $view['entries']);
         self::assertSame('/admin/logs', $view['entries'][0]['context']['path']);
         self::assertSame('n/a', $view['entries'][0]['context']['country']);
+    }
+
+    public function testItIgnoresAuditActionFiltersForApplicationLogs(): void
+    {
+        $this->writeTestFile($this->logDir, 'test.log', '[2099-01-01T10:00:00.000000+00:00] app.ERROR: app.failure {"code":"app.failure"} []'.PHP_EOL);
+
+        $view = (new LogFileBrowser($this->logDir, 'test'))->browse([
+            'source' => 'application',
+            'level' => 'ERROR',
+            'audit_action' => 'audit.unrelated',
+        ]);
+
+        self::assertSame('', $view['filters']['audit_action']);
+        self::assertSame(1, $view['pagination']['total']);
+        self::assertSame('app.failure', $view['entries'][0]['message']);
+    }
+
+    public function testItUsesClampedPaginationPageWhenReadingEntries(): void
+    {
+        $lines = [];
+        for ($i = 1; $i <= 26; ++$i) {
+            $lines[] = sprintf('[2099-01-01T10:%02d:00.000000+00:00] message.ERROR: message.%02d [] []', $i, $i);
+        }
+        $this->writeTestFile($this->logDir, 'test/message-2099-01-01.log', implode(PHP_EOL, [...$lines, '']));
+
+        $view = (new LogFileBrowser($this->logDir, 'test'))->browse([
+            'source' => 'message',
+            'level' => 'ERROR',
+            'per_page' => 25,
+            'page' => 999,
+        ]);
+
+        self::assertSame(2, $view['filters']['page']);
+        self::assertSame(2, $view['pagination']['page']);
+        self::assertCount(1, $view['entries']);
+        self::assertSame('message.01', $view['entries'][0]['message']);
     }
 }

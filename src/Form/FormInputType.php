@@ -15,6 +15,7 @@ enum FormInputType: string
     case Checkbox = 'checkbox';
     case Number = 'number';
     case Color = 'color';
+    case Password = 'password';
     case Captcha = 'captcha';
 
     /**

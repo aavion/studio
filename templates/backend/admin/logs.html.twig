@@ -14,18 +14,40 @@
         title: 'admin.logs.title'|trans,
     } only %}
 
+    <nav class="system-tabs" aria-label="{{ 'admin.logs.sources.label'|trans }}">
+        {% set source_tab_query = {
+            q: log_view.filters.search,
+            match: log_view.filters.match,
+            time_window: log_view.filters.time_window,
+            per_page: log_view.filters.per_page,
+            page: 1,
+        } %}
+        {% for source in log_view.sources %}
+            <a class="system-tab{% if source.key == log_view.selected_source %} system-tab-active{% endif %}" href="?{{ source_tab_query|merge({source: source.key})|url_encode }}">
+                {{ source.label|trans }}
+            </a>
+        {% endfor %}
+    </nav>
+
+    {% set log_page_query = {
+        source: log_view.selected_source,
+        q: log_view.filters.search,
+        match: log_view.filters.match,
+        time_window: log_view.filters.time_window,
+        per_page: log_view.filters.per_page,
+    } %}
+    {% if log_view.capabilities.level_filter %}
+        {% set log_page_query = log_page_query|merge({level: log_view.filters.levels}) %}
+    {% endif %}
+    {% if log_view.capabilities.audit_action_filter or log_view.capabilities.signal_reason_filter %}
+        {% set log_page_query = log_page_query|merge({audit_action: log_view.filters.audit_action}) %}
+    {% endif %}
+
     <section class="system-panel">
         <h2>{{ 'admin.logs.filters.title'|trans }}</h2>
         <form method="get" class="system-form system-backend-log-filter-form" data-controller="filter-form" data-action="input->filter-form#queue change->filter-form#queue submit->filter-form#submit">
+            <input type="hidden" name="source" value="{{ log_view.selected_source }}">
             <div class="system-form-grid">
-                <label>
-                    <span>{{ 'admin.logs.filters.source'|trans }}</span>
-                    <select name="source">
-                        {% for source in log_view.sources %}
-                            <option value="{{ source.key }}" {% if source.key == log_view.selected_source %}selected{% endif %}>{{ source.label|trans }}</option>
-                        {% endfor %}
-                    </select>
-                </label>
                 <label>
                     <span>{{ 'admin.logs.filters.window'|trans }}</span>
                     <select name="time_window">
@@ -34,15 +56,16 @@
                         {% endfor %}
                     </select>
                 </label>
-                <label>
-                    <span>{{ 'admin.logs.filters.level'|trans }}</span>
-                    <select name="level">
-                        <option value="">{{ 'admin.logs.filters.any_level'|trans }}</option>
-                        {% for level in ['DEBUG', 'INFO', 'NOTICE', 'WARNING', 'ERROR', 'CRITICAL', 'ALERT', 'EMERGENCY'] %}
-                            <option value="{{ level }}" {% if level == log_view.filters.level %}selected{% endif %}>{{ level }}</option>
-                        {% endfor %}
-                    </select>
-                </label>
+                {% if log_view.capabilities.level_filter %}
+                    <label>
+                        <span>{{ 'admin.logs.filters.level'|trans }}</span>
+                        <select name="level[]" multiple size="6">
+                            {% for level in ['DEBUG', 'INFO', 'NOTICE', 'WARNING', 'ERROR', 'CRITICAL', 'ALERT', 'EMERGENCY'] %}
+                                <option value="{{ level }}" {% if level in log_view.filters.levels %}selected{% endif %}>{{ level }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                {% endif %}
                 <label>
                     <span>{{ 'admin.logs.filters.search'|trans }}</span>
                     <input type="search" name="q" value="{{ log_view.filters.search }}" maxlength="120">
@@ -55,10 +78,17 @@
                         {% endfor %}
                     </select>
                 </label>
-                <label>
-                    <span>{{ 'admin.logs.filters.audit_action'|trans }}</span>
-                    <input type="search" name="audit_action" value="{{ log_view.filters.audit_action }}" maxlength="120">
-                </label>
+                {% if log_view.capabilities.audit_action_filter %}
+                    <label>
+                        <span>{{ 'admin.logs.filters.audit_action'|trans }}</span>
+                        <input type="search" name="audit_action" value="{{ log_view.filters.audit_action }}" maxlength="120">
+                    </label>
+                {% elseif log_view.capabilities.signal_reason_filter %}
+                    <label>
+                        <span>{{ 'admin.logs.filters.signal_reason'|trans }}</span>
+                        <input type="search" name="audit_action" value="{{ log_view.filters.audit_action }}" maxlength="120">
+                    </label>
+                {% endif %}
                 <label>
                     <span>{{ 'admin.logs.filters.per_page'|trans }}</span>
                     <select name="per_page">
@@ -75,24 +105,26 @@
 
     <section class="system-panel">
         <h2>{{ 'admin.logs.entries.title'|trans }}</h2>
-        {% if log_view.files is empty %}
-            <p class="system-muted">{{ 'admin.logs.entries.no_files'|trans }}</p>
-        {% elseif log_view.entries is empty %}
+        {% if log_view.entries is empty %}
             <p class="system-muted">{{ 'admin.logs.entries.empty'|trans }}</p>
         {% else %}
-            <p class="system-muted">{{ 'admin.logs.entries.files'|trans({'%files%': log_view.files|join(', ')}) }}</p>
             <div class="system-table-wrapper">
                 <table class="system-table system-backend-log-table">
                     <thead>
                         <tr>
                             <th>{{ 'admin.logs.columns.timestamp'|trans }}</th>
-                            <th>{{ 'admin.logs.columns.level'|trans }}</th>
+                            {% if log_view.capabilities.level_filter %}
+                                <th>{{ 'admin.logs.columns.level'|trans }}</th>
+                            {% endif %}
                             {% if log_view.selected_source == 'access' %}
                                 <th>{{ 'admin.logs.columns.request'|trans }}</th>
                                 <th>{{ 'admin.logs.columns.http_status'|trans }}</th>
                             {% elseif log_view.selected_source == 'audit' %}
                                 <th>{{ 'admin.logs.columns.user'|trans }}</th>
                                 <th>{{ 'admin.logs.columns.action'|trans }}</th>
+                            {% elseif log_view.selected_source == 'security_signal' %}
+                                <th>{{ 'admin.logs.columns.security_signal'|trans }}</th>
+                                <th>{{ 'admin.logs.columns.subject'|trans }}</th>
                             {% else %}
                                 <th>{{ 'admin.logs.columns.message'|trans }}</th>
                             {% endif %}
@@ -103,13 +135,18 @@
                         {% for entry in log_view.entries %}
                             <tr>
                                 <td>{{ entry.timestamp|default('') }}</td>
-                                <td><span class="system-badge">{{ entry.level|default('') }}</span></td>
+                                {% if log_view.capabilities.level_filter %}
+                                    <td><span class="system-badge">{{ entry.level|default('') }}</span></td>
+                                {% endif %}
                                 {% if log_view.selected_source == 'access' %}
                                     <td>{{ entry.context.method|default('admin.logs.empty_value'|trans) }} {{ entry.context.requested_path|default(entry.context.path|default('admin.logs.empty_value'|trans)) }}<br><span class="system-muted">{{ entry.context.resolved_route|default(entry.context.route|default('admin.logs.empty_value'|trans)) }}</span></td>
                                     <td>{{ entry.context.http_status|default('admin.logs.empty_value'|trans) }}</td>
                                 {% elseif log_view.selected_source == 'audit' %}
                                     <td>{{ entry.context.user|default('admin.logs.empty_value'|trans) }}<br><span class="system-muted">{{ entry.context.user_access_level|default('0') }}</span></td>
                                     <td>{{ entry.context.action|default(entry.message) }}</td>
+                                {% elseif log_view.selected_source == 'security_signal' %}
+                                    <td>{{ entry.context.signal_type|default(entry.summary|default(entry.message)) }}<br><span class="system-muted">{{ entry.context.reason_code|default('admin.logs.empty_value'|trans) }}</span></td>
+                                    <td>{{ entry.context.subject_type|default('admin.logs.empty_value'|trans) }}<br><span class="system-muted">{{ entry.context.subject_identifier|default('admin.logs.empty_value'|trans) }}</span></td>
                                 {% else %}
                                     <td>{{ entry.summary|default(entry.message|default(entry.raw)) }}</td>
                                 {% endif %}
@@ -122,10 +159,10 @@
             <div class="system-toolbar">
                 <span class="system-muted">{{ 'admin.logs.entries.page_summary'|trans({'%page%': log_view.pagination.page, '%pages%': log_view.pagination.total_pages, '%total%': log_view.pagination.total}) }}</span>
                 {% if log_view.pagination.has_previous %}
-                    <a class="system-button" href="?{{ app.request.query.all|merge({page: log_view.pagination.previous_page})|url_encode }}">{{ 'admin.logs.entries.previous'|trans }}</a>
+                    <a class="system-button" href="?{{ log_page_query|merge({page: log_view.pagination.previous_page})|url_encode }}">{{ 'admin.logs.entries.previous'|trans }}</a>
                 {% endif %}
                 {% if log_view.pagination.has_next %}
-                    <a class="system-button" href="?{{ app.request.query.all|merge({page: log_view.pagination.next_page})|url_encode }}">{{ 'admin.logs.entries.next'|trans }}</a>
+                    <a class="system-button" href="?{{ log_page_query|merge({page: log_view.pagination.next_page})|url_encode }}">{{ 'admin.logs.entries.next'|trans }}</a>
                 {% endif %}
             </div>
         {% endif %}

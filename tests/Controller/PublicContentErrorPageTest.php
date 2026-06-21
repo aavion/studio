@@ -20,6 +20,7 @@ final class PublicContentErrorPageTest extends WebTestCase
         self::assertSelectorTextContains('h1', 'Page not found');
         self::assertSelectorTextContains('.system-frontend-error-reference', 'Request ID');
         self::assertSelectorNotExists('.system-frontend-error-reference dd:nth-of-type(2)');
+        self::assertStringContainsString('no-store', (string) $client->getResponse()->headers->get('Cache-Control'));
     }
 
     public function testItReturnsForbiddenForReservedCronPrefix(): void

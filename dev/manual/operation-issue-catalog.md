@@ -18,13 +18,13 @@ parameters
 context
 ```
 
-Third-party modules and themes may provide their own codes and translation keys as long as they remain deterministic and namespaced. Package-owned catalogues must stay under package-owned namespaces; system/core namespaces are reserved and win conflicts when catalogues are aggregated.
+Third-party modules and themes may provide their own codes and translation keys as long as they remain deterministic and namespaced. Extension-owned catalogues must stay under extension-owned namespaces; system/core namespaces are reserved and win conflicts when catalogues are aggregated.
 
 Validation rules:
 
-- Codes use either uppercase generic tokens, for example `E_INVALID_ARGUMENT`, or lowercase namespaced tokens, for example `package.required_file_missing`.
+- Codes use either uppercase generic tokens, for example `E_INVALID_ARGUMENT`, or lowercase namespaced tokens, for example `extension.required_file_missing`.
 - Translation keys start with `message.`, for example `message.content.slug.invalid_format`.
-- System constants live in domain-owned catalogues such as `PackageMessageCode`, `SetupMessageKey`, or `ContentMessageKey`; central `MessageCode` and `MessageKey` classes aggregate catalogues for validation and tooling.
+- System constants live in domain-owned catalogues such as `ExtensionMessageCode`, `SetupMessageKey`, or `ContentMessageKey`; central `MessageCode` and `MessageKey` classes aggregate catalogues for validation and tooling.
 - Translation parameters use placeholder names such as `%slug%`.
 - Non-translated diagnostics, paths, raw output excerpts, and internal class names belong in `context`.
 
@@ -40,45 +40,45 @@ Validation rules:
 | `manifest.unknown_key` | Closed manifest spec rejected an undeclared key. | `key` |
 | `manifest.parsed` | Manifest parsing completed. | `keys`, `key_count` |
 | `manifest.validated` | Manifest validation completed. | `required_keys`, `allowed_keys` |
-| `package.manifest_unreadable` | Manifest file exists but cannot be read. | `path`, `source` |
-| `package.required_file_missing` | Required package file is absent. | `source`, `package`, `requirement`, `path` |
-| `package.required_directory_missing` | Required package directory is absent. | `source`, `package`, `requirement`, `path` |
-| `package.file_unreadable` | Package file could not be read for linting. | `source`, `package`, `file`, `path` |
-| `package.php_syntax_error` | PHP linter found a syntax error. | `source`, `package`, `file`, `path` |
-| `package.php_namespace_invalid` | Package PHP source under `src/` is outside the declared `PACKAGE_NAMESPACE`. | `source`, `package`, `file`, `path`, `namespace`, `expected_namespace` |
-| `package.twig_syntax_error` | Twig linter found a syntax error. | `source`, `package`, `file`, `path` |
-| `package.json_syntax_error` | JSON linter found a syntax error. | `source`, `package`, `file`, `path` |
-| `package.yaml_syntax_error` | YAML linter found a syntax error. | `source`, `package`, `file`, `path` |
-| `package.css_syntax_error` | CSS linter found a syntax error. | `source`, `package`, `file`, `path` |
-| `package.javascript_syntax_error` | JavaScript linter found a syntax error. | `source`, `package`, `file`, `path` |
-| `package.template_path_invalid` | Package template path is not allowed for root/shared, provider, or macro namespace rules. | `source`, `package`, `package_slug`, `file`, `scopes` |
-| `package.copy_source_missing` | Planned package copy source does not exist. | `source`, `package`, `file`, `path` |
-| `package.copy_source_symlink` | Planned package copy source is a symlink. | `source`, `package`, `file`, `path` |
-| `package.asset_rebuild_queued` | Package asset rebuild was queued for deferred Messenger processing. | `trigger`, `environment`, `deferred` |
-| `package.asset_rebuild_queue_failed` | Package asset rebuild could not be queued for deferred Messenger processing. | `trigger`, `environment`, `exception`, `message` |
-| `package.asset.contribution_package_invalid` | Package asset contribution has no package identifier. | `package` |
-| `package.asset.contribution_type_invalid` | Package asset contribution declares an unsupported contribution type. | `package`, `type` |
-| `package.asset.contribution_path_invalid` | Package asset contribution path is empty, absolute, or contains null bytes. | `path` |
-| `package.asset.contribution_path_traversal` | Package asset contribution path traverses parent directories. | `path` |
-| `package.translation_fallback_missing` | Package translation sources exist but no configured fallback source catalogue is present. | `source`, `package`, `file`, `path`, `fallback_locale`, `fallback_locale_candidates` |
-| `package.translation_namespace_invalid` | Package translation source is outside the package-owned `pkg.<slug>` namespace. | `source`, `package`, `file`, `path`, `expected_prefix` |
-| `translation.aggregate_completed` | Core and active package translation sources were aggregated into runtime catalogues. | `packages`, `locales`, `files`, `targets` |
+| `extension.manifest_unreadable` | Manifest file exists but cannot be read. | `path`, `source` |
+| `extension.required_file_missing` | Required extension file is absent. | `source`, `extension`, `requirement`, `path` |
+| `extension.required_directory_missing` | Required extension directory is absent. | `source`, `extension`, `requirement`, `path` |
+| `extension.file_unreadable` | Extension file could not be read for linting. | `source`, `extension`, `file`, `path` |
+| `extension.php_syntax_error` | PHP linter found a syntax error. | `source`, `extension`, `file`, `path` |
+| `extension.php_namespace_invalid` | Extension PHP source under `src/` is outside the declared `EXTENSION_NAMESPACE`. | `source`, `extension`, `file`, `path`, `namespace`, `expected_namespace` |
+| `extension.twig_syntax_error` | Twig linter found a syntax error. | `source`, `extension`, `file`, `path` |
+| `extension.json_syntax_error` | JSON linter found a syntax error. | `source`, `extension`, `file`, `path` |
+| `extension.yaml_syntax_error` | YAML linter found a syntax error. | `source`, `extension`, `file`, `path` |
+| `extension.css_syntax_error` | CSS linter found a syntax error. | `source`, `extension`, `file`, `path` |
+| `extension.javascript_syntax_error` | JavaScript linter found a syntax error. | `source`, `extension`, `file`, `path` |
+| `extension.template_path_invalid` | Extension template path is not allowed for root/shared, provider, or macro namespace rules. | `source`, `extension`, `extension_slug`, `file`, `scopes` |
+| `extension.copy_source_missing` | Planned extension copy source does not exist. | `source`, `extension`, `file`, `path` |
+| `extension.copy_source_symlink` | Planned extension copy source is a symlink. | `source`, `extension`, `file`, `path` |
+| `extension.asset_rebuild_queued` | Extension asset rebuild was queued for deferred Messenger processing. | `trigger`, `environment`, `deferred` |
+| `extension.asset_rebuild_queue_failed` | Extension asset rebuild could not be queued for deferred Messenger processing. | `trigger`, `environment`, `exception`, `message` |
+| `extension.asset.contribution_extension_invalid` | Extension asset contribution has no extension identifier. | `extension` |
+| `extension.asset.contribution_type_invalid` | Extension asset contribution declares an unsupported contribution type. | `extension`, `type` |
+| `extension.asset.contribution_path_invalid` | Extension asset contribution path is empty, absolute, or contains null bytes. | `path` |
+| `extension.asset.contribution_path_traversal` | Extension asset contribution path traverses parent directories. | `path` |
+| `extension.translation_fallback_missing` | Extension translation sources exist but no English source catalogue is present. | `source`, `extension`, `file`, `path`, `fallback_locale`, `fallback_locale_candidates` |
+| `extension.translation_namespace_invalid` | Extension translation source is outside the extension-owned `ext.<slug>` namespace. | `source`, `extension`, `file`, `path`, `expected_prefix` |
+| `translation.aggregate_completed` | Core and active extension translation sources were aggregated into runtime catalogues. | `extensions`, `locales`, `files`, `targets` |
 | `translation.aggregate_failed` | Translation aggregation could not write runtime catalogues. | `exception`, `message`, `target_pattern` |
 | `view.template_namespace.unsupported` | A template namespace string does not map to a supported root, frontend, or backend namespace. | `namespace` |
-| `package.discovery_queued` | Package discovery was queued for deferred Messenger processing. | `trigger`, `deferred` |
-| `package.discovery_queue_failed` | Package discovery could not be queued for deferred Messenger processing. | `trigger`, `exception`, `message` |
-| `package.discovery_completed` | Package discovery completed successfully. | `candidate_count` |
-| `package.validation_completed` | Package validation completed successfully. | `source`, `package`, `inventory_count` |
-| `package.lifecycle.cleanup_completed` | Package cleanup boundary completed. | `package`, `actions` |
-| `package.lifecycle.removed` | Package directory was removed and the registry row was marked removed. | `package`, `path` |
-| `package.lifecycle.purged` | Package cleanup completed and the registry row was deleted. | `package` |
-| `package.lifecycle.fault_reset` | Faulty package was validated and reset to inactive. | `package`, `path` |
-| `package.lifecycle.runtime_failure` | Package was marked faulty after a runtime failure. | `package`, `faulty` |
-| `package.lifecycle.php_load_failed` | Active package PHP loader failed and the package was marked faulty. | `package`, `path`, `loader`, `exception`, `message` |
-| `package.dependency.invalid` | Package dependency declaration could not be parsed. | `package`, `value` |
-| `package.scheduler.cron_invalid` | Package scheduler registration declares an invalid cron expression. | `source`, `package`, `file`, `path`, `value` |
-| `package.dependency.cycle` | Package activation or installer preflight found a circular hard dependency. | `package`, `cycle` |
-| `package.copy_plan_created` | Package copy plan was created successfully. | `source`, `package`, `target_root`, `target_prefix`, `files` |
+| `extension.discovery_queued` | Extension discovery was queued for deferred Messenger processing. | `trigger`, `deferred` |
+| `extension.discovery_queue_failed` | Extension discovery could not be queued for deferred Messenger processing. | `trigger`, `exception`, `message` |
+| `extension.discovery_completed` | Extension discovery completed successfully. | `candidate_count` |
+| `extension.validation_completed` | Extension validation completed successfully. | `source`, `extension`, `inventory_count` |
+| `extension.lifecycle.cleanup_completed` | Extension cleanup boundary completed. | `extension`, `actions` |
+| `extension.lifecycle.removed` | Extension directory was removed and the registry row was marked removed. | `extension`, `path` |
+| `extension.lifecycle.purged` | Extension cleanup completed and the registry row was deleted. | `extension` |
+| `extension.lifecycle.fault_reset` | Faulty extension was validated and reset to inactive. | `extension`, `path` |
+| `extension.lifecycle.runtime_failure` | Extension was marked faulty after a runtime failure. | `extension`, `faulty` |
+| `extension.lifecycle.php_load_failed` | Active extension PHP loader failed and the extension was marked faulty. | `extension`, `path`, `loader`, `exception`, `message` |
+| `extension.dependency.invalid` | Extension dependency declaration could not be parsed. | `extension`, `value` |
+| `extension.scheduler.cron_invalid` | Extension scheduler registration declares an invalid cron expression. | `source`, `extension`, `file`, `path`, `value` |
+| `extension.dependency.cycle` | Extension activation or installer preflight found a circular hard dependency. | `extension`, `cycle` |
+| `extension.copy_plan_created` | Extension copy plan was created successfully. | `source`, `extension`, `target_root`, `target_prefix`, `files` |
 | `filesystem.source_missing` | Filesystem copy source is missing. | `source`, `target` |
 | `filesystem.source_symlink` | Filesystem copy source is a symlink. | `source`, `target` |
 | `filesystem.target_symlink` | Filesystem target path is a symlink. | `path`, `source`, `target` |
@@ -107,19 +107,19 @@ Validation rules:
 |-----------------|---------|-------------------|
 | `message.manifest.parsed` | Manifest parsing completed. | N/A |
 | `message.manifest.validated` | Manifest validation completed. | N/A |
-| `message.package.discovery_queued` | Package discovery was queued for deferred processing. | `%trigger%` |
-| `message.package.discovery_queue_failed` | Package discovery could not be queued. | `%trigger%` |
-| `message.package.discovery_completed` | Package discovery completed successfully. | `%count%` |
-| `message.package.validation_completed` | Package validation completed successfully. | `%package%` |
-| `message.package.asset_rebuild_queued` | Package asset rebuild was queued for deferred processing. | `%trigger%` |
-| `message.package.asset_rebuild_queue_failed` | Package asset rebuild could not be queued. | `%trigger%` |
-| `message.package.asset.contribution_package_invalid` | Package asset contribution has no package identifier. | `%package%` |
-| `message.package.asset.contribution_type_invalid` | Package asset contribution type is unsupported. | `%type%` |
-| `message.package.asset.contribution_path_invalid` | Package asset contribution path is not project-relative. | `%path%` |
-| `message.package.asset.contribution_path_traversal` | Package asset contribution path traverses parent directories. | `%path%` |
-| `message.package.translation_fallback_missing` | Package translation sources do not include the required fallback catalogue. | `%package%`, `%locale%` |
-| `message.package.translation_namespace_invalid` | Package translation source does not stay under the package-owned namespace. | `%path%`, `%package%` |
-| `message.translation.aggregate_completed` | Translation aggregation completed. | `%files%`, `%locales%`, `%packages%` |
+| `message.extension.discovery_queued` | Extension discovery was queued for deferred processing. | `%trigger%` |
+| `message.extension.discovery_queue_failed` | Extension discovery could not be queued. | `%trigger%` |
+| `message.extension.discovery_completed` | Extension discovery completed successfully. | `%count%` |
+| `message.extension.validation_completed` | Extension validation completed successfully. | `%extension%` |
+| `message.extension.asset_rebuild_queued` | Extension asset rebuild was queued for deferred processing. | `%trigger%` |
+| `message.extension.asset_rebuild_queue_failed` | Extension asset rebuild could not be queued. | `%trigger%` |
+| `message.extension.asset.contribution_extension_invalid` | Extension asset contribution has no extension identifier. | `%extension%` |
+| `message.extension.asset.contribution_type_invalid` | Extension asset contribution type is unsupported. | `%type%` |
+| `message.extension.asset.contribution_path_invalid` | Extension asset contribution path is not project-relative. | `%path%` |
+| `message.extension.asset.contribution_path_traversal` | Extension asset contribution path traverses parent directories. | `%path%` |
+| `message.extension.translation_fallback_missing` | Extension translation sources do not include the required fallback catalogue. | `%extension%`, `%locale%` |
+| `message.extension.translation_namespace_invalid` | Extension translation source does not stay under the extension-owned namespace. | `%path%`, `%extension%` |
+| `message.translation.aggregate_completed` | Translation aggregation completed. | `%files%`, `%locales%`, `%extensions%` |
 | `message.translation.aggregate_failed` | Translation aggregation failed. | `%path%` |
 | `message.statistics.record_failed` | Access statistics recorder failed while handling a request. | N/A |
 | `message.statistics.aggregate_failed` | Access statistics aggregation failed. | N/A |
@@ -133,14 +133,14 @@ Validation rules:
 | `message.menu.target_type.invalid` | Site menu item target type is unsupported. | `%target_type%` |
 | `message.menu.target_value.invalid` | Site menu item target value is empty, too long, or contains control characters. | N/A |
 | `message.view.template_namespace.unsupported` | Template namespace is not supported. | `%namespace%` |
-| `message.package.lifecycle.cleanup_completed` | Package cleanup boundary completed. | `%package%` |
-| `message.package.lifecycle.dependent_deactivated` | Package was automatically deactivated because a dependency became unavailable. | `%package%`, `%dependency%` |
-| `message.package.lifecycle.removed` | Package directory was removed and the registry row was marked removed. | `%package%` |
-| `message.package.lifecycle.purged` | Package cleanup completed and the registry row was deleted. | `%package%` |
-| `message.package.lifecycle.fault_reset` | Faulty package was validated and reset to inactive. | `%package%` |
-| `message.package.lifecycle.runtime_failure` | Package was marked faulty after a runtime failure. | `%package%` |
-| `message.package.lifecycle.php_load_failed` | Active package PHP loader failed and the package was marked faulty. | `%package%` |
-| `message.package.copy_plan_created` | Package copy plan was created successfully. | `%count%` |
+| `message.extension.lifecycle.cleanup_completed` | Extension cleanup boundary completed. | `%extension%` |
+| `message.extension.lifecycle.dependent_deactivated` | Extension was automatically deactivated because a dependency became unavailable. | `%extension%`, `%dependency%` |
+| `message.extension.lifecycle.removed` | Extension directory was removed and the registry row was marked removed. | `%extension%` |
+| `message.extension.lifecycle.purged` | Extension cleanup completed and the registry row was deleted. | `%extension%` |
+| `message.extension.lifecycle.fault_reset` | Faulty extension was validated and reset to inactive. | `%extension%` |
+| `message.extension.lifecycle.runtime_failure` | Extension was marked faulty after a runtime failure. | `%extension%` |
+| `message.extension.lifecycle.php_load_failed` | Active extension PHP loader failed and the extension was marked faulty. | `%extension%` |
+| `message.extension.copy_plan_created` | Extension copy plan was created successfully. | `%count%` |
 | `message.filesystem.file_written` | File write completed. | `%path%` |
 | `message.filesystem.file_copied` | File copy completed. | `%target%` |
 | `message.filesystem.directory_ready` | Directory exists or was created. | `%path%` |
@@ -208,15 +208,15 @@ Validation rules:
 | `message.api_key.reauthentication_required` | API key reveal requires reauthentication. | N/A |
 | `message.api_key.permission.write_required` | API key lacks write permission for the requested operation. | N/A |
 | `message.api_key.permission.revoked` | API key is revoked and cannot authenticate. | N/A |
-| `message.package.identifier.invalid` | Managed package identifier contains unsupported characters. | `%identifier%` |
-| `message.package.dependency.invalid` | Package dependency declaration could not be parsed. | `%package%` |
-| `message.package.dependency.cycle` | Package dependency resolution found a circular hard dependency. | `%cycle%` |
+| `message.extension.identifier.invalid` | Managed extension identifier contains unsupported characters. | `%identifier%` |
+| `message.extension.dependency.invalid` | Extension dependency declaration could not be parsed. | `%extension%` |
+| `message.extension.dependency.cycle` | Extension dependency resolution found a circular hard dependency. | `%cycle%` |
 | `message.menu.identifier.invalid` | Menu identifier is not lowercase snake_case. | `%identifier%` |
 
 ## Notes for future UI
 
-- Use code prefixes for filters: `manifest`, `package`, `filesystem`, `operation`, `process`.
-- Show context paths relative to the package or project when possible.
+- Use code prefixes for filters: `manifest`, `extension`, `filesystem`, `operation`, `process`.
+- Show context paths relative to the extension or project when possible.
 - Treat `blocked` and `failed` status as hard stop signals even when a queue is configured to continue.
 - Keep raw issue arrays in action-log payloads for audit/debug views.
 

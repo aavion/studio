@@ -32,7 +32,7 @@ final class TestDatabaseSchemaSeeder
                 'description' => $writer->json($schema['description']),
                 'definition' => $writer->json($schema['definition']),
                 'custom_twig' => null,
-                'definition_hash' => hash('sha256', $writer->json($schema['definition'])),
+                'definition_hash' => self::definitionHash($schema['title'], $schema['description'], $schema['definition'], null),
                 'use_min_level' => 0,
                 'use_group_identifiers' => null,
                 'edit_min_level' => 3,
@@ -101,6 +101,21 @@ final class TestDatabaseSchemaSeeder
             ],
             'order' => ['title', 'subtitle', 'teaser', 'body', 'tags'],
         ];
+    }
+
+    /**
+     * @param array<string, string> $title
+     * @param array<string, string> $description
+     * @param array<string, mixed> $definition
+     */
+    private static function definitionHash(array $title, array $description, array $definition, ?string $customTwig): string
+    {
+        return hash('sha256', json_encode([
+            'title' => $title,
+            'description' => $description,
+            'definition' => $definition,
+            'custom_twig' => $customTwig,
+        ], JSON_THROW_ON_ERROR));
     }
 
     private function __construct()

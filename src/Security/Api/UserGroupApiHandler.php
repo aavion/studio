@@ -6,6 +6,7 @@ namespace App\Security\Api;
 
 use App\Api\ApiMessageCode;
 use App\Api\ApiMessageKey;
+use App\Api\Admin\AdminFeatureApiGuard;
 use App\Api\Endpoint\ApiEndpointDefinition;
 use App\Api\Endpoint\ApiEndpointHandlerInterface;
 use App\Api\Http\ApiJsonRequestParser;
@@ -14,6 +15,7 @@ use App\Api\Http\ApiRequestContext;
 use App\Api\Http\ApiResponder;
 use App\Api\Security\ApiAccessGuard;
 use App\Core\Access\AccessLevel;
+use App\Core\AdminAcl\AdminFeatureAccessPolicy;
 use App\Core\Id\UuidFactory;
 use App\Core\Log\AuditLoggerInterface;
 use App\Core\Message\CommonMessageCode;
@@ -45,6 +47,8 @@ final readonly class UserGroupApiHandler implements ApiEndpointHandlerInterface
         private AuditLoggerInterface $auditLogger,
         private ApiAccessGuard $accessGuard,
         private ApiResponder $responder,
+        private AdminFeatureAccessPolicy $adminFeatureAccessPolicy,
+        private AdminFeatureApiGuard $featureGuard,
     ) {
     }
 
@@ -57,6 +61,10 @@ final readonly class UserGroupApiHandler implements ApiEndpointHandlerInterface
     {
         $denied = $this->accessGuard->denyUnlessAccessLevel($request, AccessLevel::ADMIN);
         if (null !== $denied) {
+            return $denied;
+        }
+
+        if ($denied = $this->featureGuard->denyUnlessVisible($request, 'admin.users.acl', 'listAdminAclGroups')) {
             return $denied;
         }
 
@@ -88,6 +96,10 @@ final readonly class UserGroupApiHandler implements ApiEndpointHandlerInterface
 
     private function createGroup(Request $request): Response
     {
+        if ($denied = $this->featureGuard->denyUnlessMutable($request, 'admin.users.acl', 'createAdminAclGroup')) {
+            return $denied;
+        }
+
         try {
             $payload = $this->jsonRequests->object($request);
         } catch (JsonException $error) {
@@ -130,6 +142,7 @@ final readonly class UserGroupApiHandler implements ApiEndpointHandlerInterface
             $group = new AclGroup($this->uuidFactory->generate(), $identifier, $name, (int) $minRole);
             $this->entityManager->persist($group);
             $this->entityManager->flush();
+            $this->adminFeatureAccessPolicy->resetCache();
             $this->audit($request, 'acl.group_created', ['group' => $group->identifier()]);
 
             return $this->responder->data($this->readModel->resource($group, includeDetail: true), Response::HTTP_CREATED);
@@ -142,6 +155,12 @@ final readonly class UserGroupApiHandler implements ApiEndpointHandlerInterface
 
     private function updateGroup(Request $request, AclGroup $group): Response
     {
+        if ($request->query->getBoolean('confirm')) {
+            if ($denied = $this->featureGuard->denyUnlessMutable($request, 'admin.users.acl', 'updateAdminAclGroup')) {
+                return $denied;
+            }
+        }
+
         try {
             $payload = $this->jsonRequests->object($request);
         } catch (JsonException $error) {
@@ -172,6 +191,7 @@ final readonly class UserGroupApiHandler implements ApiEndpointHandlerInterface
         $floorCleanup = $this->impact->removeBelowMinRoleReferences($group, $pending['min_role']);
         $group->changeMinRole($pending['min_role']);
         $this->entityManager->flush();
+        $this->adminFeatureAccessPolicy->resetCache();
         $this->audit($request, 'acl.group_updated', [
             'group' => $group->identifier(),
             'old_name' => $oldName,
@@ -190,6 +210,12 @@ final readonly class UserGroupApiHandler implements ApiEndpointHandlerInterface
 
     private function deleteGroup(Request $request, AclGroup $group): Response
     {
+        if ($request->query->getBoolean('confirm')) {
+            if ($denied = $this->featureGuard->denyUnlessMutable($request, 'admin.users.acl', 'deleteAdminAclGroup')) {
+                return $denied;
+            }
+        }
+
         try {
             $payload = $this->jsonRequests->object($request);
         } catch (JsonException $error) {
@@ -215,6 +241,7 @@ final readonly class UserGroupApiHandler implements ApiEndpointHandlerInterface
         $identifier = $group->identifier();
         $this->entityManager->remove($group);
         $this->entityManager->flush();
+        $this->adminFeatureAccessPolicy->resetCache();
         $this->audit($request, 'acl.group_deleted', [
             'group' => $identifier,
             'impact' => $cleanupImpact['summary'],
