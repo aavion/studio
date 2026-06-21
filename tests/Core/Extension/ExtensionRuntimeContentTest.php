@@ -5,10 +5,15 @@ declare(strict_types=1);
 namespace App\Tests\Core\Extension;
 
 use App\Content\ContentVisibility;
+use App\Content\Schema\ContentSchemaSource;
 use App\Core\Extension\ExtensionContentFacade;
 use App\Core\Extension\ExtensionRuntime;
 use App\Core\Extension\ExtensionRuntimeServices;
+use App\Entity\ContentFieldValue;
 use App\Entity\ContentItem;
+use App\Entity\ContentRevision;
+use App\Entity\ContentSchema;
+use App\Entity\ContentSchemaVersion;
 use App\Tests\Support\FilesystemTestHelper;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\EntityRepository;
@@ -73,6 +78,55 @@ final class ExtensionRuntimeContentTest extends TestCase
         self::assertArrayNotHasKey('active_revision', $query[0]);
     }
 
+    public function testItExposesActiveRevisionFieldSetsForSingleContentReads(): void
+    {
+        $article = $this->contentWithActiveRevision();
+        ExtensionRuntime::configure(new ExtensionRuntimeServices(
+            $this->projectDir,
+            content: new ExtensionContentFacade($this->entityManager([$article])),
+        ));
+        $this->writeExtensionFile(<<<'PHP'
+            <?php
+
+            return [
+                extension_content_get('article'),
+                extension_content_get('article', ['language' => 'de', 'variant' => 'teaser', 'fields' => ['title']]),
+                extension_content_query([], ['include_fields' => true, 'fields' => 'body,missing']),
+            ];
+            PHP);
+
+        [$full, $filtered, $query] = require $this->projectDir.'/extensions/content-facade/extension.php';
+
+        self::assertSame('76000000-0000-7000-8000-000000000001', $full['active_revision']['uid']);
+        self::assertSame('article', $full['active_revision']['schema_identifier']);
+        self::assertSame(['title' => 'Hello', 'body' => 'Hello body'], $full['fields']);
+        self::assertSame([
+            [
+                'language' => 'de',
+                'variant' => 'teaser',
+                'fields' => ['title' => 'Hallo', 'body' => 'Hallo kurz'],
+            ],
+            [
+                'language' => 'en',
+                'variant' => 'default',
+                'fields' => ['title' => 'Hello', 'body' => 'Hello body'],
+            ],
+        ], $full['active_revision']['field_sets']);
+        self::assertSame(['title' => 'Hallo'], $filtered['fields']);
+        self::assertSame([
+            [
+                'language' => 'de',
+                'variant' => 'teaser',
+                'fields' => ['body' => 'Hallo kurz'],
+            ],
+            [
+                'language' => 'en',
+                'variant' => 'default',
+                'fields' => ['body' => 'Hello body'],
+            ],
+        ], $query[0]['active_revision']['field_sets']);
+    }
+
     public function testItAppliesCriteriaLimitAndSafeDefaults(): void
     {
         $a = new ContentItem('75000000-0000-7000-8000-000000000011', 'alpha');
@@ -106,6 +160,75 @@ final class ExtensionRuntimeContentTest extends TestCase
     private function writeExtensionFile(string $contents): void
     {
         $this->writeTestFile($this->projectDir, 'extensions/content-facade/extension.php', $contents);
+    }
+
+    private function contentWithActiveRevision(): ContentItem
+    {
+        $content = new ContentItem('75000000-0000-7000-8000-000000000021', 'article');
+        $content->publish();
+        $content->setAvailableLanguages(['en', 'de']);
+        $content->setAvailableVariants(['default', 'teaser']);
+        $schemaVersion = $this->schemaVersion();
+        $revision = new ContentRevision('76000000-0000-7000-8000-000000000001', $content, 3, $schemaVersion);
+        $revision->addFieldValue(new ContentFieldValue(
+            '77000000-0000-7000-8000-000000000001',
+            $revision,
+            'en',
+            'default',
+            'title',
+            'Hello',
+        ));
+        $revision->addFieldValue(new ContentFieldValue(
+            '77000000-0000-7000-8000-000000000002',
+            $revision,
+            'en',
+            'default',
+            'body',
+            'Hello body',
+        ));
+        $revision->addFieldValue(new ContentFieldValue(
+            '77000000-0000-7000-8000-000000000003',
+            $revision,
+            'de',
+            'teaser',
+            'title',
+            'Hallo',
+        ));
+        $revision->addFieldValue(new ContentFieldValue(
+            '77000000-0000-7000-8000-000000000004',
+            $revision,
+            'de',
+            'teaser',
+            'body',
+            'Hallo kurz',
+        ));
+        $content->activateRevision($revision);
+
+        return $content;
+    }
+
+    private function schemaVersion(): ContentSchemaVersion
+    {
+        $schema = new ContentSchema(
+            '78000000-0000-7000-8000-000000000001',
+            'article',
+            ContentSchemaSource::Custom,
+            ['en' => 'Article'],
+        );
+
+        return new ContentSchemaVersion(
+            '79000000-0000-7000-8000-000000000001',
+            $schema,
+            1,
+            ['en' => 'Article schema'],
+            [
+                'fields' => [
+                    ['identifier' => 'title', 'type' => 'text', 'required' => true],
+                    ['identifier' => 'subtitle', 'type' => 'text', 'required' => true],
+                    ['identifier' => 'body', 'type' => 'rich_text'],
+                ],
+            ],
+        );
     }
 
     /**

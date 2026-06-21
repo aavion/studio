@@ -8,6 +8,7 @@ use App\Content\ContentStatus;
 use App\Content\ContentVisibility;
 use App\Content\Read\ContentReadAccessPolicy;
 use App\Content\Read\PublishedContentResolver;
+use App\Content\Read\PublishedContentView;
 use App\Core\Access\AccessActor;
 use App\Entity\ContentItem;
 use App\Entity\UserAccount;
@@ -19,12 +20,16 @@ final readonly class ExtensionContentFacade
 {
     private const MAX_LIMIT = 50;
 
+    private ExtensionContentFieldReadModel $fieldReadModel;
+
     public function __construct(
         private EntityManagerInterface $entityManager,
         private ?PublishedContentResolver $contentResolver = null,
         private ?ContentReadAccessPolicy $contentAccess = null,
         private ?Security $security = null,
+        ?ExtensionContentFieldReadModel $fieldReadModel = null,
     ) {
+        $this->fieldReadModel = $fieldReadModel ?? new ExtensionContentFieldReadModel();
     }
 
     /**
@@ -46,8 +51,9 @@ final readonly class ExtensionContentFacade
             );
 
             $results = [];
+            $referenceOptions = $this->fieldReadModel->options($options, false);
             foreach ($items as $item) {
-                $reference = $this->reference($item);
+                $reference = $this->reference($item, $referenceOptions);
                 if (null !== $reference) {
                     $results[] = $reference;
                 }
@@ -75,18 +81,19 @@ final readonly class ExtensionContentFacade
         }
 
         try {
+            $referenceOptions = $this->fieldReadModel->options($options, true);
             if ($this->isUuid($identifier)) {
-                return $this->reference($this->entityManager->find(ContentItem::class, strtolower($identifier)));
+                return $this->reference($this->entityManager->find(ContentItem::class, strtolower($identifier)), $referenceOptions);
             }
 
             if (str_starts_with($identifier, '/')) {
-                return $this->routeReference($identifier, $options);
+                return $this->routeReference($identifier, $referenceOptions);
             }
 
             return $this->reference($this->entityManager->getRepository(ContentItem::class)->findOneBy([
                 'slug' => $identifier,
                 'status' => ContentStatus::Published,
-            ]));
+            ]), $referenceOptions);
         } catch (Throwable) {
             return null;
         }
@@ -109,7 +116,7 @@ final readonly class ExtensionContentFacade
             is_string($options['variant'] ?? null) ? (string) $options['variant'] : 'default',
         );
 
-        return null !== $view ? $this->reference($view->content()) : null;
+        return null !== $view ? $this->reference($view->content(), $options, $view) : null;
     }
 
     /**
@@ -172,13 +179,13 @@ final readonly class ExtensionContentFacade
     /**
      * @return array<string, mixed>|null
      */
-    private function reference(mixed $content): ?array
+    private function reference(mixed $content, array $options = [], ?PublishedContentView $view = null): ?array
     {
         if (!$content instanceof ContentItem || !$this->canView($content)) {
             return null;
         }
 
-        return [
+        $reference = [
             'type' => 'content',
             'uid' => $content->uid(),
             'slug' => $content->slug(),
@@ -192,6 +199,34 @@ final readonly class ExtensionContentFacade
             'available_languages' => $content->availableLanguages(),
             'available_variants' => $content->availableVariants(),
         ];
+
+        if (true === ($options['include_fields'] ?? false)) {
+            $activeRevision = $this->fieldReadModel->revision($view?->revision() ?? $content->activeRevision(), $options);
+            if (null !== $activeRevision) {
+                $reference['active_revision'] = $activeRevision;
+                $selectedFields = $this->fieldReadModel->selectedFields($activeRevision['field_sets'], $options);
+                if (null !== $selectedFields) {
+                    $reference['content_context'] = [
+                        'language' => $selectedFields['language'],
+                        'variant' => $selectedFields['variant'],
+                    ];
+                    $reference['fields'] = $selectedFields['fields'];
+                }
+            }
+
+            if ($view instanceof PublishedContentView) {
+                $fields = $this->fieldReadModel->fields($view->fields(), $options);
+                $reference['content_context'] = [
+                    'language' => $view->context()->language(),
+                    'requested_language' => $view->context()->requestedLanguage(),
+                    'variant' => $view->context()->variant(),
+                    'requested_variant' => $view->context()->requestedVariant(),
+                ];
+                $reference['fields'] = $fields;
+            }
+        }
+
+        return $reference;
     }
 
     private function canView(ContentItem $content): bool
