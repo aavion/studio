@@ -47,6 +47,7 @@ final class SecurityControllerTest extends WebTestCase
         self::assertSelectorExists('input[name="captcha[provider]"][value="none"]');
         self::assertSelectorExists('input[name="captcha[fallback_rendered]"][value="1"]');
         self::assertSelectorExists('input[name="captcha[form_id]"][value="user-login-form"]');
+        self::assertSelectorExists('input[name="_captcha_instance"]');
 
         $client->request('GET', '/user/login?bypass=1&captcha=failed');
 

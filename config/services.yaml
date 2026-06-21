@@ -485,6 +485,10 @@ services:
             $cacheDir: '%kernel.project_dir%/var/cache'
             $environment: '%kernel.environment%'
 
+    App\Security\Captcha\CaptchaInstanceStore:
+        arguments:
+            $cache: '@cache.app'
+
     App\Security\Abuse\AbuseSubjectResolver:
         arguments:
             $secret: '%kernel.secret%'

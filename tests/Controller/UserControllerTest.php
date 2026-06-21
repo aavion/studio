@@ -351,13 +351,14 @@ final class UserControllerTest extends WebTestCase
             self::assertSelectorExists('input[name="captcha[provider]"][value="none"]');
             self::assertSelectorExists('input[name="captcha[fallback_rendered]"][value="1"]');
             self::assertSelectorExists('input[name="captcha[form_id]"][value="user-registration-form"]');
+            self::assertSelectorExists('input[name="_captcha_instance"]');
             self::assertSelectorNotExists('input[name="captcha[status]"][value="skipped"]');
         } finally {
             $config->set('user.registration.mode', 'disabled');
         }
     }
 
-    public function testRegistrationDirectPostWithoutCaptchaStillUsesNoProviderFallback(): void
+    public function testRegistrationDirectPostWithoutRenderedCaptchaInstanceFails(): void
     {
         $client = self::createClient();
         $config = self::getContainer()->get(Config::class);
@@ -377,15 +378,14 @@ final class UserControllerTest extends WebTestCase
             ]);
 
             self::assertResponseIsSuccessful();
-            self::assertSelectorTextContains('.system-frontend-auth-notice', 'If the address can be registered, an email with account setup instructions was created.');
+            self::assertSelectorTextContains('.system-form-errors', 'The captcha could not be verified. Please try again.');
 
             $accountToken = $entityManager->getRepository(AccountToken::class)->findOneBy([
                 'email' => 'direct-registration@example.test',
                 'type' => AccountTokenType::Registration,
             ]);
 
-            self::assertInstanceOf(AccountToken::class, $accountToken);
-            $entityManager->remove($accountToken);
+            self::assertNull($accountToken);
         } finally {
             $config->set('site.url', (string) $originalSiteUrl);
             $config->set('user.registration.mode', 'disabled');

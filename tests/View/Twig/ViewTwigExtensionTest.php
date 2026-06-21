@@ -47,6 +47,7 @@ final class ViewTwigExtensionTest extends KernelTestCase
         self::assertStringContainsString('name="captcha[provider]" value="none"', $html);
         self::assertStringContainsString('name="captcha[fallback_rendered]" value="1"', $html);
         self::assertStringContainsString('name="captcha[form_id]" value="comment-form"', $html);
+        self::assertStringContainsString('name="_captcha_instance"', $html);
         self::assertStringNotContainsString('captcha[status]', $html);
         self::assertStringContainsString('|', $html);
         self::assertStringContainsString('name="body"', $html);
@@ -67,6 +68,7 @@ final class ViewTwigExtensionTest extends KernelTestCase
         self::assertStringContainsString('name="captcha[provider]" value="none"', $html);
         self::assertStringContainsString('name="captcha[fallback_rendered]" value="1"', $html);
         self::assertStringContainsString('name="captcha[form_id]" value="registration-form"', $html);
+        self::assertStringContainsString('name="_captcha_instance"', $html);
         self::assertStringNotContainsString('captcha[status]', $html);
     }
 

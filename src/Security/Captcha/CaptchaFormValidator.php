@@ -8,53 +8,29 @@ use Symfony\Component\HttpFoundation\Request;
 
 final readonly class CaptchaFormValidator
 {
-    public function __construct(private CaptchaProviderBridge $providerBridge)
+    public function result(Request $request): CaptchaResult
     {
-    }
-
-    public function validateRequired(Request $request, string $workflow, string $formId, string $fieldName = 'captcha'): CaptchaValidationResult
-    {
-        $submittedFields = $request->request->all();
-        $payloadPresent = array_key_exists($fieldName, $submittedFields);
-        $payload = $payloadPresent ? $submittedFields[$fieldName] : null;
-        $activeProvider = $this->providerBridge->activeProvider();
-
-        if (null !== $activeProvider) {
-            if (!$payloadPresent) {
-                return CaptchaValidationResult::recoverableFailure($activeProvider, [
-                    'reason' => 'missing_payload',
-                    'workflow' => $workflow,
-                    'form_id' => $formId,
-                    'field_name' => $fieldName,
-                ]);
-            }
-
-            if ($this->looksLikeNativeFallbackPayload($payload)) {
-                return CaptchaValidationResult::recoverableFailure($activeProvider, [
-                    'reason' => 'fallback_payload_for_active_provider',
-                    'workflow' => $workflow,
-                    'form_id' => $formId,
-                    'field_name' => $fieldName,
-                ]);
-            }
+        $result = $request->attributes->get(CaptchaRequestGuardSubscriber::RESULT_ATTRIBUTE);
+        if ($result instanceof CaptchaResult) {
+            return $result;
         }
 
-        return $this->providerBridge->validate(new CaptchaValidationRequest($workflow, $formId, $fieldName, $payload, [
-            'path' => $request->getPathInfo(),
-            'route' => $request->attributes->get('_route'),
-        ]));
-    }
-
-    private function looksLikeNativeFallbackPayload(mixed $payload): bool
-    {
-        if (!is_array($payload)) {
-            return false;
+        if (is_string($result)) {
+            return CaptchaResult::tryFrom($result) ?? CaptchaResult::Failed;
         }
 
-        $provider = $payload['provider'] ?? null;
+        $bodyResult = $request->request->all()[CaptchaRequestGuardSubscriber::RESULT_FIELD] ?? null;
 
-        return is_string($provider)
-            && 'none' === strtolower($provider)
-            && array_key_exists('fallback_rendered', $payload);
+        return is_string($bodyResult) ? CaptchaResult::tryFrom($bodyResult) ?? CaptchaResult::Failed : CaptchaResult::Failed;
+    }
+
+    public function acceptsRequired(Request $request): bool
+    {
+        return in_array($this->result($request), [CaptchaResult::Skipped, CaptchaResult::Verified], true);
+    }
+
+    public function acceptsVerified(Request $request): bool
+    {
+        return CaptchaResult::Verified === $this->result($request);
     }
 }

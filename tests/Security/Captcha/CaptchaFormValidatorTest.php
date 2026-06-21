@@ -4,125 +4,55 @@ declare(strict_types=1);
 
 namespace App\Tests\Security\Captcha;
 
-use App\Core\Extension\ExtensionProviderContribution;
-use App\Core\Extension\ExtensionRuntimeContributionRegistry;
-use App\Core\Extension\ExtensionScope;
-use App\Core\Extension\ExtensionStatus;
-use App\Entity\Extension;
 use App\Security\Captcha\CaptchaFormValidator;
-use App\Security\Captcha\CaptchaProviderBridge;
-use App\Security\Captcha\CaptchaValidationRequest;
-use App\Security\Captcha\CaptchaValidationResult;
-use App\Security\Captcha\CaptchaValidationStatus;
+use App\Security\Captcha\CaptchaRequestGuardSubscriber;
+use App\Security\Captcha\CaptchaResult;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 
 final class CaptchaFormValidatorTest extends TestCase
 {
-    public function testItAllowsRequiredCaptchaWhenNoProviderIsActive(): void
+    public function testItFailsWhenNoServerSideCaptchaResultExists(): void
     {
-        $validator = new CaptchaFormValidator(new CaptchaProviderBridge(new ExtensionRuntimeContributionRegistry()));
+        $validator = new CaptchaFormValidator();
 
-        $result = $validator->validateRequired(Request::create('/user/register', 'POST'), 'user.registration', 'user-registration-form');
-
-        self::assertSame(CaptchaValidationStatus::Skipped, $result->status());
-        self::assertTrue($result->allowsWorkflow());
+        self::assertSame(CaptchaResult::Failed, $validator->result(Request::create('/user/register', 'POST')));
     }
 
-    public function testItRejectsMissingPayloadWhenProviderIsActive(): void
+    public function testItReadsServerSideRequestAttributeBeforeBodyField(): void
     {
-        $providerCalled = false;
-        $validator = $this->validator(static function () use (&$providerCalled): CaptchaValidationResult {
-            $providerCalled = true;
-
-            return CaptchaValidationResult::verifiedForProvider('demo-captcha');
-        });
-
-        $result = $validator->validateRequired(Request::create('/user/register', 'POST'), 'user.registration', 'user-registration-form');
-
-        self::assertSame(CaptchaValidationStatus::RecoverableFailure, $result->status());
-        self::assertSame('demo-module', $result->provider());
-        self::assertSame('missing_payload', $result->context()['reason']);
-        self::assertFalse($result->allowsWorkflow());
-        self::assertFalse($providerCalled);
-    }
-
-    public function testItRejectsNativeFallbackPayloadWhenProviderIsActive(): void
-    {
-        $providerCalled = false;
-        $validator = $this->validator(static function () use (&$providerCalled): CaptchaValidationResult {
-            $providerCalled = true;
-
-            return CaptchaValidationResult::verifiedForProvider('demo-captcha');
-        });
+        $validator = new CaptchaFormValidator();
         $request = Request::create('/user/register', 'POST', [
-            'captcha' => [
-                'provider' => 'none',
-                'fallback_rendered' => '1',
-                'form_id' => 'user-registration-form',
-            ],
+            CaptchaRequestGuardSubscriber::RESULT_FIELD => 'verified',
         ]);
+        $request->attributes->set(CaptchaRequestGuardSubscriber::RESULT_ATTRIBUTE, 'failed');
 
-        $result = $validator->validateRequired($request, 'user.registration', 'user-registration-form');
-
-        self::assertSame(CaptchaValidationStatus::RecoverableFailure, $result->status());
-        self::assertSame('fallback_payload_for_active_provider', $result->context()['reason']);
-        self::assertFalse($result->allowsWorkflow());
-        self::assertFalse($providerCalled);
+        self::assertSame(CaptchaResult::Failed, $validator->result($request));
+        self::assertFalse($validator->acceptsRequired($request));
+        self::assertFalse($validator->acceptsVerified($request));
     }
 
-    public function testItDelegatesProviderPayloadWhenProviderIsActive(): void
+    public function testRequiredPolicyAcceptsSkippedAndVerifiedResults(): void
     {
-        $validator = $this->validator(static function (CaptchaValidationRequest $request): CaptchaValidationResult {
-            return CaptchaValidationResult::verifiedForProvider('demo-captcha', [
-                'payload' => $request->payload(),
-            ]);
-        });
-        $request = Request::create('/user/register', 'POST', [
-            'captcha' => [
-                'token' => 'ok',
-            ],
-        ]);
+        $validator = new CaptchaFormValidator();
 
-        $result = $validator->validateRequired($request, 'user.registration', 'user-registration-form');
+        foreach ([CaptchaResult::Skipped, CaptchaResult::Verified] as $result) {
+            $request = Request::create('/user/register', 'POST');
+            $request->attributes->set(CaptchaRequestGuardSubscriber::RESULT_ATTRIBUTE, $result);
 
-        self::assertTrue($result->allowsWorkflow());
-        self::assertSame('demo-module', $result->provider());
-        self::assertSame(['token' => 'ok'], $result->context()['payload']);
+            self::assertTrue($validator->acceptsRequired($request));
+        }
     }
 
-    public function testItDoesNotTreatProviderSkippedResultAsAccepted(): void
+    public function testVerifiedPolicyAcceptsOnlyVerifiedResults(): void
     {
-        $validator = $this->validator(static fn (): CaptchaValidationResult => CaptchaValidationResult::skipped('demo-captcha'));
-        $request = Request::create('/user/register', 'POST', [
-            'captcha' => [
-                'token' => 'ignored',
-            ],
-        ]);
+        $validator = new CaptchaFormValidator();
+        $skipped = Request::create('/user/register', 'POST');
+        $skipped->attributes->set(CaptchaRequestGuardSubscriber::RESULT_ATTRIBUTE, CaptchaResult::Skipped);
+        $verified = Request::create('/user/register', 'POST');
+        $verified->attributes->set(CaptchaRequestGuardSubscriber::RESULT_ATTRIBUTE, CaptchaResult::Verified);
 
-        $result = $validator->validateRequired($request, 'user.registration', 'user-registration-form');
-
-        self::assertSame(CaptchaValidationStatus::Skipped, $result->status());
-        self::assertSame('demo-module', $result->provider());
-        self::assertFalse($result->allowsWorkflow());
-    }
-
-    private function validator(callable $provider): CaptchaFormValidator
-    {
-        $registry = new ExtensionRuntimeContributionRegistry();
-        $registry->add($this->extension(), new ExtensionProviderContribution(ExtensionScope::CaptchaProvider, $provider));
-
-        return new CaptchaFormValidator(new CaptchaProviderBridge($registry));
-    }
-
-    private function extension(): Extension
-    {
-        return new Extension(
-            '10000000-0000-7000-8000-000000000705',
-            [ExtensionScope::CaptchaProvider],
-            'demo-module',
-            'extensions/demo-module',
-            ExtensionStatus::Active,
-        );
+        self::assertFalse($validator->acceptsVerified($skipped));
+        self::assertTrue($validator->acceptsVerified($verified));
     }
 }

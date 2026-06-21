@@ -73,7 +73,7 @@ final class UserRegistrationController extends AbstractController
                 $errors[] = 'ui.user.register.errors.invalid_csrf';
             }
 
-            if ([] === $errors && !$this->captchaForms->validateRequired($request, 'user.registration', 'user-registration-form')->allowsWorkflow()) {
+            if ([] === $errors && !$this->captchaForms->acceptsRequired($request)) {
                 $errors[] = 'ui.user.register.errors.captcha';
             }
 

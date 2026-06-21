@@ -268,17 +268,20 @@ Define:
 - `CaptchaRenderContext`: workflow key, form instance ID, field name, route, locale, and safe public metadata.
 - `CaptchaValidationRequest`: workflow key, form instance ID, submitted payload, route/request metadata, and safe abuse/rate context.
 - `CaptchaValidationResult`: explicit result kind: `skipped`, `verified`, `recoverableFailure`, `suspiciousFailure`, `providerUnavailable`, and `providerFault`.
+- `CaptchaInstanceStore` and `CaptchaRequestGuardSubscriber`: core-owned render-instance cache and mutating-request guard that turn rendered captcha fields into a server-owned `failed`, `skipped`, or `verified` submission result.
 - `CaptchaFailureCode`: stable failure codes suitable for translation, logging, and abuse signals.
 
 The provider callable should own challenge generation, challenge refresh, one-shot validation, external verification, and provider-specific payload interpretation.
 
 ### Form integration
 
-- Keep a root-scoped captcha form field Twig component that any workflow template can render explicitly. Captcha validation is opt-in per form: if the component/field is rendered and submitted, the workflow validates captcha before ordinary form side effects; if the field is absent, the workflow does not run captcha.
+- Keep a root-scoped captcha form field Twig component that any workflow template can render explicitly. Captcha validation is opt-in per form handler: the component registers a short-lived captcha instance, the request guard computes the server-owned captcha result for every mutating HTTP request, and each form handler decides whether `failed`, `skipped`, or `verified` satisfies that form's own field definition.
 - Rendering uses `@provider/captcha/field.html.twig`.
 - If no real captcha provider is active, native fallback renders no visible challenge and submits only non-authoritative hidden metadata such as provider identity and form ID. Server-side validation may skip only because no active provider contribution exists, never because the client submitted a skip/fallback marker.
-- Every rendered captcha instance receives a stable unique form/captcha instance ID so multiple forms on one page are addressable.
-- Submitted captcha payload is passed to the active provider before ordinary form validation continues. When a provider is active, fallback or skipped markers in the submitted payload are treated as provider input only and must not short-circuit validation.
+- Every rendered captcha instance receives a stable unique form/captcha instance ID so multiple forms on one page are addressable. Instances are bound to the current visitor identity, expire after 3600 seconds, and are consumed on POST so replayed instance IDs fail.
+- Submitted captcha payload is passed to the active provider only after the guard validates the cached instance and visitor binding. When a provider is active, fallback or skipped markers in the submitted payload are treated as provider input only and must not short-circuit validation.
+- Client-submitted captcha result fields are stripped before the guard writes the server-owned result to request attributes and a reserved request-body key. Missing IDs, missing/expired artifacts, malformed artifacts, and visitor mismatches produce `failed`.
+- The field supports `require` and `require-verified` policy names for form definitions. The policy is not authoritative in the client payload or cache artifact; form handlers decide whether to accept `skipped` (`require`) or only `verified` (`require-verified`) from the server-owned result.
 - Initial core placement is intentionally narrow: render captcha on the public email-only registration request form and optional auto-ban recovery login form, not on ordinary login or token-protected invitation/account-setup forms.
 - Skipped/no-provider success lets the workflow continue but is not verified human proof.
 - Verified provider success may reset only explicitly resettable captcha-failure buckets where policy allows.
@@ -337,7 +340,7 @@ The provider callable should own challenge generation, challenge refresh, one-sh
 
 10. Wire the opt-in captcha field render and submit pipeline to the captcha bridge.
 
-   **Review checkpoint:** Test multiple forms per page, field-present versus field-absent submissions, missing provider, inactive provider, active provider render failure, active provider validation failure, malformed payloads, replay-like payloads, spoofed fallback/skip fields, and public form behavior without creating anonymous sessions. Confirm captcha validation runs before ordinary form submission side effects only for forms that rendered the field and cannot be bypassed by forging provider fields.
+   **Review checkpoint:** Test multiple forms per page, field-present versus field-absent form handlers, missing provider, inactive provider, active provider render failure, active provider validation failure, malformed payloads, replayed instance IDs, spoofed result/fallback/skip fields, missing instance IDs, cache misses, and visitor mismatches. Confirm captcha validation runs before ordinary form submission side effects for captcha-aware form handlers and cannot be bypassed by forging provider fields or omitting the rendered field.
 
 11. Add verified-success and failure integration with rate-limit reset and abuse signal boundaries.
 
@@ -386,7 +389,7 @@ At every checkpoint and again before opening review, verify these edges explicit
 - Test global captcha field renders non-visible fallback without blocking workflows.
 - Test unique form/captcha instance IDs for multiple fields on one page.
 - Test ordinary login and token-protected account setup do not render captcha, while registration and recovery login do.
-- Test field-present submissions validate captcha and field-absent submissions do not.
+- Test rendered instance submissions validate captcha, missing/cache-miss/visitor-mismatch submissions fail, and consumed instance IDs cannot be replayed.
 - Test submitted payload delegation to active provider.
 - Test client-supplied fallback or skipped markers cannot bypass an active provider.
 - Test verified, skipped, recoverable failure, suspicious failure, provider unavailable, and provider fault results.

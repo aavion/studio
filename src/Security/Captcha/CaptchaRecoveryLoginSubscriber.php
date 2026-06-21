@@ -37,8 +37,7 @@ final readonly class CaptchaRecoveryLoginSubscriber implements EventSubscriberIn
             return;
         }
 
-        $result = $this->captchaForms->validateRequired($request, 'user.login.recovery', 'user-login-form');
-        if ($result->allowsWorkflow()) {
+        if ($this->captchaForms->acceptsRequired($request)) {
             return;
         }
 
