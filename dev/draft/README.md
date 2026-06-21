@@ -81,6 +81,7 @@ The feature drafts should be created in dependency order. Start with architectur
 
 ### Future drafts
 
+- [Branding extensions](future-branding-extensions.md)
 - [Community hub](future-CommunityHub.md)
 - [First-party modules and admin add-ons](future-FirstPartyModulesAdminAddons.md)
 - [Inline frontpage editor](future-InlineFrontpageEditor.md)

@@ -46,6 +46,7 @@
   - Open: extension signature/checksum strategy; direct vs staged updates; rollback scope.
 
 - [ ] **Future**
+  - [ ] Branding extensions
   - [ ] Neural-like index and semantic resolver
   - [ ] First-party modules and admin add-ons
     - [ ] Referrer/promo system with reusable tokens
@@ -76,7 +77,7 @@
 - [ ] Editor/Content/Config follow-up: warn non-blockingly when a proposed route or slug would match a configured suspicious probe path, so legitimate content remains possible but accidental high-signal probe namespace collisions are visible before publication.
 - [ ] Captcha/rate-limit follow-up: add a short-lived opaque 429 recovery context when real captcha challenges are wired, so verified provider-backed solves can reset only the whitelisted/resettable descriptor and subject scope that produced the rendered 429 without exposing bucket IDs, subject keys, IP data, or limiter internals.
 - [ ] Aggregation/rate-limit follow-up: evaluate short-lived emergency country/continent traffic-shedding buckets for DDoS-like spikes. Treat this as aggregate rate limiting, not auto-ban or geo-blocking; ignore `n/a` GeoIP, keep thresholds extreme, preserve trusted-user recovery and Owner/API access, and use brief windows such as 5-15 minutes.
-- [ ] Audit follow-up: decide whether optional branding extensions need capabilities beyond `system-template`; extension CSS class namespace validation is now enforced for extension-owned selectors.
+- [ ] Branding extension follow-up: implement the dedicated `branding` scope from `dev/draft/future-branding-extensions.md` as a future isolated slice; current `system-template` remains an additive capability for identity-bearing extensions, not a branding package model.
 - [ ] Extension database follow-up: design an explicit destructive cleanup or migration contract for extension-owned database tables, including post-migration table drops, destructive column/index changes, data-copy review, and operator-facing diagnostics.
 - [ ] Extension mail follow-up: finalize configurable extension mail workflow contributions with owner-prefixed workflow IDs, localized default templates, parameter metadata for the template editor legend, active-extension filtering, purge cleanup, and a real delivery bridge once the mailer contract exists. The current `extension_mail()` facade is only a development-stub boundary.
 - [ ] Extension ZIP/archive upload follow-up: design dedicated extension-owned archive inspection/import support. `ZipArchive` remains blocked for extension PHP, and runtime upload import currently rejects ZIP/archive payloads by extension and MIME until archive validation, size accounting, and nested payload policy are defined.
@@ -90,6 +91,8 @@
 **Usage:** Keep concise session notes in the active worklog and include the current branch in headings, using the form `### YYYY-MM-DD branch-name`. Place the newest branch/date heading directly below `## Branch Logs`; within a matching branch/date heading, add new notes at the top so the newest context stays first. Record meaningful committed or completed changes, decisions, blockers, and follow-ups; keep detailed verification in PR notes unless a result materially affects the worklog context. When switching to a different branch or after a PR is merged, compact the completed branch entry into [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), then create the new branch entry at the top.
 
 ### 2026-06-21 feat-security-captcha-contract
+- Enforced extension manifest identity scopes so real extensions must declare `module`, a theme scope, or a provider scope before adding capability scopes such as `system-template`, `api`, `database`, `content-schema`, `scheduler-tasks`, or `operations`; documented `module` as the neutral identity fallback rather than a capability gate.
+- Added the future branding extension draft and roadmap entry for a later exclusive single-active `branding` package model instead of mixing branding semantics into the current scope slice.
 - Added visible `scheduler-tasks` and `operations` extension scopes for high-risk scheduled callable/action-queue execution and detached operation workflows, and enforced those scopes for scheduler task/provider and operation definition/provider contributions.
 - Extended `extension_content_get()` and optional `extension_content_query(..., ['include_fields' => true])` read models with active revision metadata and bounded schema-field sets for stored language/variant contexts, while keeping the helpers read-only and actor-visible.
 - Added contribution-based extension operations with `ExtensionOperationDefinition`, extension-owned ActionQueue providers, the shared `extension.operation` live-operation provider, scheduler reuse for registered extension action queues, and live Admin detail buttons for active extension operation targets.

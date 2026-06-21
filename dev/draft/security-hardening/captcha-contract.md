@@ -30,6 +30,7 @@ Codex may create local commits for this branch when each commit has a clear them
 - Remove the active captcha provider setting (`security.captcha.provider`) from the contract plan because it duplicates extension activation state. Later Admin extension views may add provider-scope filters and activation shortcuts instead.
 - Provider-specific options, variants, challenge behavior, external credentials, and UI choices belong to the provider extension's own settings and code.
 - Public extension events must stay curated. Extensions should use the contribution-facing event-listener API, but core must expose only documented public hook events through the hook registry.
+- Real extension manifests must include at least one identity scope: `module`, a theme scope, or a provider scope. Capability scopes such as `system-template`, `api`, `database`, `content-schema`, `scheduler-tasks`, and `operations` are additive only; `module` is the neutral identity fallback, not a capability gate.
 
 ## Dependencies
 
@@ -63,6 +64,7 @@ This branch deliberately increases extension flexibility. Each slice must theref
 - **Partial registration:** dynamic factories and boot failures can leave half-registered routes, handlers, templates, listeners, or provider callables unless registry mutation remains staged.
 - **Ownership drift:** every contributed object or callable must stay attributable to the active extension that registered it for diagnostics, faulting, and dependency deactivation.
 - **Scope drift:** provider, API, live endpoint, database, content-schema, scheduler, cookie, event, and view contributions must remain gated by their owning scopes or documented public surfaces.
+- **Capability-only manifests:** an extension must not become valid only because it declares sensitive capability scopes. Manifest validation must require `module`, a theme scope, or a provider scope before activation, install apply, template validation, or contribution loading can treat it as a real extension.
 - **Template namespace collision:** provider Twig lookup may use the shared `@provider` namespace, but validated provider templates must stay below `templates/provider/{provider-scope}/**`. A provider extension with a different scope must not be able to publish or shadow `@provider/captcha/**`, and inactive providers must not be registered as Twig paths.
 - **Request-data bypass:** extensions need request, query, and form data for their own forms and endpoints, but that data should arrive through the matching contribution context or handler request object. Ambient superglobals let extension code inspect unrelated core forms, cookies, sessions, CSRF-adjacent values, and request metadata outside the reviewed contract.
 - **Recovery bypass:** skipped captcha, missing providers, disabled providers, or provider faults must not become verified human proof, reset rate limits, clear bans, or unlock `429` recovery.

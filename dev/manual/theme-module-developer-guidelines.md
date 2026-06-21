@@ -27,7 +27,7 @@ Use this guide as a working reference when building the native system extensions
 
 ## Extension scopes
 
-Extensions live under `extensions/<extension-slug>/` and use `EXTENSION_*` manifest keys. `EXTENSION_SCOPE` is a DotEnv-style list such as `[frontend-theme, module]`, or a single value such as `module`. Capability scopes such as `api`, `database`, and `content-schema` gate matching extension contributions.
+Extensions live under `extensions/<extension-slug>/` and use `EXTENSION_*` manifest keys. `EXTENSION_SCOPE` is a DotEnv-style list such as `[frontend-theme, system-template]`, or a single value such as `module`. Every real extension needs at least one identity scope: `module`, a theme scope such as `frontend-theme` or `backend-theme`, or a provider scope such as `captcha-provider`. Capability scopes such as `system-template`, `api`, `database`, `content-schema`, `scheduler-tasks`, and `operations` may be added to an identity scope to unlock matching boundaries, but they do not make a manifest valid on their own.
 
 Expected extension shape:
 
@@ -61,10 +61,12 @@ Additional `EXTENSION_*` manifest keys become typed immutable metadata and can b
 
 Current constraints:
 
-- Allowed scopes start as `frontend-theme`, `backend-theme`, `system-template`, `module`, `captcha-provider`, `editor-provider`, `api`, `database`, and `content-schema`.
+- Allowed identity scopes start as `frontend-theme`, `backend-theme`, `module`, `captcha-provider`, and `editor-provider`.
+- Allowed capability scopes start as `system-template`, `api`, `database`, `content-schema`, `scheduler-tasks`, and `operations`.
 - An extension is always activated or deactivated as one unit. Scopes describe capabilities, not separately switchable sub-extensions.
 - Only one `frontend-theme`, one `backend-theme`, one `system-template`, and one provider extension of each provider type may be active at the same time.
 - Multiple `module` extensions may be active at the same time.
+- `module` is the neutral identity fallback for extensions that are neither themes nor providers; it is not a capability gate for unrelated features.
 - Activating a new single-active scope deactivates the previously active extension for that scope. If that extension also had module behavior, the module behavior is deactivated with it.
 - Disabled extensions must not contribute services, routes, templates, assets, database tables, permissions, providers, subscribers, or handlers.
 - Extensions may contribute routes, services, templates, assets, field types, editor actions, API resources, permissions, database tables, event subscribers, message handlers, or replaceable providers only through documented extension points.

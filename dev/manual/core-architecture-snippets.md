@@ -101,7 +101,7 @@ foreach ($result->value() as $candidate) {
 }
 ```
 
-Current extension manifests use `EXTENSION_*` keys. `EXTENSION_SCOPE` accepts a DotEnv-style list such as `[frontend-theme, module]` or a single value such as `module`.
+Current extension manifests use `EXTENSION_*` keys. `EXTENSION_SCOPE` accepts a DotEnv-style list such as `[frontend-theme, system-template]` or a single value such as `module`. Every real extension must declare at least one identity scope: `module`, a theme scope such as `frontend-theme` or `backend-theme`, or a provider scope such as `captcha-provider`. Capability scopes such as `system-template`, `api`, `database`, `content-schema`, `scheduler-tasks`, and `operations` may be added as needed but do not make a manifest valid on their own.
 
 ## Fixture extensions
 

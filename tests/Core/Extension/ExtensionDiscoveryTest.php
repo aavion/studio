@@ -116,6 +116,25 @@ final class ExtensionDiscoveryTest extends TestCase
         self::assertSame('frontend-theme,unsupported-scope', $result->firstIssue()?->context()['scope']);
     }
 
+    public function testItReportsCapabilityOnlyExtensionScopes(): void
+    {
+        $this->writeManifest('.', 'APP_VERSION=0.1.0');
+        $this->writeManifest('extensions/capability-only', <<<'MANIFEST'
+            EXTENSION_AUTHOR=Aavion
+            EXTENSION_SLUG=capability-only
+            EXTENSION_NAME=Capability Only
+            EXTENSION_VERSION=1.0.0
+            EXTENSION_SCOPE=[system-template, api, database]
+            EXTENSION_DEPENDENCIES=[]
+            MANIFEST);
+
+        $result = (new ExtensionDiscovery())->discover($this->projectDir, 'test');
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('extension.scope_invalid', $result->firstIssue()?->code());
+        self::assertSame('[system-template, api, database]', $result->firstIssue()?->context()['scope']);
+    }
+
     public function testImportManifestsAreParsedWithoutNamespaceRestrictions(): void
     {
         $this->writeManifest('.', 'APP_VERSION=0.1.0');

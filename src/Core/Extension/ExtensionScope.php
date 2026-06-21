@@ -41,6 +41,10 @@ enum ExtensionScope: string
             throw new InvalidArgumentException('Extension scope list must not be empty.');
         }
 
+        if (!self::hasIdentityScope($scopes)) {
+            throw new InvalidArgumentException('Extension scope list must include module, a theme scope, or a provider scope.');
+        }
+
         return array_values($scopes);
     }
 
@@ -68,6 +72,22 @@ enum ExtensionScope: string
         };
     }
 
+    public function isTheme(): bool
+    {
+        return match ($this) {
+            self::FrontendTheme, self::BackendTheme => true,
+            self::SystemTemplate, self::Module, self::Api,
+            self::CaptchaProvider, self::EditorProvider,
+            self::Database, self::ContentSchema,
+            self::SchedulerTasks, self::Operations => false,
+        };
+    }
+
+    public function isIdentity(): bool
+    {
+        return self::Module === $this || $this->isTheme() || $this->isProvider();
+    }
+
     /**
      * @return list<string>
      */
@@ -91,5 +111,19 @@ enum ExtensionScope: string
             static fn (string $scope): string => trim($scope, " \t\n\r\0\x0B'\""),
             explode(',', $value),
         ), static fn (string $scope): bool => '' !== $scope));
+    }
+
+    /**
+     * @param array<string, self> $scopes
+     */
+    private static function hasIdentityScope(array $scopes): bool
+    {
+        foreach ($scopes as $scope) {
+            if ($scope->isIdentity()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

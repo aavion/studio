@@ -60,7 +60,7 @@ Required extension manifest keys:
 | `EXTENSION_SLUG` | Stable extension identifier and target folder name under `extensions/`. |
 | `EXTENSION_NAME` | Human-readable extension name. |
 | `EXTENSION_VERSION` | Extension version. |
-| `EXTENSION_SCOPE` | One or more scopes, for example `[frontend-theme, module]`. Capability scopes include `api`, `database`, and `content-schema`. |
+| `EXTENSION_SCOPE` | One or more scopes, for example `[frontend-theme, system-template]` or `module`. Every real extension needs an identity scope: `module`, a theme scope, or a provider scope. Capability scopes such as `system-template`, `api`, `database`, `content-schema`, `scheduler-tasks`, and `operations` are additive only. |
 | `EXTENSION_DEPENDENCIES` | Dependency list, empty when no dependency is required. |
 
 `EXTENSION_SLUG` must be an owner slug: it starts with a lowercase letter, uses only lowercase letters, digits, and single hyphen-separated segments, stays at 60 characters or less, and matches the extension folder name exactly.
@@ -69,7 +69,7 @@ Optional well-known keys include `EXTENSION_SOURCE`, `EXTENSION_CHANNEL`, `EXTEN
 
 The ZIP installer stages uploads under `var/cache/{APP_ENV}/extension-installs`, verifies the manifest and extension lint rules, then pauses the live operation with a review-required confirmation before copying files. `EXTENSION_SLUG` defines the target folder. If that extension already exists, the apply step removes the existing extension folder first, preserving whether it was active so activation can be restored after discovery. Update execution beyond ZIP uploads is deferred: a later updater should compare registered versions with manifest source metadata and use a narrow Git-backed stub for extension or system updates.
 
-Current allowed scopes are `frontend-theme`, `backend-theme`, `system-template`, `module`, `captcha-provider`, `editor-provider`, `api`, `database`, and `content-schema`. Frontend themes, backend themes, system-template extensions, and provider scopes are single-active scopes: activating a new extension with the same single-active scope deactivates the previously active extension. Module, api, database, and content-schema extensions may be active in parallel. `api` gates extension-owned API endpoints and handlers, `database` gates declarative extension-owned table contributions, and `content-schema` gates immutable content schema preset contributions.
+Current identity scopes are `frontend-theme`, `backend-theme`, `module`, `captcha-provider`, and `editor-provider`. Current capability scopes are `system-template`, `api`, `database`, `content-schema`, `scheduler-tasks`, and `operations`. Frontend themes, backend themes, system-template overrides, and provider scopes are single-active scopes: activating a new extension with the same single-active scope deactivates the previously active extension. Module, api, database, content-schema, scheduler-tasks, and operations scopes may be active in parallel unless they are combined with a single-active identity or capability scope. `module` is the neutral identity fallback, not a capability gate. `system-template` allows an identity-bearing extension to override root templates and root CSS tokens. `api` gates extension-owned API endpoints and handlers, `database` gates declarative extension-owned table contributions, `content-schema` gates immutable content schema preset contributions, `scheduler-tasks` gates scheduled callable/action-queue contributions, and `operations` gates extension-owned operation queues.
 
 Deactivation cascades through active reverse dependencies. If an active extension depends on an extension being deactivated, it is deactivated first; this applies to explicit deactivation and to implicit single-active scope conflicts during activation. Activation still resolves dependencies in the opposite direction and activates inactive dependencies with the requested extension.
 
@@ -164,7 +164,7 @@ Live extension actions should enter the Operations/ActionLog layer through contr
 - Extension-owned data deletion needs explicit confirmation and action-log coverage before the cleanup runner performs destructive work.
 - Extension-owned database tables are named by core as `{database-prefix}ext{normalized-slug-length}_{normalized-slug}_{local-table}`.
 - Deactivation must not drop data. Uninstall may offer data removal through an extension purge routine.
-- Theme, system-template, and provider scopes are single-active; module, database, and content-schema scopes are many-active.
+- Theme, system-template, and provider scopes are single-active; module, api, database, content-schema, scheduler-tasks, and operations scopes are many-active unless combined with a single-active scope.
 
 ## References
 

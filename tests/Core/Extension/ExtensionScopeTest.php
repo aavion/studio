@@ -41,12 +41,44 @@ final class ExtensionScopeTest extends TestCase
         );
     }
 
+    public function testItRequiresAtLeastOneIdentityScope(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Extension scope list must include module, a theme scope, or a provider scope.');
+
+        ExtensionScope::fromManifestValue('[system-template, api, database, content-schema, scheduler-tasks, operations]');
+    }
+
+    public function testItTreatsModuleThemeAndProviderScopesAsIdentityScopes(): void
+    {
+        self::assertTrue(ExtensionScope::Module->isIdentity());
+        self::assertTrue(ExtensionScope::FrontendTheme->isIdentity());
+        self::assertTrue(ExtensionScope::BackendTheme->isIdentity());
+        self::assertTrue(ExtensionScope::CaptchaProvider->isIdentity());
+        self::assertTrue(ExtensionScope::EditorProvider->isIdentity());
+        self::assertFalse(ExtensionScope::SystemTemplate->isIdentity());
+        self::assertFalse(ExtensionScope::Api->isIdentity());
+        self::assertFalse(ExtensionScope::Database->isIdentity());
+        self::assertFalse(ExtensionScope::ContentSchema->isIdentity());
+        self::assertFalse(ExtensionScope::SchedulerTasks->isIdentity());
+        self::assertFalse(ExtensionScope::Operations->isIdentity());
+    }
+
     public function testItKnowsProviderScopes(): void
     {
         self::assertTrue(ExtensionScope::CaptchaProvider->isProvider());
         self::assertTrue(ExtensionScope::EditorProvider->isProvider());
         self::assertFalse(ExtensionScope::Module->isProvider());
         self::assertFalse(ExtensionScope::FrontendTheme->isProvider());
+    }
+
+    public function testItKnowsThemeScopes(): void
+    {
+        self::assertTrue(ExtensionScope::FrontendTheme->isTheme());
+        self::assertTrue(ExtensionScope::BackendTheme->isTheme());
+        self::assertFalse(ExtensionScope::SystemTemplate->isTheme());
+        self::assertFalse(ExtensionScope::Module->isTheme());
+        self::assertFalse(ExtensionScope::CaptchaProvider->isTheme());
     }
 
     public function testItRejectsUnknownScopes(): void
