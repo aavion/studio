@@ -1,7 +1,7 @@
 # Developer Worklog
 
 > **Status**: Active  
-> **Updated**: 2026-06-21  
+> **Updated**: 2026-06-22  
 > **Owner**: Core  
 > **Purpose:** Keeps track of changes and upcoming tasks. 
 
@@ -93,6 +93,7 @@
 **Usage:** Keep concise session notes in the active worklog and include the current branch in headings, using the form `### YYYY-MM-DD branch-name`. Place the newest branch/date heading directly below `## Branch Logs`; within a matching branch/date heading, add new notes at the top so the newest context stays first. Record meaningful committed or completed changes, decisions, blockers, and follow-ups; keep detailed verification in PR notes unless a result materially affects the worklog context. When switching to a different branch or after a PR is merged, compact the completed branch entry into [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), then create the new branch entry at the top.
 
 ### 2026-06-22 feat-security-captcha-contract
+- Audited production `catch (Throwable)` and `throw new` usage against the message-layer rule, kept hard invariants and low-level adapter failures in place, normalized API JSON parse failures to stable reason codes, and removed an unnecessary hard-coded maintenance-mode exception message.
 - Simplified live-operation label localization by folding translated label handling into `LiveOperationStarter::start()` with tolerant fallback for existing literal or stored continuation labels.
 
 ### 2026-06-21 feat-security-captcha-contract
