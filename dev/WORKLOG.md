@@ -88,6 +88,7 @@
 **Usage:** Keep concise session notes in the active worklog and include the current branch in headings, using the form `### YYYY-MM-DD branch-name`. Place the newest branch/date heading directly below `## Branch Logs`; within a matching branch/date heading, add new notes at the top so the newest context stays first. Record meaningful committed or completed changes, decisions, blockers, and follow-ups; keep detailed verification in PR notes unless a result materially affects the worklog context. When switching to a different branch or after a PR is merged, compact the completed branch entry into [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), then create the new branch entry at the top.
 
 ### 2026-06-21 feat-security-captcha-contract
+- Added generic runtime provider contributions with `captchaProvider()` builder support, provider-scope guards, duplicate-provider rejection, and staged rollback coverage.
 - Added runtime extension event-listener contributions backed by the public hook registry, stable listener priority ordering, and `PublicEventDispatcher` integration with structured extension-owned failure diagnostics.
 - Added typed runtime boot contributions with runtime context delivery, loader-level phase partitioning, and staged registry rollback so boot failures do not leave partial runtime contributions.
 - Added active extension PSR-4 class loading for validated `EXTENSION_NAMESPACE` classes below extension-owned `src/`, with duplicate namespace rejection and no automatic extension-local vendor autoload registration.

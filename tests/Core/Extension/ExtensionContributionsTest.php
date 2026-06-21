@@ -6,8 +6,10 @@ namespace App\Tests\Core\Extension;
 
 use App\Core\Extension\ExtensionContributions;
 use App\Core\Extension\ExtensionEventListenerContribution;
+use App\Core\Extension\ExtensionProviderContribution;
 use App\Core\Extension\ExtensionRuntimeContributionFactory;
 use App\Core\Extension\ExtensionRuntimeBoot;
+use App\Core\Extension\ExtensionScope;
 use App\Core\Extension\Content\ExtensionContentSchemaDefinition;
 use App\Core\Extension\Database\ExtensionDatabaseColumn;
 use App\Core\Extension\Database\ExtensionDatabaseTable;
@@ -59,6 +61,8 @@ final class ExtensionContributionsTest extends TestCase
             })
             ->eventListener(ViewContextEvent::class, static function (): void {
             })
+            ->captchaProvider(static function (): void {
+            })
             ->staticView($staticView)
             ->setting($setting)
             ->schedulerTask($schedulerTask)
@@ -70,6 +74,8 @@ final class ExtensionContributionsTest extends TestCase
         self::assertInstanceOf(ExtensionRuntimeContributionFactory::class, $items[0]);
         self::assertInstanceOf(ExtensionRuntimeBoot::class, $items[1]);
         self::assertInstanceOf(ExtensionEventListenerContribution::class, $items[2]);
-        self::assertSame([$staticView, $setting, $schedulerTask, $databaseTable, $contentSchema], array_slice($items, 3));
+        self::assertInstanceOf(ExtensionProviderContribution::class, $items[3]);
+        self::assertSame(ExtensionScope::CaptchaProvider, $items[3]->scope());
+        self::assertSame([$staticView, $setting, $schedulerTask, $databaseTable, $contentSchema], array_slice($items, 4));
     }
 }

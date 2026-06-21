@@ -15,6 +15,7 @@ use App\Core\Extension\Database\ExtensionDatabaseTable;
 use App\Core\Extension\ExtensionContributionContext;
 use App\Core\Extension\ExtensionEventListenerContribution;
 use App\Core\Extension\ExtensionMessageKey;
+use App\Core\Extension\ExtensionProviderContribution;
 use App\Core\Extension\ExtensionRuntimeContributionFactory;
 use App\Core\Extension\Settings\ExtensionSettingDefinition;
 use App\Core\Extension\Settings\ExtensionSettingProviderInterface;
@@ -98,7 +99,8 @@ final readonly class ExtensionRuntimeContributionExpander
             || $contribution instanceof CookieConsentDefinition
             || $contribution instanceof ExtensionDatabaseTable
             || $contribution instanceof ExtensionContentSchemaDefinition
-            || $contribution instanceof ExtensionEventListenerContribution;
+            || $contribution instanceof ExtensionEventListenerContribution
+            || $contribution instanceof ExtensionProviderContribution;
     }
 
     /**

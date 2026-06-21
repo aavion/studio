@@ -15,6 +15,7 @@ use App\Core\Extension\ExtensionEventListenerContribution;
 use App\Core\Extension\ExtensionLiveContributionGuard;
 use App\Core\Extension\ExtensionMessageCode;
 use App\Core\Extension\ExtensionMessageKey;
+use App\Core\Extension\ExtensionProviderContribution;
 use App\Core\Extension\ExtensionScope;
 use App\Core\Extension\Settings\ExtensionSettingDefinition;
 use App\Core\Message\MessageException;
@@ -204,6 +205,31 @@ final readonly class ExtensionRuntimeContributionGuard
         ], [
             'extension' => $extension->extensionName(),
             'event' => $contribution->eventClass(),
+        ]);
+    }
+
+    public function assertProviderContribution(Extension $extension, ExtensionProviderContribution $contribution): void
+    {
+        if (!$contribution->scope()->isProvider()) {
+            throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_RUNTIME_CONTRIBUTION_UNSUPPORTED, [
+                '%extension%' => $extension->extensionName(),
+                '%type%' => ExtensionProviderContribution::class.'('.$contribution->scope()->value.') non_provider_scope',
+            ], [
+                'extension' => $extension->extensionName(),
+                'scope' => $contribution->scope()->value,
+            ]);
+        }
+
+        if ($extension->hasScope($contribution->scope())) {
+            return;
+        }
+
+        throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_RUNTIME_CONTRIBUTION_UNSUPPORTED, [
+            '%extension%' => $extension->extensionName(),
+            '%type%' => ExtensionProviderContribution::class.'('.$contribution->scope()->value.') scope_missing',
+        ], [
+            'extension' => $extension->extensionName(),
+            'required_scope' => $contribution->scope()->value,
         ]);
     }
 

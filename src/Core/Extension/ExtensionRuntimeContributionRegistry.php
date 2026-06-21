@@ -21,6 +21,7 @@ use App\Core\Extension\Database\ExtensionDatabaseTable;
 use App\Core\Extension\Settings\ExtensionSettingDefinition;
 use App\Core\Extension\Settings\ExtensionSettingProviderInterface;
 use App\Core\Extension\Settings\ExtensionSettings;
+use App\Core\Message\MessageException;
 use App\Entity\Extension;
 use App\Live\LiveEndpointDefinition;
 use App\Live\LiveEndpointHandlerInterface;
@@ -70,6 +71,11 @@ final class ExtensionRuntimeContributionRegistry implements StaticViewInjectionP
     private array $eventListeners = [];
 
     private int $eventListenerSequence = 0;
+
+    /**
+     * @var array<string, ExtensionProviderRegistration>
+     */
+    private array $providers = [];
 
     public function __clone(): void
     {
@@ -186,6 +192,12 @@ final class ExtensionRuntimeContributionRegistry implements StaticViewInjectionP
             return;
         }
 
+        if ($contribution instanceof ExtensionProviderContribution) {
+            $this->addProviderContribution($extension, $contribution);
+
+            return;
+        }
+
         $schedulerProviderHandled = false;
 
         if ($contribution instanceof SchedulerCallableProviderInterface) {
@@ -214,6 +226,7 @@ final class ExtensionRuntimeContributionRegistry implements StaticViewInjectionP
         $this->contentSchemaDefinitions = $registry->contentSchemaDefinitions;
         $this->eventListeners = $registry->eventListeners;
         $this->eventListenerSequence = $registry->eventListenerSequence;
+        $this->providers = $registry->providers;
     }
 
     private function addSchedulerTaskDefinition(Extension $extension, SchedulerTaskDefinition $definition): void
@@ -249,6 +262,23 @@ final class ExtensionRuntimeContributionRegistry implements StaticViewInjectionP
             static fn (ExtensionEventListenerRegistration $left, ExtensionEventListenerRegistration $right): int => $right->priority() <=> $left->priority()
                 ?: $left->sequence() <=> $right->sequence(),
         );
+    }
+
+    private function addProviderContribution(Extension $extension, ExtensionProviderContribution $contribution): void
+    {
+        $this->guard()->assertProviderContribution($extension, $contribution);
+        if (isset($this->providers[$contribution->scope()->value])) {
+            throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_RUNTIME_CONTRIBUTION_UNSUPPORTED, [
+                '%extension%' => $extension->extensionName(),
+                '%type%' => ExtensionProviderContribution::class.'('.$contribution->scope()->value.') duplicate',
+            ], [
+                'extension' => $extension->extensionName(),
+                'scope' => $contribution->scope()->value,
+                'existing_extension' => $this->providers[$contribution->scope()->value]->extensionName(),
+            ]);
+        }
+
+        $this->providers[$contribution->scope()->value] = new ExtensionProviderRegistration($extension, $contribution);
     }
 
     /**
@@ -342,5 +372,10 @@ final class ExtensionRuntimeContributionRegistry implements StaticViewInjectionP
     public function extensionEventListeners(string $eventClass): array
     {
         return $this->eventListeners[$eventClass] ?? [];
+    }
+
+    public function provider(ExtensionScope $scope): ?ExtensionProviderRegistration
+    {
+        return $this->providers[$scope->value] ?? null;
     }
 }

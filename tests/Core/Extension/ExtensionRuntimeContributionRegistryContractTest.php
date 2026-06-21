@@ -11,6 +11,7 @@ use App\Core\Extension\Database\ExtensionDatabaseTable;
 use App\Core\Extension\ExtensionContributionContext;
 use App\Core\Extension\ExtensionContributions;
 use App\Core\Extension\ExtensionEventListenerContribution;
+use App\Core\Extension\ExtensionProviderContribution;
 use App\Core\Extension\ExtensionRuntimeBoot;
 use App\Core\Extension\ExtensionRuntimeContributionRegistry;
 use App\Core\Extension\ExtensionScope;
@@ -164,6 +165,76 @@ final class ExtensionRuntimeContributionRegistryContractTest extends TestCase
 
         self::assertSame([], $registry->extensionSettings());
         self::assertSame([], $registry->extensionEventListeners(ExtensionRuntimeContributionRegistryContractTestEvent::class));
+    }
+
+    public function testItAcceptsProviderContributionsForMatchingProviderScopes(): void
+    {
+        $registry = new ExtensionRuntimeContributionRegistry();
+        $provider = static fn (): string => 'verified';
+
+        $registry->add($this->extension([ExtensionScope::CaptchaProvider]), new ExtensionProviderContribution(ExtensionScope::CaptchaProvider, $provider));
+
+        self::assertSame('demo-module', $registry->provider(ExtensionScope::CaptchaProvider)?->extensionName());
+        self::assertSame('verified', ($registry->provider(ExtensionScope::CaptchaProvider)?->provider())());
+    }
+
+    public function testItRejectsProviderContributionsWithoutMatchingProviderScope(): void
+    {
+        $registry = new ExtensionRuntimeContributionRegistry();
+
+        try {
+            $registry->add($this->extension([ExtensionScope::Module]), [
+                new ExtensionSettingDefinition(
+                    'demo-module',
+                    'display.mode',
+                    'extension.demo_module.display_mode.label',
+                    'compact',
+                ),
+                new ExtensionProviderContribution(ExtensionScope::CaptchaProvider, static fn (): string => 'verified'),
+            ]);
+
+            self::fail('Expected provider contributions to require the matching provider scope.');
+        } catch (\Throwable $error) {
+            self::assertStringContainsString('message.extension.runtime.contribution_unsupported', $error->getMessage());
+        }
+
+        self::assertSame([], $registry->extensionSettings());
+        self::assertNull($registry->provider(ExtensionScope::CaptchaProvider));
+    }
+
+    public function testItRejectsProviderContributionsForNonProviderScopes(): void
+    {
+        $this->expectExceptionMessage('message.extension.runtime.contribution_unsupported');
+
+        (new ExtensionRuntimeContributionRegistry())->add(
+            $this->extension([ExtensionScope::Module]),
+            new ExtensionProviderContribution(ExtensionScope::Module, static fn (): string => 'verified'),
+        );
+    }
+
+    public function testItRejectsDuplicateProviderContributionsWithoutReplacingExistingProvider(): void
+    {
+        $registry = new ExtensionRuntimeContributionRegistry();
+        $registry->add($this->extension([ExtensionScope::CaptchaProvider]), new ExtensionProviderContribution(ExtensionScope::CaptchaProvider, static fn (): string => 'first'));
+
+        try {
+            $registry->add($this->extension([ExtensionScope::CaptchaProvider]), [
+                new ExtensionSettingDefinition(
+                    'demo-module',
+                    'display.mode',
+                    'extension.demo_module.display_mode.label',
+                    'compact',
+                ),
+                new ExtensionProviderContribution(ExtensionScope::CaptchaProvider, static fn (): string => 'second'),
+            ]);
+
+            self::fail('Expected duplicate provider contributions to be rejected.');
+        } catch (\Throwable $error) {
+            self::assertStringContainsString('message.extension.runtime.contribution_unsupported', $error->getMessage());
+        }
+
+        self::assertSame([], $registry->extensionSettings());
+        self::assertSame('first', ($registry->provider(ExtensionScope::CaptchaProvider)?->provider())());
     }
 
     public function testItRejectsDatabaseContributionsWithoutDatabaseScope(): void

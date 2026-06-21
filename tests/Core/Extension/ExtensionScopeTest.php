@@ -34,6 +34,14 @@ final class ExtensionScopeTest extends TestCase
         );
     }
 
+    public function testItKnowsProviderScopes(): void
+    {
+        self::assertTrue(ExtensionScope::CaptchaProvider->isProvider());
+        self::assertTrue(ExtensionScope::EditorProvider->isProvider());
+        self::assertFalse(ExtensionScope::Module->isProvider());
+        self::assertFalse(ExtensionScope::FrontendTheme->isProvider());
+    }
+
     public function testItRejectsUnknownScopes(): void
     {
         $this->expectException(InvalidArgumentException::class);

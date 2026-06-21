@@ -510,6 +510,32 @@ final class ExtensionLifecycleBoundaryTest extends KernelTestCase
         self::assertSame(10, $registry->extensionEventListeners(ViewContextEvent::class)[0]->priority());
     }
 
+    public function testExtensionPhpLoaderRegistersProviderContributions(): void
+    {
+        $this->insertExtension('demo-module', ['captcha-provider'], 'active');
+        $this->writeTestFile($this->projectDir, 'extensions/demo-module/extension.php', <<<'PHP'
+            <?php
+
+            use App\Core\Extension\ExtensionContributions;
+
+            return ExtensionContributions::create()
+                ->captchaProvider(static fn (): string => 'demo-provider');
+            PHP);
+
+        $registry = new ExtensionRuntimeContributionRegistry();
+        $result = (new ExtensionPhpLoader(
+            new ActiveExtensionProvider($this->entityManager),
+            $this->entityManager,
+            $this->projectDir,
+            new NullWorkflowResultMessageReporter(),
+            runtimeContributions: $registry,
+        ))->loadActiveExtensions();
+
+        self::assertTrue($result->isSuccess());
+        self::assertSame('demo-module', $registry->provider(ExtensionScope::CaptchaProvider)?->extensionName());
+        self::assertSame('demo-provider', ($registry->provider(ExtensionScope::CaptchaProvider)?->provider())());
+    }
+
     public function testExtensionPhpLoaderDoesNotKeepPartialRuntimeContributionsAfterFailure(): void
     {
         $this->insertExtension('broken-module', ['module'], 'active');

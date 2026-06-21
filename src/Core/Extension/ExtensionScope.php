@@ -58,6 +58,14 @@ enum ExtensionScope: string
         };
     }
 
+    public function isProvider(): bool
+    {
+        return match ($this) {
+            self::CaptchaProvider, self::EditorProvider => true,
+            self::FrontendTheme, self::BackendTheme, self::SystemTemplate, self::Module, self::Api, self::Database, self::ContentSchema => false,
+        };
+    }
+
     /**
      * @return list<string>
      */
