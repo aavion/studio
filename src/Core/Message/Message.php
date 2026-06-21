@@ -191,7 +191,10 @@ final readonly class Message
 
     private function isValidTranslationKey(string $translationKey): bool
     {
-        return 1 === preg_match('/^message(?:\.[a-z][a-z0-9_]*)+$/', $translationKey);
+        return 1 === preg_match(
+            '/^(?:message(?:\.[a-z][a-z0-9_]*)+|ext\.[a-z][a-z0-9]*(?:-[a-z0-9]+)*\.(?:[a-z][a-z0-9_]*)(?:\.[a-z][a-z0-9_]*)*)$/',
+            $translationKey,
+        );
     }
 
     /**

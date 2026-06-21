@@ -40,7 +40,7 @@ final class ExtensionRuntimeLogTest extends TestCase
         $this->writeExtensionFile(<<<'PHP'
             <?php
 
-            return extension_log('info', 'message.extension.discovery_completed', [
+            return extension_log('info', 'ext.log-facade.runtime.ready', [
                 'extension' => 'spoofed',
                 'detail' => 'ready',
             ]);
@@ -52,7 +52,7 @@ final class ExtensionRuntimeLogTest extends TestCase
         $message = $logger->messages[0];
         self::assertSame(MessageLevel::Info, $message->level());
         self::assertSame(ExtensionMessageCode::EXTENSION_RUNTIME_LOG, $message->code());
-        self::assertSame('message.extension.discovery_completed', $message->translationKey());
+        self::assertSame('ext.log-facade.runtime.ready', $message->translationKey());
         self::assertSame('log-facade', $message->context()['extension']);
         self::assertSame('extension_runtime', $message->context()['source']);
         self::assertSame('spoofed', $message->context()['extension_context']['extension']);
@@ -69,18 +69,24 @@ final class ExtensionRuntimeLogTest extends TestCase
             <?php
 
             return [
-                extension_log('verbose', 'message.extension.discovery_completed'),
+                extension_log('verbose', 'ext.log-facade.runtime.ready'),
                 extension_log('warning', 'Provider finished'),
+                extension_log('info', 'ext.other.runtime.ready'),
+                extension_log('info', 'message.extension.discovery_completed'),
             ];
             PHP);
 
-        self::assertSame([false, true], require $this->projectDir.'/extensions/log-facade/extension.php');
-        self::assertCount(1, $logger->messages);
+        self::assertSame([false, true, true, true], require $this->projectDir.'/extensions/log-facade/extension.php');
+        self::assertCount(3, $logger->messages);
 
         $message = $logger->messages[0];
         self::assertSame(MessageLevel::Warning, $message->level());
         self::assertSame(ExtensionMessageKey::EXTENSION_RUNTIME_LOG, $message->translationKey());
         self::assertSame(['%message%' => 'Provider finished'], $message->parameters());
+        self::assertSame(ExtensionMessageKey::EXTENSION_RUNTIME_LOG, $logger->messages[1]->translationKey());
+        self::assertSame(['%message%' => 'ext.other.runtime.ready'], $logger->messages[1]->parameters());
+        self::assertSame(ExtensionMessageKey::EXTENSION_RUNTIME_LOG, $logger->messages[2]->translationKey());
+        self::assertSame(['%message%' => 'message.extension.discovery_completed'], $logger->messages[2]->parameters());
     }
 
     private function writeExtensionFile(string $contents): void

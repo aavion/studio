@@ -265,6 +265,16 @@ if (!function_exists('extension_cookie_delete')) {
     }
 }
 
+if (!function_exists('extension_trans')) {
+    /**
+     * @param array<string, mixed> $parameters
+     */
+    function extension_trans(string $key, array $parameters = [], ?string $locale = null): string
+    {
+        return ExtensionRuntime::trans($key, $parameters, $locale);
+    }
+}
+
 if (!function_exists('extension_lookup')) {
     /**
      * @param array<string, mixed> $options

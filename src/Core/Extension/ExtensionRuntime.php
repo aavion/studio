@@ -308,6 +308,17 @@ final class ExtensionRuntime
     }
 
     /**
+     * @param array<string, mixed> $parameters
+     */
+    public static function trans(string $key, array $parameters = [], ?string $locale = null): string
+    {
+        $slug = self::callerExtensionSlug();
+        $translations = self::$services?->translations();
+
+        return null !== $slug && null !== $translations ? $translations->trans($slug, $key, $parameters, $locale) : '';
+    }
+
+    /**
      * @param array<string, mixed> $options
      * @return array<string, mixed>|null
      */

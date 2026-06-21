@@ -32,7 +32,7 @@ final readonly class ExtensionLogFacade
         }
 
         $message = $this->message($message);
-        $translationKey = $this->isValidTranslationKey($message) ? $message : ExtensionMessageKey::EXTENSION_RUNTIME_LOG;
+        $translationKey = ExtensionTranslationKey::isOwnedBy($extensionName, $message) ? $message : ExtensionMessageKey::EXTENSION_RUNTIME_LOG;
         $parameters = $translationKey === $message ? [] : ['%message%' => $message];
         $messageContext = [
             'extension' => $extensionName,
@@ -88,8 +88,4 @@ final readonly class ExtensionLogFacade
         };
     }
 
-    private function isValidTranslationKey(string $translationKey): bool
-    {
-        return 1 === preg_match('/^message(?:\.[a-z][a-z0-9_]*)+$/', $translationKey);
-    }
 }

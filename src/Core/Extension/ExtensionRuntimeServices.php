@@ -29,6 +29,7 @@ final readonly class ExtensionRuntimeServices
         private ?ExtensionPermissionFacade $permissions = null,
         private ?ExtensionCsrfFacade $csrf = null,
         private ?ExtensionCookieFacade $cookies = null,
+        private ?ExtensionTranslationFacade $translations = null,
     ) {
     }
 
@@ -130,5 +131,10 @@ final readonly class ExtensionRuntimeServices
     public function cookies(): ?ExtensionCookieFacade
     {
         return $this->cookies;
+    }
+
+    public function translations(): ?ExtensionTranslationFacade
+    {
+        return $this->translations;
     }
 }

@@ -67,23 +67,25 @@ final class ExtensionRuntimeAlertTest extends TestCase
             <?php
 
             return [
-                extension_alert('success', 'message.extension.discovery_completed', ['%%count%%' => 1]),
+                extension_alert('success', 'ext.alert-facade.runtime.ready', ['%%count%%' => 1]),
                 extension_alert('warning', 'Literal alert', [], ['target' => 'session', 'session' => 'session-id']),
-                extension_alert('info', 'message.extension.discovery_completed', ['%%count%%' => 2], ['target' => 'user', 'uid' => '71000000-0000-7000-8000-000000000001']),
-                extension_alert('error', 'message.extension.discovery_completed', ['%%count%%' => 3], ['target' => 'role', 'role' => 'admin']),
-                extension_alert('info', 'message.extension.discovery_completed', ['%%count%%' => 4], ['target' => 'topic', 'topic' => %s]),
-                extension_alert('info', 'message.extension.discovery_completed', ['%%count%%' => 5], ['target' => 'acl_group', 'identifier' => 'team_admin']),
-                extension_alert('info', 'message.extension.discovery_completed', ['%%count%%' => 6], ['target' => 'acl_group', 'uid' => '72000000-0000-7000-8000-000000000001']),
-                extension_alert('info', 'message.extension.discovery_completed', [], ['target' => 'topic', 'topic' => 'https://example.test/topic']),
-                extension_alert('info', 'message.extension.discovery_completed', [], ['target' => 'acl_group', 'identifier' => 'missing']),
+                extension_alert('info', 'ext.alert-facade.runtime.ready', ['%%count%%' => 2], ['target' => 'user', 'uid' => '71000000-0000-7000-8000-000000000001']),
+                extension_alert('error', 'ext.alert-facade.runtime.ready', ['%%count%%' => 3], ['target' => 'role', 'role' => 'admin']),
+                extension_alert('info', 'ext.alert-facade.runtime.ready', ['%%count%%' => 4], ['target' => 'topic', 'topic' => %s]),
+                extension_alert('info', 'ext.alert-facade.runtime.ready', ['%%count%%' => 5], ['target' => 'acl_group', 'identifier' => 'team_admin']),
+                extension_alert('info', 'ext.alert-facade.runtime.ready', ['%%count%%' => 6], ['target' => 'acl_group', 'uid' => '72000000-0000-7000-8000-000000000001']),
+                extension_alert('info', 'ext.alert-facade.runtime.ready', [], ['target' => 'topic', 'topic' => 'https://example.test/topic']),
+                extension_alert('info', 'ext.alert-facade.runtime.ready', [], ['target' => 'acl_group', 'identifier' => 'missing']),
+                extension_alert('info', 'ext.other.runtime.ready'),
+                extension_alert('info', 'message.extension.discovery_completed'),
             ];
             PHP, var_export($topic, true)));
 
-        self::assertSame([true, true, true, true, true, true, true, false, false], require $this->projectDir.'/extensions/alert-facade/extension.php');
-        self::assertCount(7, $dispatcher->records);
+        self::assertSame([true, true, true, true, true, true, true, false, false, true, true], require $this->projectDir.'/extensions/alert-facade/extension.php');
+        self::assertCount(9, $dispatcher->records);
         self::assertSame('current', $dispatcher->records[0]['target']);
         self::assertTrue($dispatcher->records[0]['delivery']->flashes());
-        self::assertSame('message.extension.discovery_completed', $dispatcher->records[0]['alert']->translationKey());
+        self::assertSame('ext.alert-facade.runtime.ready', $dispatcher->records[0]['alert']->translationKey());
         self::assertSame('session', $dispatcher->records[1]['target']);
         self::assertSame('session-id', $dispatcher->records[1]['id']);
         self::assertTrue($dispatcher->records[1]['delivery']->queues());
@@ -97,6 +99,10 @@ final class ExtensionRuntimeAlertTest extends TestCase
         self::assertSame($topic, $dispatcher->records[4]['id']);
         self::assertSame($topics->aclGroupTopic($group), $dispatcher->records[5]['id']);
         self::assertSame($topics->aclGroupTopic($group), $dispatcher->records[6]['id']);
+        self::assertSame(ExtensionMessageKey::EXTENSION_RUNTIME_LOG, $dispatcher->records[7]['alert']->translationKey());
+        self::assertSame(['%message%' => 'ext.other.runtime.ready'], $dispatcher->records[7]['alert']->parameters());
+        self::assertSame(ExtensionMessageKey::EXTENSION_RUNTIME_LOG, $dispatcher->records[8]['alert']->translationKey());
+        self::assertSame(['%message%' => 'message.extension.discovery_completed'], $dispatcher->records[8]['alert']->parameters());
     }
 
     private function writeExtensionFile(string $contents): void

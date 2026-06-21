@@ -35,7 +35,8 @@ final readonly class ExtensionAlertFacade
             return false;
         }
 
-        $alert = UiAlertTranslation::forLevel($this->level($level), $this->translationKey($message), $this->parameters($message, $parameters));
+        $translationKey = $this->translationKey($extensionName, $message);
+        $alert = UiAlertTranslation::forLevel($this->level($level), $translationKey, $this->parameters($message, $parameters, $translationKey));
         $target = strtolower(trim((string) ($options['target'] ?? 'current')));
         $delivery = $this->delivery($options, 'current' === $target || '' === $target);
         $presentation = $this->presentation($options);
@@ -66,11 +67,11 @@ final readonly class ExtensionAlertFacade
         };
     }
 
-    private function translationKey(string $message): string
+    private function translationKey(string $extensionName, string $message): string
     {
         $message = trim($message);
 
-        return 1 === preg_match('/^message(?:\.[a-z][a-z0-9_]*)+$/', $message)
+        return ExtensionTranslationKey::isOwnedBy($extensionName, $message)
             ? $message
             : ExtensionMessageKey::EXTENSION_RUNTIME_LOG;
     }
@@ -80,9 +81,9 @@ final readonly class ExtensionAlertFacade
      *
      * @return array<string, mixed>
      */
-    private function parameters(string $message, array $parameters): array
+    private function parameters(string $message, array $parameters, string $translationKey): array
     {
-        if ($this->translationKey($message) !== ExtensionMessageKey::EXTENSION_RUNTIME_LOG) {
+        if ($translationKey !== ExtensionMessageKey::EXTENSION_RUNTIME_LOG) {
             return $parameters;
         }
 
