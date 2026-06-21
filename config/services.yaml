@@ -317,6 +317,7 @@ services:
             $storage: '@App\Core\Extension\ExtensionStorage'
             $uploads: '@App\Core\Extension\ExtensionUploadStorage'
             $requests: '@App\Core\Extension\ExtensionRequestSnapshot'
+            $content: '@App\Core\Extension\ExtensionContentFacade'
 
     App\Core\Extension\ExtensionStorage:
         arguments:
@@ -330,6 +331,13 @@ services:
     App\Core\Extension\ExtensionRequestSnapshot:
         arguments:
             $requestStack: '@request_stack'
+
+    App\Core\Extension\ExtensionContentFacade:
+        arguments:
+            $entityManager: '@doctrine.orm.entity_manager'
+            $contentResolver: '@App\Content\Read\PublishedContentResolver'
+            $contentAccess: '@App\Content\Read\ContentReadAccessPolicy'
+            $security: '@security.helper'
 
     App\Security\AutoBan\AutoBanSignalEvaluator:
         arguments:

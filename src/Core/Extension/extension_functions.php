@@ -193,6 +193,29 @@ if (!function_exists('extension_request')) {
     }
 }
 
+if (!function_exists('extension_content_query')) {
+    /**
+     * @param array<string, mixed> $criteria
+     * @param array<string, mixed> $options
+     * @return list<array<string, mixed>>
+     */
+    function extension_content_query(array $criteria = [], array $options = []): array
+    {
+        return ExtensionRuntime::contentQuery($criteria, $options);
+    }
+}
+
+if (!function_exists('extension_content_get')) {
+    /**
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>|null
+     */
+    function extension_content_get(string $identifier, array $options = []): ?array
+    {
+        return ExtensionRuntime::contentGet($identifier, $options);
+    }
+}
+
 if (!function_exists('extension_lookup')) {
     /**
      * @param array<string, mixed> $options

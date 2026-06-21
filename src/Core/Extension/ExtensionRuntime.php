@@ -228,6 +228,31 @@ final class ExtensionRuntime
     }
 
     /**
+     * @param array<string, mixed> $criteria
+     * @param array<string, mixed> $options
+     * @return list<array<string, mixed>>
+     */
+    public static function contentQuery(array $criteria = [], array $options = []): array
+    {
+        $slug = self::callerExtensionSlug();
+        $content = self::$services?->content();
+
+        return null !== $slug && null !== $content ? $content->query($slug, $criteria, $options) : [];
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>|null
+     */
+    public static function contentGet(string $identifier, array $options = []): ?array
+    {
+        $slug = self::callerExtensionSlug();
+        $content = self::$services?->content();
+
+        return null !== $slug && null !== $content ? $content->get($slug, $identifier, $options) : null;
+    }
+
+    /**
      * @param array<string, mixed> $options
      * @return array<string, mixed>|null
      */
