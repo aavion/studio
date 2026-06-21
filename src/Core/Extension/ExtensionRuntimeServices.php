@@ -14,6 +14,7 @@ final readonly class ExtensionRuntimeServices
         private ?ExtensionSettings $settings = null,
         private ?ExtensionAssetReader $assets = null,
         private ?ExtensionAssetUrlGenerator $assetUrls = null,
+        private ?ExtensionEndpointUrlGenerator $endpointUrls = null,
     ) {
     }
 
@@ -40,5 +41,10 @@ final readonly class ExtensionRuntimeServices
     public function assetUrls(): ?ExtensionAssetUrlGenerator
     {
         return $this->assetUrls;
+    }
+
+    public function endpointUrls(): ?ExtensionEndpointUrlGenerator
+    {
+        return $this->endpointUrls;
     }
 }

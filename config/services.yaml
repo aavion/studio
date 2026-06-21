@@ -299,6 +299,7 @@ services:
             $settings: '@App\Core\Extension\Settings\ExtensionSettings'
             $assets: '@App\Core\Extension\ExtensionAssetReader'
             $assetUrls: '@App\Core\Extension\ExtensionAssetUrlGenerator'
+            $endpointUrls: '@App\Core\Extension\ExtensionEndpointUrlGenerator'
 
     App\Security\AutoBan\AutoBanSignalEvaluator:
         arguments:

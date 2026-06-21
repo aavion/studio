@@ -54,3 +54,23 @@ if (!function_exists('extension_asset_url')) {
         return ExtensionRuntime::assetUrl($path);
     }
 }
+
+if (!function_exists('extension_live_url')) {
+    /**
+     * @param array<string, mixed> $params
+     */
+    function extension_live_url(string $endpoint, array $params = []): ?string
+    {
+        return ExtensionRuntime::liveUrl($endpoint, $params);
+    }
+}
+
+if (!function_exists('extension_api_url')) {
+    /**
+     * @param array<string, mixed> $params
+     */
+    function extension_api_url(string $endpoint, array $params = []): ?string
+    {
+        return ExtensionRuntime::apiUrl($endpoint, $params);
+    }
+}

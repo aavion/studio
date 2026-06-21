@@ -66,6 +66,28 @@ final class ExtensionRuntime
     }
 
     /**
+     * @param array<string, mixed> $params
+     */
+    public static function liveUrl(string $endpoint, array $params = []): ?string
+    {
+        $slug = self::callerExtensionSlug();
+        $endpointUrls = self::$services?->endpointUrls();
+
+        return null !== $slug && null !== $endpointUrls ? $endpointUrls->liveUrl($slug, $endpoint, $params) : null;
+    }
+
+    /**
+     * @param array<string, mixed> $params
+     */
+    public static function apiUrl(string $endpoint, array $params = []): ?string
+    {
+        $slug = self::callerExtensionSlug();
+        $endpointUrls = self::$services?->endpointUrls();
+
+        return null !== $slug && null !== $endpointUrls ? $endpointUrls->apiUrl($slug, $endpoint, $params) : null;
+    }
+
+    /**
      * @internal test helper
      */
     public static function reset(): void
