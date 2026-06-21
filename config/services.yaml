@@ -277,6 +277,13 @@ services:
             $cache: '@cache.app'
             $lockFactory: '@lock.factory'
 
+    App\Core\Extension\ExtensionCache:
+        arguments:
+            $cache: '@cache.app'
+
+    App\Core\Extension\ExtensionCacheInterface:
+        alias: App\Core\Extension\ExtensionCache
+
     App\Security\AutoBan\AutoBanSignalEvaluator:
         arguments:
             $environment: '%kernel.environment%'
@@ -379,6 +386,7 @@ services:
             $projectDir: '%kernel.project_dir%'
             $environment: '%kernel.environment%'
             $runtimeContributions: '@App\Core\Extension\ExtensionRuntimeContributionRegistry'
+            $extensionCache: '@App\Core\Extension\ExtensionCacheInterface'
 
     App\Core\Extension\ExtensionRuntimeFailureHandler:
         arguments:

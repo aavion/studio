@@ -46,9 +46,13 @@ final class ExtensionPhpLoader implements EventSubscriberInterface
         private readonly ?ExtensionContentSchemaImpact $contentSchemaImpact = null,
         ?ExtensionDependentDeactivator $dependentDeactivator = null,
         ?ExtensionClassAutoloader $classAutoloader = null,
+        ?ExtensionCacheInterface $extensionCache = null,
     ) {
         $this->dependentDeactivator = $dependentDeactivator ?? new ExtensionDependentDeactivator($entityManager);
         $this->classAutoloader = $classAutoloader ?? new ExtensionClassAutoloader($projectDir, $pathGuard);
+        if (null !== $extensionCache) {
+            ExtensionCacheRuntime::configure($extensionCache, $projectDir);
+        }
     }
 
     public static function getSubscribedEvents(): array
