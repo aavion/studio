@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Core\Extension;
 
 use App\Content\ContentVisibility;
+use App\Core\Extension\ExtensionAclGroupMemberProviderInterface;
 use App\Core\Extension\ExtensionReferenceFacade;
 use App\Core\Extension\ExtensionRuntime;
 use App\Core\Extension\ExtensionRuntimeServices;
@@ -78,6 +79,7 @@ final class ExtensionRuntimeReferenceTest extends TestCase
             references: new ExtensionReferenceFacade(
                 $this->entityManager([$group, $admin, $user, $content, $extension]),
                 security: $this->security($admin),
+                aclGroupMembers: new FakeExtensionAclGroupMemberProvider([$group->uid() => [$user]]),
             ),
         ));
         $this->writeExtensionFile(<<<'PHP'
@@ -116,6 +118,14 @@ final class ExtensionRuntimeReferenceTest extends TestCase
         self::assertSame($userRef, $userEntity);
         self::assertSame('acl_group', $groupRef['type']);
         self::assertSame('team_admin', $groupRef['identifier']);
+        self::assertSame([[
+            'type' => 'user',
+            'uid' => $user->uid(),
+            'username' => 'memberuser',
+            'status' => 'active',
+            'role' => 'user',
+            'access_level' => UserRole::User->accessLevel(),
+        ]], $groupRef['members']);
         self::assertSame('role', $roleRef['type']);
         self::assertSame('public', $roleRef['value']);
         self::assertSame('extension', $extensionRef['type']);
@@ -217,5 +227,20 @@ final class ExtensionRuntimeReferenceTest extends TestCase
         $security->method('getUser')->willReturn($user);
 
         return $security;
+    }
+}
+
+final readonly class FakeExtensionAclGroupMemberProvider implements ExtensionAclGroupMemberProviderInterface
+{
+    /**
+     * @param array<string, list<UserAccount>> $membersByGroupUid
+     */
+    public function __construct(private array $membersByGroupUid)
+    {
+    }
+
+    public function members(AclGroup $group): array
+    {
+        return $this->membersByGroupUid[$group->uid()] ?? [];
     }
 }

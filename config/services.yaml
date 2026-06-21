@@ -292,6 +292,9 @@ services:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
+    App\Core\Extension\ExtensionAclGroupMemberProviderInterface:
+        alias: App\Core\Extension\DoctrineExtensionAclGroupMemberProvider
+
     App\Core\Extension\ExtensionRuntimeServices:
         arguments:
             $projectDir: '%kernel.project_dir%'

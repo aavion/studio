@@ -26,6 +26,7 @@ final readonly class ExtensionReferenceFacade
         private ?PublishedContentResolver $contentResolver = null,
         private ?ContentReadAccessPolicy $contentAccess = null,
         private ?Security $security = null,
+        private ?ExtensionAclGroupMemberProviderInterface $aclGroupMembers = null,
     ) {
     }
 
@@ -219,6 +220,7 @@ final readonly class ExtensionReferenceFacade
             'identifier' => $group->identifier(),
             'name' => $group->name(),
             'min_role' => $group->minRole(),
+            'members' => array_map($this->userMemberReference(...), $this->aclGroupMembers?->members($group) ?? []),
         ];
     }
 
@@ -258,6 +260,21 @@ final readonly class ExtensionReferenceFacade
             'manifest_version' => $extension->manifestVersion(),
             'installed_version' => $extension->installedVersion(),
             'available_version' => $extension->availableVersion(),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function userMemberReference(UserAccount $user): array
+    {
+        return [
+            'type' => 'user',
+            'uid' => $user->uid(),
+            'username' => $user->username(),
+            'status' => $user->status()->value,
+            'role' => $user->role()->value,
+            'access_level' => $user->accessLevel(),
         ];
     }
 
