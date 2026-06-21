@@ -85,3 +85,13 @@ if (!function_exists('extension_http_request')) {
         return ExtensionRuntime::httpRequest($method, $url, $payload, $options);
     }
 }
+
+if (!function_exists('extension_log')) {
+    /**
+     * @param array<string, mixed> $context
+     */
+    function extension_log(string $level, string $message, array $context = []): bool
+    {
+        return ExtensionRuntime::log($level, $message, $context);
+    }
+}

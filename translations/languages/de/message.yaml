@@ -88,6 +88,7 @@ message:
       rolled_back: 'Extension-Lifecycle-Änderungen wurden für %count% Extension(e) zurückgerollt.'
     runtime:
       contribution_unsupported: 'Extension "%extension%" hat einen nicht unterstützten Runtime-Contribution-Typ "%type%" zurückgegeben.'
+      log: '%message%'
     live:
       endpoint_path_invalid: 'Extension "%extension%" wollte den Live-Endpunkt-Pfad "%path%" außerhalb des eigenen /api/live/{extension}/-Namespace registrieren.'
       endpoint_handler_invalid: 'Extension "%extension%" wollte den Live-Endpunkt-Handler "%handler%" außerhalb des eigenen Handler-Namespace registrieren.'

@@ -301,6 +301,7 @@ services:
             $assetUrls: '@App\Core\Extension\ExtensionAssetUrlGenerator'
             $endpointUrls: '@App\Core\Extension\ExtensionEndpointUrlGenerator'
             $httpRequests: '@App\Core\Extension\ExtensionHttpRequest'
+            $logs: '@App\Core\Extension\ExtensionLogFacade'
 
     App\Security\AutoBan\AutoBanSignalEvaluator:
         arguments:

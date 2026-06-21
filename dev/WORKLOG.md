@@ -88,6 +88,7 @@
 **Usage:** Keep concise session notes in the active worklog and include the current branch in headings, using the form `### YYYY-MM-DD branch-name`. Place the newest branch/date heading directly below `## Branch Logs`; within a matching branch/date heading, add new notes at the top so the newest context stays first. Record meaningful committed or completed changes, decisions, blockers, and follow-ups; keep detailed verification in PR notes unless a result materially affects the worklog context. When switching to a different branch or after a PR is merged, compact the completed branch entry into [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), then create the new branch entry at the top.
 
 ### 2026-06-21 feat-security-captcha-contract
+- Added `extension_log()` for caller-attributed extension runtime logs, with invalid literal messages routed through a system-owned fallback message key and extension-supplied context nested to avoid top-level context spoofing.
 - Added `extension_http_request()` as a bounded service-backed extension HTTP facade with method/scheme validation, JSON result decoding, response/payload size limits, and private-network blocking by default behind a core config key.
 - Added `extension_live_url()` and `extension_api_url()` helpers that build caller-owned extension endpoint URLs through the shared runtime boundary and Symfony routes while rejecting unsafe relative endpoint inputs.
 - Added the `extension_asset_url()` runtime helper for caller-owned mirrored public assets while keeping private extension assets non-addressable through URLs.

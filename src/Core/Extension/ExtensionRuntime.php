@@ -109,6 +109,17 @@ final class ExtensionRuntime
     }
 
     /**
+     * @param array<string, mixed> $context
+     */
+    public static function log(string $level, string $message, array $context = []): bool
+    {
+        $slug = self::callerExtensionSlug();
+        $logs = self::$services?->logs();
+
+        return null !== $slug && null !== $logs && $logs->log($slug, $level, $message, $context);
+    }
+
+    /**
      * @internal test helper
      */
     public static function reset(): void

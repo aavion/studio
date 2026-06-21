@@ -88,6 +88,7 @@ message:
       rolled_back: 'Extension lifecycle changes were rolled back for %count% extension(s).'
     runtime:
       contribution_unsupported: 'Extension "%extension%" returned unsupported runtime contribution type "%type%".'
+      log: '%message%'
     live:
       endpoint_path_invalid: 'Extension "%extension%" tried to register live endpoint path "%path%" outside its own /api/live/{extension}/ namespace.'
       endpoint_handler_invalid: 'Extension "%extension%" tried to register live endpoint handler "%handler%" outside its own handler namespace.'
