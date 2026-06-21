@@ -59,6 +59,7 @@
                 setup_display_values: setup_display_values,
                 setup_errors: setup_errors,
                 setup_site_settings_form: setup_site_settings_form,
+                form_id: 'setup-wizard',
             } only %}
         {% elseif setup_step == 'database' %}
             {% include '@backend/setup/partials/steps/_database.html.twig' with {

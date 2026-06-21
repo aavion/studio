@@ -1169,6 +1169,9 @@ final class BackendControllerTest extends WebTestCase
         self::assertSelectorTextContains('h1', 'Security settings');
         self::assertSelectorExists('form#admin-settings-security');
         self::assertSelectorNotExists('select[name="security.captcha.provider"]');
+        self::assertStringContainsString('name="captcha[provider]" value="none"', (string) $client->getResponse()->getContent());
+        self::assertStringContainsString('name="captcha[form_id]" value="admin-settings-security"', (string) $client->getResponse()->getContent());
+        self::assertStringNotContainsString('name="security.captcha.preview[provider]"', (string) $client->getResponse()->getContent());
         self::assertSelectorExists(sprintf('select[name="%s"]', RateLimitPolicyCatalogue::MODE_KEY));
         self::assertSelectorExists(sprintf('input[name="%s"]', ConfigAuditLogPolicy::ENABLED_KEY));
         self::assertSelectorExists(sprintf('input[name="%s[]"]', ConfigAuditLogPolicy::EVENTS_KEY));

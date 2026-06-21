@@ -41,7 +41,7 @@ final class CaptchaProviderBridgeTest extends TestCase
         self::assertNull($result->provider());
         self::assertFalse($result->visible());
         self::assertFalse($result->faulty());
-        self::assertTrue($result->context()['captcha']['skipped']);
+        self::assertTrue($result->context()['captcha']['fallback_rendered']);
         self::assertSame('login-form', $result->context()['captcha']['form_id']);
     }
 
@@ -77,6 +77,31 @@ final class CaptchaProviderBridgeTest extends TestCase
         self::assertTrue($validation->isProviderBacked());
         self::assertSame('demo-module', $validation->provider());
         self::assertSame('captcha', $validation->context()['field']);
+    }
+
+    public function testItDoesNotTrustClientSuppliedSkipPayloadWhenProviderIsActive(): void
+    {
+        $registry = new ExtensionRuntimeContributionRegistry();
+        $registry->add($this->extension(), new ExtensionProviderContribution(
+            ExtensionScope::CaptchaProvider,
+            static function (CaptchaValidationRequest $request): CaptchaValidationResult {
+                return CaptchaValidationResult::recoverableFailure('demo-captcha', [
+                    'payload' => $request->payload(),
+                ]);
+            },
+        ));
+        $bridge = new CaptchaProviderBridge($registry);
+
+        $result = $bridge->validate(new CaptchaValidationRequest('login', 'login-form', 'captcha', [
+            'provider' => 'none',
+            'fallback_rendered' => '1',
+            'status' => 'skipped',
+        ]));
+
+        self::assertSame(CaptchaValidationStatus::RecoverableFailure, $result->status());
+        self::assertSame('demo-module', $result->provider());
+        self::assertTrue($result->isProviderBacked());
+        self::assertSame('skipped', $result->context()['payload']['status']);
     }
 
     public function testItConvertsProviderExceptionsToProviderFaultResults(): void

@@ -24,8 +24,12 @@ final class SecurityControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Sign in');
-        self::assertSelectorExists('form[action="/user/login"][method="post"]');
+        self::assertSelectorExists('form#user-login-form[action="/user/login"][method="post"]');
         self::assertSelectorExists('input[name="_csrf_token"]');
+        self::assertSelectorExists('input[name="captcha[provider]"][value="none"]');
+        self::assertSelectorExists('input[name="captcha[fallback_rendered]"][value="1"]');
+        self::assertSelectorExists('input[name="captcha[form_id]"][value="user-login-form"]');
+        self::assertSelectorNotExists('input[name="captcha[status]"][value="skipped"]');
         self::assertSelectorNotExists('input[name="_auto_ban_recovery_token"]');
         self::assertSelectorTextContains('a[href="/user/reset-password"]', 'Forgot password?');
         self::assertSelectorNotExists('.system-frontend-error-reference');

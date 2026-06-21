@@ -23,5 +23,8 @@
 <section class="system-panel">
     <h2>{{ 'setup.site.behavior_title'|trans }}</h2>
     <p class="system-muted">{{ 'setup.site.behavior_text'|trans }}</p>
-    {% include '@backend/partials/forms/_dynamic_fields.html.twig' with {fields: setup_site_settings_form.fields} only %}
+    {% include '@backend/partials/forms/_dynamic_fields.html.twig' with {
+        fields: setup_site_settings_form.fields,
+        form_id: form_id|default('setup-wizard'),
+    } only %}
 </section>

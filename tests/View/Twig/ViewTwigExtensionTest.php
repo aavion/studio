@@ -41,9 +41,13 @@ final class ViewTwigExtensionTest extends KernelTestCase
 
         $twig = self::getContainer()->get(Environment::class);
         $html = $twig->createTemplate(
-            '{% include "@frontend/partials/forms/fields/captcha.html.twig" %}|{% include "@backend/editor/fields/richtext.html.twig" with {name: "body", value: "Hello"} only %}',
+            '{% include "@frontend/partials/forms/fields/captcha.html.twig" with {form_id: "comment-form", name: "captcha"} only %}|{% include "@backend/editor/fields/richtext.html.twig" with {name: "body", value: "Hello"} only %}',
         )->render();
 
+        self::assertStringContainsString('name="captcha[provider]" value="none"', $html);
+        self::assertStringContainsString('name="captcha[fallback_rendered]" value="1"', $html);
+        self::assertStringContainsString('name="captcha[form_id]" value="comment-form"', $html);
+        self::assertStringNotContainsString('captcha[status]', $html);
         self::assertStringContainsString('|', $html);
         self::assertStringContainsString('name="body"', $html);
         self::assertStringContainsString('data-controller="code-editor"', $html);

@@ -82,7 +82,7 @@ final readonly class CaptchaProviderBridge
                 'workflow' => $context->workflow(),
                 'form_id' => $context->formId(),
                 'field_name' => $context->fieldName(),
-                'skipped' => true,
+                'fallback_rendered' => true,
             ],
         ];
     }
