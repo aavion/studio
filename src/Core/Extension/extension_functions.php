@@ -106,3 +106,25 @@ if (!function_exists('extension_alert')) {
         return ExtensionRuntime::alert($level, $message, $parameters, $options);
     }
 }
+
+if (!function_exists('extension_lookup')) {
+    /**
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>|null
+     */
+    function extension_lookup(string $type, string $identifier, array $options = []): ?array
+    {
+        return ExtensionRuntime::lookup($type, $identifier, $options);
+    }
+}
+
+if (!function_exists('extension_entity')) {
+    /**
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>|null
+     */
+    function extension_entity(string $uid, ?string $type = null, array $options = []): ?array
+    {
+        return ExtensionRuntime::entity($uid, $type, $options);
+    }
+}

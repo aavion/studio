@@ -132,6 +132,30 @@ final class ExtensionRuntime
     }
 
     /**
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>|null
+     */
+    public static function lookup(string $type, string $identifier, array $options = []): ?array
+    {
+        $slug = self::callerExtensionSlug();
+        $references = self::$services?->references();
+
+        return null !== $slug && null !== $references ? $references->lookup($type, $identifier, $options) : null;
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>|null
+     */
+    public static function entity(string $uid, ?string $type = null, array $options = []): ?array
+    {
+        $slug = self::callerExtensionSlug();
+        $references = self::$services?->references();
+
+        return null !== $slug && null !== $references ? $references->entity($uid, $type, $options) : null;
+    }
+
+    /**
      * @internal test helper
      */
     public static function reset(): void

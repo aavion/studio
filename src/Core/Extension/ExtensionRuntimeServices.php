@@ -18,6 +18,7 @@ final readonly class ExtensionRuntimeServices
         private ?ExtensionHttpRequest $httpRequests = null,
         private ?ExtensionLogFacade $logs = null,
         private ?ExtensionAlertFacade $alerts = null,
+        private ?ExtensionReferenceFacade $references = null,
     ) {
     }
 
@@ -64,5 +65,10 @@ final readonly class ExtensionRuntimeServices
     public function alerts(): ?ExtensionAlertFacade
     {
         return $this->alerts;
+    }
+
+    public function references(): ?ExtensionReferenceFacade
+    {
+        return $this->references;
     }
 }
