@@ -139,8 +139,17 @@ final class ExtensionPhpLoader implements EventSubscriberInterface
 
             try {
                 $result = $this->includeLoader($loaderPath, $extension);
+                $runtime = $this->runtimeContributionsAndBoots($extension, $result);
 
-                $this->runtimeContributions?->add($extension, $result);
+                if (null !== $this->runtimeContributions) {
+                    $this->runtimeContributions->addStaged(
+                        $extension,
+                        $runtime['contributions'],
+                        fn (): null => $this->executeRuntimeBoots($extension, $runtime['boots']),
+                    );
+                } else {
+                    $this->executeRuntimeBoots($extension, $runtime['boots']);
+                }
 
                 $this->loadedExtensions[$extension->extensionName()] = true;
                 $loaded[] = $extension->extensionName();
@@ -201,6 +210,58 @@ final class ExtensionPhpLoader implements EventSubscriberInterface
         return (static function (string $loaderPath, Extension $extension): mixed {
             return require $loaderPath;
         })($loaderPath, $extension);
+    }
+
+    /**
+     * @return array{contributions: list<mixed>, boots: list<ExtensionRuntimeBoot>}
+     */
+    private function runtimeContributionsAndBoots(Extension $extension, mixed $contribution): array
+    {
+        if (null === $contribution) {
+            return ['contributions' => [], 'boots' => []];
+        }
+
+        if ($contribution instanceof ExtensionRuntimeBoot) {
+            return ['contributions' => [], 'boots' => [$contribution]];
+        }
+
+        if ($contribution instanceof ExtensionActivationContributionFactory) {
+            return ['contributions' => [], 'boots' => []];
+        }
+
+        if ($contribution instanceof ExtensionRuntimeContributionFactory) {
+            return $this->runtimeContributionsAndBoots(
+                $extension,
+                $contribution->contributions(new ExtensionContributionContext($extension)),
+            );
+        }
+
+        if (is_iterable($contribution)) {
+            $contributions = [];
+            $boots = [];
+
+            foreach ($contribution as $item) {
+                $expanded = $this->runtimeContributionsAndBoots($extension, $item);
+                array_push($contributions, ...$expanded['contributions']);
+                array_push($boots, ...$expanded['boots']);
+            }
+
+            return ['contributions' => $contributions, 'boots' => $boots];
+        }
+
+        return ['contributions' => [$contribution], 'boots' => []];
+    }
+
+    /**
+     * @param list<ExtensionRuntimeBoot> $boots
+     */
+    private function executeRuntimeBoots(Extension $extension, array $boots): null
+    {
+        foreach ($boots as $boot) {
+            $boot->boot(new ExtensionRuntimeContext($extension, $this->environment));
+        }
+
+        return null;
     }
 
     /**

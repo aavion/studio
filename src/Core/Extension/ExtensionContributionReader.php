@@ -55,6 +55,10 @@ final readonly class ExtensionContributionReader
             return;
         }
 
+        if ($contribution instanceof ExtensionRuntimeBoot) {
+            return;
+        }
+
         if (is_iterable($contribution)) {
             foreach ($contribution as $item) {
                 yield from $this->activationContributions($extension, $item);

@@ -10,6 +10,7 @@ use App\Core\Extension\Database\ExtensionDatabaseColumn;
 use App\Core\Extension\Database\ExtensionDatabaseTable;
 use App\Core\Extension\ExtensionContributionContext;
 use App\Core\Extension\ExtensionContributions;
+use App\Core\Extension\ExtensionRuntimeBoot;
 use App\Core\Extension\ExtensionRuntimeContributionRegistry;
 use App\Core\Extension\ExtensionScope;
 use App\Core\Extension\ExtensionStatus;
@@ -66,6 +67,31 @@ final class ExtensionRuntimeContributionRegistryContractTest extends TestCase
                 ->activation(static fn (): array => []));
 
             self::fail('Expected activation factories to be rejected by the runtime registry.');
+        } catch (\Throwable $error) {
+            self::assertStringContainsString('message.extension.runtime.contribution_unsupported', $error->getMessage());
+        }
+
+        self::assertSame([], $registry->extensionSettings());
+    }
+
+    public function testItRejectsRuntimeBootsInRuntimeRegistryWithoutPartialState(): void
+    {
+        $extension = $this->extension([ExtensionScope::Module]);
+        $registry = new ExtensionRuntimeContributionRegistry();
+
+        try {
+            $registry->add($extension, [
+                new ExtensionSettingDefinition(
+                    'demo-module',
+                    'display.mode',
+                    'extension.demo_module.display_mode.label',
+                    'compact',
+                ),
+                new ExtensionRuntimeBoot(static function (): void {
+                }),
+            ]);
+
+            self::fail('Expected runtime boots to be handled by the extension loader before registry insertion.');
         } catch (\Throwable $error) {
             self::assertStringContainsString('message.extension.runtime.contribution_unsupported', $error->getMessage());
         }

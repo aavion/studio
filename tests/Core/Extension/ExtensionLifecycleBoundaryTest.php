@@ -390,6 +390,95 @@ final class ExtensionLifecycleBoundaryTest extends KernelTestCase
         self::assertSame('message.extension.lifecycle.php_load_failed', $result->firstIssue()?->translationKey());
     }
 
+    public function testExtensionPhpLoaderExecutesRuntimeBootAfterStagedContributions(): void
+    {
+        $this->insertExtension('demo-module', ['module'], 'active');
+        $this->writeTestFile($this->projectDir, 'extensions/demo-module/extension.php', <<<'PHP'
+            <?php
+
+            use App\Core\Extension\ExtensionContributionContext;
+            use App\Core\Extension\ExtensionContributions;
+            use App\Core\Extension\ExtensionRuntimeContext;
+            use App\Core\Extension\Settings\ExtensionSettingDefinition;
+
+            return ExtensionContributions::create()
+                ->runtime(static fn (ExtensionContributionContext $context): array => [
+                    new ExtensionSettingDefinition(
+                        $context->extensionName(),
+                        'display.mode',
+                        'ext.demo-module.settings.display_mode.label',
+                        'booted',
+                    ),
+                ])
+                ->activation(static fn (): array => [
+                    throw new RuntimeException('activation factory must not run at runtime'),
+                ])
+                ->runtimeBoot(static function (ExtensionRuntimeContext $context): void {
+                    file_put_contents(__DIR__.'/booted.txt', $context->extensionName().'@'.$context->environment()."\n", FILE_APPEND);
+                });
+            PHP);
+
+        $registry = new ExtensionRuntimeContributionRegistry();
+        $loader = new ExtensionPhpLoader(
+            new ActiveExtensionProvider($this->entityManager),
+            $this->entityManager,
+            $this->projectDir,
+            new NullWorkflowResultMessageReporter(),
+            environment: 'test',
+            runtimeContributions: $registry,
+        );
+
+        $first = $loader->loadActiveExtensions();
+        $second = $loader->loadActiveExtensions();
+
+        self::assertTrue($first->isSuccess());
+        self::assertTrue($second->isSuccess());
+        self::assertSame('display.mode', $registry->extensionSettings()[0]->key());
+        self::assertSame(["demo-module@test"], file($this->projectDir.'/extensions/demo-module/booted.txt', FILE_IGNORE_NEW_LINES));
+        self::assertSame(['demo-module'], $first->value()['loaded']);
+        self::assertSame(['demo-module'], $second->value()['skipped']);
+    }
+
+    public function testExtensionPhpLoaderDoesNotKeepContributionsWhenRuntimeBootFails(): void
+    {
+        $this->insertExtension('demo-module', ['module'], 'active');
+        $this->writeTestFile($this->projectDir, 'extensions/demo-module/extension.php', <<<'PHP'
+            <?php
+
+            use App\Core\Extension\ExtensionContributionContext;
+            use App\Core\Extension\ExtensionContributions;
+            use App\Core\Extension\ExtensionRuntimeContext;
+            use App\Core\Extension\Settings\ExtensionSettingDefinition;
+
+            return ExtensionContributions::create()
+                ->runtime(static fn (ExtensionContributionContext $context): array => [
+                    new ExtensionSettingDefinition(
+                        $context->extensionName(),
+                        'display.mode',
+                        'ext.demo-module.settings.display_mode.label',
+                        'booted',
+                    ),
+                ])
+                ->runtimeBoot(static function (ExtensionRuntimeContext $context): void {
+                    throw new RuntimeException('boot failed');
+                });
+            PHP);
+
+        $registry = new ExtensionRuntimeContributionRegistry();
+        $result = (new ExtensionPhpLoader(
+            new ActiveExtensionProvider($this->entityManager),
+            $this->entityManager,
+            $this->projectDir,
+            new NullWorkflowResultMessageReporter(),
+            runtimeContributions: $registry,
+        ))->loadActiveExtensions();
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('faulty', $this->extensionStatus('demo-module'));
+        self::assertSame([], $registry->extensionSettings());
+        self::assertSame('message.extension.lifecycle.php_load_failed', $result->firstIssue()?->translationKey());
+    }
+
     public function testExtensionPhpLoaderDoesNotKeepPartialRuntimeContributionsAfterFailure(): void
     {
         $this->insertExtension('broken-module', ['module'], 'active');

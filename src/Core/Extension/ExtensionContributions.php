@@ -48,7 +48,7 @@ final class ExtensionContributions implements \IteratorAggregate
     }
 
     public function add(
-        StaticViewInjection|ConfigurableStaticViewInjectionSet|DynamicViewInjection|ExtensionSettingDefinition|SchedulerTaskDefinition|ApiEndpointDefinition|ApiEndpointHandlerInterface|LiveEndpointDefinition|LiveEndpointHandlerInterface|CookieConsentDefinition|ExtensionDatabaseTable|ExtensionContentSchemaDefinition|ExtensionRuntimeContributionFactory|ExtensionActivationContributionFactory|StaticViewInjectionProviderInterface|DynamicViewInjectionProviderInterface|ExtensionSettingProviderInterface|ApiEndpointProviderInterface|ApiEndpointHandlerProviderInterface|LiveEndpointProviderInterface|LiveEndpointHandlerProviderInterface|CookieConsentProviderInterface|SchedulerTaskProviderInterface|SchedulerCallableProviderInterface|SchedulerActionQueueProviderInterface|ExtensionDatabaseProviderInterface|ExtensionContentSchemaProviderInterface $contribution,
+        StaticViewInjection|ConfigurableStaticViewInjectionSet|DynamicViewInjection|ExtensionSettingDefinition|SchedulerTaskDefinition|ApiEndpointDefinition|ApiEndpointHandlerInterface|LiveEndpointDefinition|LiveEndpointHandlerInterface|CookieConsentDefinition|ExtensionDatabaseTable|ExtensionContentSchemaDefinition|ExtensionRuntimeContributionFactory|ExtensionActivationContributionFactory|ExtensionRuntimeBoot|StaticViewInjectionProviderInterface|DynamicViewInjectionProviderInterface|ExtensionSettingProviderInterface|ApiEndpointProviderInterface|ApiEndpointHandlerProviderInterface|LiveEndpointProviderInterface|LiveEndpointHandlerProviderInterface|CookieConsentProviderInterface|SchedulerTaskProviderInterface|SchedulerCallableProviderInterface|SchedulerActionQueueProviderInterface|ExtensionDatabaseProviderInterface|ExtensionContentSchemaProviderInterface $contribution,
     ): self {
         $this->items[] = $contribution;
 
@@ -63,6 +63,11 @@ final class ExtensionContributions implements \IteratorAggregate
     public function activation(callable $factory): self
     {
         return $this->add(new ExtensionActivationContributionFactory($factory));
+    }
+
+    public function runtimeBoot(callable $boot): self
+    {
+        return $this->add(new ExtensionRuntimeBoot($boot));
     }
 
     public function staticView(StaticViewInjection $injection): self

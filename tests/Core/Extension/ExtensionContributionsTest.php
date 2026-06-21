@@ -6,6 +6,7 @@ namespace App\Tests\Core\Extension;
 
 use App\Core\Extension\ExtensionContributions;
 use App\Core\Extension\ExtensionRuntimeContributionFactory;
+use App\Core\Extension\ExtensionRuntimeBoot;
 use App\Core\Extension\Content\ExtensionContentSchemaDefinition;
 use App\Core\Extension\Database\ExtensionDatabaseColumn;
 use App\Core\Extension\Database\ExtensionDatabaseTable;
@@ -52,6 +53,8 @@ final class ExtensionContributionsTest extends TestCase
 
         $contributions = ExtensionContributions::create()
             ->runtime(static fn (): array => [])
+            ->runtimeBoot(static function (): void {
+            })
             ->staticView($staticView)
             ->setting($setting)
             ->schedulerTask($schedulerTask)
@@ -61,6 +64,7 @@ final class ExtensionContributionsTest extends TestCase
         $items = iterator_to_array($contributions);
 
         self::assertInstanceOf(ExtensionRuntimeContributionFactory::class, $items[0]);
-        self::assertSame([$staticView, $setting, $schedulerTask, $databaseTable, $contentSchema], array_slice($items, 1));
+        self::assertInstanceOf(ExtensionRuntimeBoot::class, $items[1]);
+        self::assertSame([$staticView, $setting, $schedulerTask, $databaseTable, $contentSchema], array_slice($items, 2));
     }
 }

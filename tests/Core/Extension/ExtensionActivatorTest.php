@@ -130,7 +130,7 @@ use App\Core\Extension\ExtensionContributions;
 
 return ExtensionContributions::create()
     ->runtime(static function (ExtensionContributionContext $context): array {
-        file_put_contents(dirname($context->path()).'/runtime-ran.txt', 'yes');
+        file_put_contents(__DIR__.'/runtime-ran.txt', 'yes');
 
         return [];
     })
@@ -145,7 +145,7 @@ PHP);
 
         self::assertTrue($result->isSuccess());
         self::assertContains('ext11_demo_module_entry', $this->connection->createSchemaManager()->listTableNames());
-        self::assertFileDoesNotExist($this->temporaryProjectDir.'/extensions/runtime-ran.txt');
+        self::assertFileDoesNotExist($this->temporaryProjectDir.'/extensions/demo-module/runtime-ran.txt');
     }
 
     public function testItRejectsNakedCallableActivationContributionsWithoutExecutingThem(): void
@@ -168,6 +168,37 @@ PHP);
         self::assertSame('inactive', $this->extensionStatus('demo-module'));
         self::assertFileDoesNotExist($this->temporaryProjectDir.'/extensions/demo-module/activation-ran.txt');
         self::assertSame('message.extension.runtime.contribution_unsupported', $result->firstIssue()?->translationKey());
+    }
+
+    public function testItIgnoresRuntimeBootDuringActivationContributionReads(): void
+    {
+        $this->temporaryProjectDir = $this->createTemporaryDirectory('system-extension-activation-runtime-boot');
+        $this->insertExtension('demo-module', ['module', 'database'], 'inactive');
+        $this->writeTestFile($this->temporaryProjectDir, 'extensions/demo-module/extension.php', <<<'PHP'
+<?php
+
+use App\Core\Extension\Database\ExtensionDatabaseColumn;
+use App\Core\Extension\Database\ExtensionDatabaseTable;
+use App\Core\Extension\ExtensionContributionContext;
+use App\Core\Extension\ExtensionContributions;
+use App\Core\Extension\ExtensionRuntimeContext;
+
+return ExtensionContributions::create()
+    ->activation(static fn (ExtensionContributionContext $context): array => [
+        ExtensionDatabaseTable::create('entry', [
+            ExtensionDatabaseColumn::string('uid', 36),
+        ], ['uid']),
+    ])
+    ->runtimeBoot(static function (ExtensionRuntimeContext $context): void {
+        file_put_contents(__DIR__.'/runtime-boot-ran.txt', 'yes');
+    });
+PHP);
+
+        $result = $this->activatorWithContributionApplier()->activate('demo-module', 'test', rebuildAssets: false);
+
+        self::assertTrue($result->isSuccess());
+        self::assertContains('ext11_demo_module_entry', $this->connection->createSchemaManager()->listTableNames());
+        self::assertFileDoesNotExist($this->temporaryProjectDir.'/extensions/demo-module/runtime-boot-ran.txt');
     }
 
     public function testItDoesNotReloadAlreadyActiveDependenciesWhenApplyingActivationContributions(): void
