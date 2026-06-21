@@ -95,3 +95,14 @@ if (!function_exists('extension_log')) {
         return ExtensionRuntime::log($level, $message, $context);
     }
 }
+
+if (!function_exists('extension_alert')) {
+    /**
+     * @param array<string, mixed> $parameters
+     * @param array<string, mixed> $options
+     */
+    function extension_alert(string $level, string $message, array $parameters = [], array $options = []): bool
+    {
+        return ExtensionRuntime::alert($level, $message, $parameters, $options);
+    }
+}

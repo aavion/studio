@@ -120,6 +120,18 @@ final class ExtensionRuntime
     }
 
     /**
+     * @param array<string, mixed> $parameters
+     * @param array<string, mixed> $options
+     */
+    public static function alert(string $level, string $message, array $parameters = [], array $options = []): bool
+    {
+        $slug = self::callerExtensionSlug();
+        $alerts = self::$services?->alerts();
+
+        return null !== $slug && null !== $alerts && $alerts->alert($slug, $level, $message, $parameters, $options);
+    }
+
+    /**
      * @internal test helper
      */
     public static function reset(): void

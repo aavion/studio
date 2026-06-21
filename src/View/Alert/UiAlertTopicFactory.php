@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\View\Alert;
 
+use App\Entity\AclGroup;
 use App\Entity\UserAccount;
+use App\Security\UserRole;
 use InvalidArgumentException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
@@ -32,6 +34,27 @@ final readonly class UiAlertTopicFactory
         return $this->topic('session', $sessionId);
     }
 
+    public function roleTopic(UserRole|string $role): string
+    {
+        $roleValue = $role instanceof UserRole ? $role->value : trim($role);
+        $role = UserRole::tryFrom($roleValue);
+        if (!$role instanceof UserRole || UserRole::Public === $role) {
+            throw new InvalidArgumentException('UI alert role topics require a non-public user role value.');
+        }
+
+        return $this->topic('role', $role->value);
+    }
+
+    public function aclGroupTopic(AclGroup|string $group): string
+    {
+        $identity = strtolower($group instanceof AclGroup ? $group->uid() : trim($group));
+        if (1 !== preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $identity)) {
+            throw new InvalidArgumentException('UI alert ACL group topics require a group UID.');
+        }
+
+        return $this->topic('acl_group', $identity);
+    }
+
     /**
      * @return list<string>
      */
@@ -41,6 +64,15 @@ final readonly class UiAlertTopicFactory
 
         if ($user instanceof UserAccount) {
             $topics[] = $this->userTopic($user);
+            foreach ($this->roleTopicsFor($user) as $topic) {
+                $topics[] = $topic;
+            }
+
+            foreach ($user->groups() as $group) {
+                if ($group instanceof AclGroup) {
+                    $topics[] = $this->aclGroupTopic($group);
+                }
+            }
         }
 
         if (null !== $request && $request->hasSession()) {
@@ -56,7 +88,7 @@ final readonly class UiAlertTopicFactory
 
     public function isUiAlertTopic(string $topic): bool
     {
-        $matches = preg_match('/^'.preg_quote(self::PREFIX, '/').'(user|session):[a-f0-9]{64}$/', $topic);
+        $matches = preg_match('/^'.preg_quote(self::PREFIX, '/').'(user|session|role|acl_group):[a-f0-9]{64}$/', $topic);
 
         return 1 === $matches;
     }
@@ -89,6 +121,24 @@ final readonly class UiAlertTopicFactory
         }
 
         throw new InvalidArgumentException('UI alert user topics require an account UID or resolvable username.');
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function roleTopicsFor(UserAccount $user): array
+    {
+        $topics = [];
+
+        foreach (UserRole::cases() as $role) {
+            if (UserRole::Public === $role || $role->accessLevel() > $user->role()->accessLevel()) {
+                continue;
+            }
+
+            $topics[] = $this->roleTopic($role);
+        }
+
+        return $topics;
     }
 
     private function sessionId(Request $request, SessionInterface $session): ?string

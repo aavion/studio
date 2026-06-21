@@ -17,6 +17,7 @@ final readonly class ExtensionRuntimeServices
         private ?ExtensionEndpointUrlGenerator $endpointUrls = null,
         private ?ExtensionHttpRequest $httpRequests = null,
         private ?ExtensionLogFacade $logs = null,
+        private ?ExtensionAlertFacade $alerts = null,
     ) {
     }
 
@@ -58,5 +59,10 @@ final readonly class ExtensionRuntimeServices
     public function logs(): ?ExtensionLogFacade
     {
         return $this->logs;
+    }
+
+    public function alerts(): ?ExtensionAlertFacade
+    {
+        return $this->alerts;
     }
 }
