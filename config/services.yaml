@@ -288,6 +288,7 @@ services:
         arguments:
             $projectDir: '%kernel.project_dir%'
             $cache: '@App\Core\Extension\ExtensionCacheInterface'
+            $settings: '@App\Core\Extension\Settings\ExtensionSettings'
 
     App\Security\AutoBan\AutoBanSignalEvaluator:
         arguments:

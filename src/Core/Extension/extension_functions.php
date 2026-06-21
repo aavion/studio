@@ -33,3 +33,10 @@ if (!function_exists('extension_cache_delete')) {
         return ExtensionRuntime::cacheDelete($key);
     }
 }
+
+if (!function_exists('extension_settings_get')) {
+    function extension_settings_get(string $key, mixed $default = null): mixed
+    {
+        return ExtensionRuntime::settingsGet($key, $default);
+    }
+}

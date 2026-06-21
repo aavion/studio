@@ -41,6 +41,14 @@ final class ExtensionRuntime
         return null !== $slug && null !== $cache && $cache->delete($slug, $key);
     }
 
+    public static function settingsGet(string $key, mixed $default = null): mixed
+    {
+        $slug = self::callerExtensionSlug();
+        $settings = self::$services?->settings();
+
+        return null !== $slug && null !== $settings ? $settings->get($slug, $key, $default) : $default;
+    }
+
     /**
      * @internal test helper
      */
