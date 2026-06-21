@@ -52,7 +52,7 @@ Codex may create local commits for this branch when each commit has a clear them
 - `ExtensionValidator` and adjacent validators: keep static validation for namespace, syntax, template scope, PHP policy, CSS namespace, and obvious disallowed capability use.
 - `PublicEventDispatcher` / `PublicEventHookRegistry`: adapt callable listener contributions to documented public events while preserving structured failure handling.
 - `CoreSettingsRegistry` and Admin settings rendering: remove the active captcha provider setting, keep only workflow/policy settings that are not provider selection.
-- `templates/provider/captcha/field.html.twig` and form rendering: convert placeholder behavior into the provider-agnostic fallback contract.
+- `templates/components/CaptchaField.html.twig`, `templates/provider/captcha/field.html.twig`, and form rendering: convert placeholder behavior into an opt-in provider-agnostic form field contract.
 
 ## Known risks and guardrails
 
@@ -148,7 +148,11 @@ return ExtensionContributions::create()
         App\View\ViewContextEvent::class,
         static fn (App\View\ViewContextEvent $event, ExtensionEventContext $context): void => null,
     )
-    ->captchaProvider(static fn (CaptchaValidationRequest $request): CaptchaValidationResult => CaptchaValidationResult::skipped());
+    ->captchaProvider(
+        static fn (CaptchaRenderContext|CaptchaValidationRequest $input): CaptchaRenderResult|CaptchaValidationResult => $input instanceof CaptchaRenderContext
+            ? CaptchaRenderResult::forProvider('demo-captcha')
+            : CaptchaValidationResult::recoverableFailure('demo-captcha'),
+    );
 ```
 
 ### Context objects
@@ -270,11 +274,12 @@ The provider callable should own challenge generation, challenge refresh, one-sh
 
 ### Form integration
 
-- Keep a global captcha form field/Twig partial that any workflow can render.
+- Keep a root-scoped captcha form field Twig component that any workflow template can render explicitly. Captcha validation is opt-in per form: if the component/field is rendered and submitted, the workflow validates captcha before ordinary form side effects; if the field is absent, the workflow does not run captcha.
 - Rendering uses `@provider/captcha/field.html.twig`.
-- If no real captcha provider is active, native fallback renders no visible challenge and submits only enough hidden/non-display state to mark graceful skipped validation.
+- If no real captcha provider is active, native fallback renders no visible challenge and submits only non-authoritative hidden metadata such as provider identity and form ID. Server-side validation may skip only because no active provider contribution exists, never because the client submitted a skip/fallback marker.
 - Every rendered captcha instance receives a stable unique form/captcha instance ID so multiple forms on one page are addressable.
-- Submitted captcha payload is passed to the active provider before ordinary form validation continues.
+- Submitted captcha payload is passed to the active provider before ordinary form validation continues. When a provider is active, fallback or skipped markers in the submitted payload are treated as provider input only and must not short-circuit validation.
+- Initial core placement is intentionally narrow: render captcha on the public email-only registration request form and optional auto-ban recovery login form, not on ordinary login or token-protected invitation/account-setup forms.
 - Skipped/no-provider success lets the workflow continue but is not verified human proof.
 - Verified provider success may reset only explicitly resettable captcha-failure buckets where policy allows.
 - Provider `none`, missing provider, disabled provider, skipped result, or fallback success must not reset rate limits, refill budgets, clear bans, or satisfy captcha-based `429` recovery.
@@ -330,9 +335,9 @@ The provider callable should own challenge generation, challenge refresh, one-sh
 
    **Review checkpoint:** Search settings, translations, admin forms, tests, defaults, docs, and drafts for stale provider-selection state. Confirm activation/deactivation is the only provider selection authority.
 
-10. Wire the global captcha field render and submit pipeline to the captcha bridge.
+10. Wire the opt-in captcha field render and submit pipeline to the captcha bridge.
 
-   **Review checkpoint:** Test multiple forms per page, missing provider, inactive provider, active provider render failure, active provider validation failure, malformed payloads, replay-like payloads, and public form behavior without creating anonymous sessions. Confirm captcha validation runs before ordinary form submission side effects and cannot be bypassed by omitting the provider field.
+   **Review checkpoint:** Test multiple forms per page, field-present versus field-absent submissions, missing provider, inactive provider, active provider render failure, active provider validation failure, malformed payloads, replay-like payloads, spoofed fallback/skip fields, and public form behavior without creating anonymous sessions. Confirm captcha validation runs before ordinary form submission side effects only for forms that rendered the field and cannot be bypassed by forging provider fields.
 
 11. Add verified-success and failure integration with rate-limit reset and abuse signal boundaries.
 
@@ -377,10 +382,13 @@ At every checkpoint and again before opening review, verify these edges explicit
 - Test listener failures become structured diagnostics and preserve extension ownership.
 - Test captcha provider contribution requires `captcha-provider` scope.
 - Test active captcha provider resolution from lifecycle state.
-- Test no active provider uses native skipped fallback.
+- Test no active provider uses native invisible fallback metadata plus a server-side skipped validation result.
 - Test global captcha field renders non-visible fallback without blocking workflows.
 - Test unique form/captcha instance IDs for multiple fields on one page.
+- Test ordinary login and token-protected account setup do not render captcha, while registration and recovery login do.
+- Test field-present submissions validate captcha and field-absent submissions do not.
 - Test submitted payload delegation to active provider.
+- Test client-supplied fallback or skipped markers cannot bypass an active provider.
 - Test verified, skipped, recoverable failure, suspicious failure, provider unavailable, and provider fault results.
 - Test only verified provider-backed success can call scoped reset hooks.
 - Test provider failure records safe diagnostics and does not expose internals.

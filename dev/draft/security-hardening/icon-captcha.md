@@ -37,8 +37,9 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 
 ## Public interfaces and data decisions
 
-- Provider key is `icon_captcha`.
+- Provider identity is the active extension slug, expected to be `icon-captcha` for the first-party package. Extension-owned internal keys may use snake-case, but core provider selection must not depend on a separate provider setting or hardcoded provider key.
 - IconCaptcha is self-contained extension code. Core must not ship IconCaptcha-specific JavaScript, CSS, challenge generators, polling endpoints, templates, or answer payload structures.
+- IconCaptcha participates only where a core or extension template explicitly renders the captcha field component. Ordinary login and token-protected account setup must remain captcha-free unless a future product decision changes their templates.
 - Public challenge payload contains only challenge ID, timestamp, render metadata, and button identifiers needed for display.
 - Provider secret is generated/configured outside manifests and public assets.
 - Default challenge TTL is 15 minutes, and validation invalidates the challenge after every attempt, successful or failed.
@@ -55,7 +56,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Challenge reuse fails after validation regardless of success or failure.
 - Expired challenges fail recoverably.
 - Context mismatch is suspicious but should not reveal internals.
-- Disabled provider falls back according to the generic resolver policy.
+- A missing or inactive provider falls back according to the generic captcha bridge policy. When the `icon-captcha` provider is active, submitted fallback or skipped markers are treated only as provider payload and must not bypass provider validation.
 - Asset loading failures produce safe diagnostics and recoverable user feedback where possible.
 - Asset license gaps or unclear provenance block the provider branch until the asset is replaced or the license is documented as acceptable.
 - Browser inspection should not reveal the correct answer through DOM order, source file names, SVG IDs, ARIA labels, visible hidden text, or static asset URLs.
