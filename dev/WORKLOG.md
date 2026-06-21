@@ -92,6 +92,9 @@
 ## Branch Logs
 **Usage:** Keep concise session notes in the active worklog and include the current branch in headings, using the form `### YYYY-MM-DD branch-name`. Place the newest branch/date heading directly below `## Branch Logs`; within a matching branch/date heading, add new notes at the top so the newest context stays first. Record meaningful committed or completed changes, decisions, blockers, and follow-ups; keep detailed verification in PR notes unless a result materially affects the worklog context. When switching to a different branch or after a PR is merged, compact the completed branch entry into [WORKLOG_HISTORY.md](WORKLOG_HISTORY.md), then create the new branch entry at the top.
 
+### 2026-06-22 feat-security-captcha-contract
+- Simplified live-operation label localization by folding translated label handling into `LiveOperationStarter::start()` with tolerant fallback for existing literal or stored continuation labels.
+
 ### 2026-06-21 feat-security-captcha-contract
 - Fixed PR-readiness drift found during the second audit pass by replacing newly added hard-coded contributor-facing exception texts with MessageException/MessageKey diagnostics, adding translated live-operation labels for direct operation starts, translating the empty extension-alert fallback, and updating the PR-readiness skill to emit copyable PR notes.
 - Fixed a PR-readiness class-map drift issue by replacing misleading generated extension-runtime descriptions with a neutral runtime-surface description, keeping the map usable as a lookup during review.

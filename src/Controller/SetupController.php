@@ -161,7 +161,7 @@ final class SetupController extends AbstractController
      */
     private function startSetupLiveOperation(Request $request, array $values): Response
     {
-        $result = $this->liveOperationStarter->startTranslated(
+        $result = $this->liveOperationStarter->start(
             LiveOperationQueueFactory::SETUP_APPLY,
             ['values' => $values, 'trigger' => 'setup_wizard'],
             'setup.operation.apply',

@@ -308,7 +308,7 @@ final readonly class UserGroupApiHandler implements ApiEndpointHandlerInterface
             return $this->validationFailed($request, ['__actor' => ['admin.users.form.errors.invalid']], ['group_identifier' => $group->identifier()]);
         }
 
-        $result = $this->liveOperations->startTranslated(
+        $result = $this->liveOperations->start(
             LiveOperationQueueFactory::ACL_GROUP_APPLY,
             [
                 'group_uid' => $group->uid(),

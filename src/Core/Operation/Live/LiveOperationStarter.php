@@ -30,12 +30,14 @@ final readonly class LiveOperationStarter
 
     /**
      * @param array<string, mixed> $payload
+     * @param array<string, mixed> $labelParameters
      *
      * @return WorkflowResult<array{operation_id: string, token: string, operation: string, label: string, status: string}>
      */
-    public function start(string $operation, array $payload, string $label): WorkflowResult
+    public function start(string $operation, array $payload, string $label, array $labelParameters = []): WorkflowResult
     {
         $run = null;
+        $label = $this->translatedLabel($label, $labelParameters);
 
         try {
             if (LiveOperationQueueFactory::SETUP_APPLY === $operation) {
@@ -84,14 +86,17 @@ final readonly class LiveOperationStarter
     }
 
     /**
-     * @param array<string, mixed> $payload
      * @param array<string, mixed> $labelParameters
-     *
-     * @return WorkflowResult<array{operation_id: string, token: string, operation: string, label: string, status: string}>
      */
-    public function startTranslated(string $operation, array $payload, string $labelKey, array $labelParameters = []): WorkflowResult
+    private function translatedLabel(string $label, array $labelParameters): string
     {
-        return $this->start($operation, $payload, $this->translator->trans($labelKey, $labelParameters));
+        try {
+            $translated = $this->translator->trans($label, $labelParameters);
+        } catch (Throwable) {
+            return $label;
+        }
+
+        return '' !== trim($translated) ? $translated : $label;
     }
 
     private function startProcess(string $operation, string $operationId, string $token): void

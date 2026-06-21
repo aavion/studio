@@ -292,7 +292,7 @@ final class AdminAclGroupController extends AbstractController
             ]);
         }
 
-        $result = $this->liveOperationStarter->startTranslated(
+        $result = $this->liveOperationStarter->start(
             LiveOperationQueueFactory::ACL_GROUP_APPLY,
             [
                 'group_uid' => $group->uid(),

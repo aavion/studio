@@ -106,7 +106,7 @@ final class AdminExtensionController extends AbstractController
             return $this->redirect('/admin/extensions');
         }
 
-        $result = $this->liveOperationStarter->startTranslated(
+        $result = $this->liveOperationStarter->start(
             LiveOperationQueueFactory::EXTENSION_INSTALL_VERIFY,
             [
                 'install_id' => $stage->value()['install_id'],
@@ -265,7 +265,7 @@ final class AdminExtensionController extends AbstractController
             return $this->liveOperationResponder->render($this->accessDeniedResult('extension_lifecycle_'.$action));
         }
 
-        $result = $this->liveOperationStarter->startTranslated(
+        $result = $this->liveOperationStarter->start(
             LiveOperationQueueFactory::EXTENSION_LIFECYCLE,
             ['extension' => $extensionName, 'action' => $action, 'trigger' => 'admin_ui'],
             'admin.extensions.lifecycle.live_label',
@@ -308,7 +308,7 @@ final class AdminExtensionController extends AbstractController
             return $live ? $this->liveOperationResponder->render($result) : $this->redirect('/admin/extensions/'.rawurlencode($extensionName));
         }
 
-        $result = $this->liveOperationStarter->startTranslated(
+        $result = $this->liveOperationStarter->start(
             LiveOperationQueueFactory::EXTENSION_OPERATION,
             ['extension' => $extensionName, 'target' => $target, 'trigger' => 'admin_ui'],
             'admin.extensions.operation.live_label',

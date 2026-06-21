@@ -157,7 +157,7 @@ final readonly class ExtensionApiHandler implements ApiEndpointHandlerInterface
             ]);
         }
 
-        $result = $this->starter->startTranslated(
+        $result = $this->starter->start(
             LiveOperationQueueFactory::EXTENSION_LIFECYCLE,
             ['extension' => $extensionName, 'action' => $action, 'trigger' => 'admin_api'],
             'admin.extensions.lifecycle.live_label',

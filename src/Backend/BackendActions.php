@@ -143,22 +143,22 @@ final readonly class BackendActions
         }
 
         return match ($action) {
-            self::EXTENSION_DISCOVERY => $this->liveOperationStarter->startTranslated(
+            self::EXTENSION_DISCOVERY => $this->liveOperationStarter->start(
                 LiveOperationQueueFactory::EXTENSION_DISCOVERY,
                 ['environment' => $this->kernel->getEnvironment(), 'trigger' => 'admin_ui'],
                 'admin.actions.extension_discovery.label',
             ),
-            self::ASSET_REBUILD => $this->liveOperationStarter->startTranslated(
+            self::ASSET_REBUILD => $this->liveOperationStarter->start(
                 LiveOperationQueueFactory::EXTENSION_ASSET_REBUILD,
                 ['environment' => $this->kernel->getEnvironment(), 'trigger' => 'admin_ui'],
                 'admin.actions.asset_rebuild.label',
             ),
-            self::CACHE_CLEAR => $this->liveOperationStarter->startTranslated(
+            self::CACHE_CLEAR => $this->liveOperationStarter->start(
                 LiveOperationQueueFactory::BACKEND_CACHE_CLEAR,
                 ['environment' => $this->kernel->getEnvironment(), 'trigger' => 'admin_ui'],
                 'admin.actions.cache_clear.label',
             ),
-            self::GEOIP_DATABASE_UPDATE => $this->liveOperationStarter->startTranslated(
+            self::GEOIP_DATABASE_UPDATE => $this->liveOperationStarter->start(
                 LiveOperationQueueFactory::GEOIP_DATABASE_UPDATE,
                 ['environment' => $this->kernel->getEnvironment(), 'trigger' => 'admin_ui'],
                 'admin.actions.geoip_database_update.label',
