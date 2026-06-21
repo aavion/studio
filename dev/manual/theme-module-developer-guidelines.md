@@ -118,7 +118,7 @@ Current public hooks:
 - `App\View\Event\OutputGeneratedEvent`: adjust generated HTML output after rendering.
 - `App\Core\Extension\Event\ExtensionAssetSyncStartedEvent`: observe the active extension set before asset sync.
 - `App\Core\Extension\Event\ExtensionAssetRegistryBuildEvent`: add CSS, JavaScript, or Tailwind registry contributions before registries are written.
-- `App\Core\Extension\Event\ExtensionAssetSyncCompletedEvent`: observe extension asset sync metrics after registry generation.
+- `App\Core\Extension\Event\ExtensionAssetSyncCompletedEvent`: observe extension asset sync metrics after registry generation and mirror commit; listener failures are reported as post-commit warnings and do not roll back the already-written files.
 
 Subscribers should use Symfony-native event subscription and the event class name:
 

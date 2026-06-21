@@ -37,7 +37,7 @@ final readonly class ExtensionRegistryHandler
         private ExtensionManifestVariables $manifestVariables = new ExtensionManifestVariables(),
     ) {
         $this->validationSpec = $validationSpec ?? ExtensionSpec::create()
-            ->withInventoryDepth(4)
+            ->withInventoryDepth(PHP_INT_MAX)
             ->withLintingChecks();
         $this->dependencyResolver = $dependencyResolver ?? new ExtensionDependencyResolver($entityManager);
         $this->store = $store ?? new ExtensionLifecycleStore($entityManager);

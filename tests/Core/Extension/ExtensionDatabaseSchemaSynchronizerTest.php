@@ -99,6 +99,30 @@ final class ExtensionDatabaseSchemaSynchronizerTest extends KernelTestCase
         ]);
     }
 
+    public function testItDropsCurrentTableWhenCreateFailsAfterTableStatement(): void
+    {
+        $this->connection->executeStatement('CREATE TABLE extension_index_collision_holder (label VARCHAR(120) NOT NULL)');
+        $this->connection->executeStatement('CREATE INDEX ext11_demo_module_entry_label ON extension_index_collision_holder (label)');
+
+        try {
+            $result = (new ExtensionDatabaseSchemaSynchronizer($this->connection))->apply($this->extension(), [
+                ExtensionDatabaseTable::create('entry', [
+                    ExtensionDatabaseColumn::string('uid', 36),
+                    ExtensionDatabaseColumn::string('label', 120),
+                ], ['uid'], [
+                    ExtensionDatabaseIndex::index('label', ['label']),
+                ]),
+            ]);
+        } finally {
+            $this->connection->executeStatement('DROP TABLE IF EXISTS extension_index_collision_holder');
+        }
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('extension.database.contribution_invalid', $result->firstIssue()?->code());
+        self::assertNotContains('ext11_demo_module_entry', $this->connection->createSchemaManager()->listTableNames());
+        self::assertContains('ext11_demo_module_entry', $result->context()['cleanup_attempted']);
+    }
+
     public function testItCreatesExtensionTablesWithForeignKeysAfterReferencedTables(): void
     {
         $result = (new ExtensionDatabaseSchemaSynchronizer($this->connection))->apply($this->extension(), [
@@ -240,6 +264,8 @@ final class ExtensionDatabaseSchemaSynchronizerTest extends KernelTestCase
 
     private function dropTestTables(): void
     {
+        $this->dropTableIfExists('extension_index_collision_holder');
+
         foreach ($this->connection->createSchemaManager()->listTableNames() as $tableName) {
             if (1 === preg_match('#^ext\d+_#', $tableName)) {
                 $this->dropTableIfExists($tableName);

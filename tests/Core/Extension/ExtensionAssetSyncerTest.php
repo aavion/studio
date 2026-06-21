@@ -238,6 +238,30 @@ final class ExtensionAssetSyncerTest extends TestCase
         self::assertDirectoryDoesNotExist($this->root.'/assets/extensions/demo');
     }
 
+    public function testItTreatsCompletedHookFailuresAsPostCommitWarnings(): void
+    {
+        $this->writeTestFile($this->root, 'extensions/demo/assets/module.css', '.demo {}');
+
+        $dispatcher = new EventDispatcher();
+        $dispatcher->addListener(ExtensionAssetSyncCompletedEvent::class, static function (): void {
+            throw new \RuntimeException('Completed observer failed');
+        });
+
+        $result = (new ExtensionAssetSyncer(
+            $this->root,
+            eventDispatcher: new PublicEventDispatcher($dispatcher, new PublicEventHookRegistry(), new NullWorkflowResultMessageReporter()),
+        ))->sync([
+            new ExtensionAssetSyncTarget('demo', 'extensions/demo', [ExtensionScope::Module]),
+        ]);
+
+        self::assertSame(WorkflowStatus::Success, $result->status());
+        self::assertTrue($result->context()['completed_hook_failed']);
+        self::assertSame('event.hook_listener_failed', $result->messages()[1]->code());
+        self::assertTrue($result->messages()[1]->context()['post_commit']);
+        self::assertDirectoryExists($this->root.'/assets/extensions/demo');
+        self::assertStringContainsString('extensions/demo/module.css', (string) file_get_contents($this->root.'/assets/styles/extensions/extension.css'));
+    }
+
     public function testItKeepsPreviousMirrorWhenRegistryWriteFails(): void
     {
         $this->writeTestFile($this->root, 'extensions/demo/assets/module.css', '.demo {}');

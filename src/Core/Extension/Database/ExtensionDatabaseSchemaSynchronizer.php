@@ -87,7 +87,7 @@ final class ExtensionDatabaseSchemaSynchronizer
             try {
                 $this->createTable($extension, $physicalName, $table);
             } catch (Throwable $error) {
-                $cleanup = $this->dropTables($extension, $created);
+                $cleanup = $this->dropTables($extension, [...$created, $physicalName]);
 
                 return WorkflowResult::failed([
                     Message::create(
@@ -102,6 +102,7 @@ final class ExtensionDatabaseSchemaSynchronizer
                     'extension' => $extension->extensionName(),
                     'table' => $physicalName,
                     'created_before_failure' => $created,
+                    'cleanup_attempted' => [...$created, $physicalName],
                     'cleanup_context' => $cleanup->context(),
                 ], $cleanup->messages());
             }

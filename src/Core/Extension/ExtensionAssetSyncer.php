@@ -160,17 +160,39 @@ final readonly class ExtensionAssetSyncer
             'tailwind_sources' => $this->countByType($contributions, ExtensionAssetContribution::TYPE_TAILWIND_SOURCE),
         ];
 
-        $completed = $this->dispatchHook(new ExtensionAssetSyncCompletedEvent($extensions, $context));
-        if (null !== $completed) {
-            return $completed;
-        }
-
-        return WorkflowResult::success($context, $context, [
+        $messages = [
             Message::create(ExtensionMessageCode::EXTENSION_ASSET_SYNC_COMPLETED, ExtensionMessageKey::EXTENSION_ASSET_SYNC_COMPLETED, [
                 '%assets%' => (string) $mirroredAssets,
                 '%extensions%' => (string) count($extensions),
             ], $context, MessageLevel::Success),
-        ]);
+        ];
+        $completed = $this->dispatchHook(new ExtensionAssetSyncCompletedEvent($extensions, $context));
+        if (null !== $completed) {
+            array_push($messages, ...$this->completedHookWarnings($completed));
+            $context['completed_hook_failed'] = true;
+        }
+
+        return WorkflowResult::success($context, $context, $messages);
+    }
+
+    /**
+     * @return list<Message>
+     */
+    private function completedHookWarnings(WorkflowResult $completed): array
+    {
+        return array_map(
+            static fn (Message $issue): Message => Message::warning(
+                $issue->code(),
+                $issue->translationKey(),
+                $issue->parameters(),
+                [
+                    ...$issue->context(),
+                    'post_commit' => true,
+                    'policy' => 'extension_asset_sync.completed_observer',
+                ],
+            ),
+            $completed->issues(),
+        );
     }
 
     /**

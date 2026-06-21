@@ -227,6 +227,23 @@ final class ExtensionRegistryHandlerTest extends KernelTestCase
         self::assertSame('extension.php_syntax_error', $metadata['validation']['issues'][0]['code']);
     }
 
+    public function testItValidatesFilesystemExtensionsBeyondMirroredAssetDepth(): void
+    {
+        $this->writeExtensionManifest('deep-asset-module', '1.0.0');
+        $this->writeTestFile($this->projectDir, 'extensions/deep-asset-module/assets/a/b/c/d/shell.php', '<?php echo "published";');
+
+        $result = $this->handler()->synchronize($this->candidates());
+
+        self::assertTrue($result->isSuccess(), json_encode($result->toArray(), JSON_THROW_ON_ERROR));
+        $this->assertChangeRecorded($result->value(), 'deep-asset-module', 'faulty', 'faulty');
+
+        $row = $this->extensionRow('deep-asset-module');
+        $metadata = $this->metadata($row);
+        self::assertSame('faulty', $row['status']);
+        self::assertSame('extension.policy.blocked_path', $metadata['validation']['issues'][0]['code']);
+        self::assertSame('assets/a/b/c/d/shell.php', $metadata['validation']['issues'][0]['context']['path']);
+    }
+
     public function testItRunsAssetRebuildWhenActiveExtensionBecomesFaulty(): void
     {
         $this->insertExtension('broken-module', 'extensions/broken-module', '1.0.0', 'active');

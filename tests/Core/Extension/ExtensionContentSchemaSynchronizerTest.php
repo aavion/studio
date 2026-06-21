@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Core\Extension;
 
 use App\Content\ContentStatus;
+use App\Content\Schema\ContentSchemaSource;
 use App\Core\Extension\Content\ExtensionContentSchemaDefinition;
 use App\Core\Extension\Content\ExtensionContentSchemaSynchronizer;
 use App\Core\Extension\ExtensionScope;
@@ -113,6 +114,28 @@ final class ExtensionContentSchemaSynchronizerTest extends KernelTestCase
         self::assertInstanceOf(ContentSchema::class, $schema);
         self::assertSame(2, $schema->activeVersion()?->version());
         self::assertSame('{{ fields.title }}', $schema->activeVersion()?->customTwig());
+    }
+
+    public function testItRejectsIdentifierCollisionWithCustomContentSchema(): void
+    {
+        $schema = new ContentSchema(
+            'c3000000-0000-7000-8000-000000000901',
+            'ext11_demo_module_article',
+            ContentSchemaSource::Custom,
+            ['en' => 'Custom Article'],
+        );
+        $this->entityManager->persist($schema);
+        $this->entityManager->flush();
+
+        $result = (new ExtensionContentSchemaSynchronizer($this->entityManager))->apply($this->extension(), [
+            $this->schema('body'),
+        ]);
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('extension.content_schema.contribution_invalid', $result->firstIssue()?->code());
+        self::assertSame('schema_identifier_collision', $result->firstIssue()?->parameters()['%reason%'] ?? null);
+        self::assertSame(ContentSchemaSource::Custom, $schema->source());
+        self::assertNull($schema->activeVersion());
     }
 
     public function testItDeletesExtensionContentSchemasOnPurge(): void

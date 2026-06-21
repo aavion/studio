@@ -33,7 +33,7 @@ final readonly class ExtensionFaultResetter
         private ExtensionManifestVariables $manifestVariables = new ExtensionManifestVariables(),
     ) {
         $this->validationSpec = $validationSpec ?? ExtensionSpec::create()
-            ->withInventoryDepth(4)
+            ->withInventoryDepth(PHP_INT_MAX)
             ->withLintingChecks();
     }
 

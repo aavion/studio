@@ -59,8 +59,19 @@ final readonly class ExtensionContentSchemaSynchronizer
                 ]);
             }
 
+            $schema = $this->entityManager->getRepository(ContentSchema::class)->findOneBy(['identifier' => $identifier]);
+            if ($schema instanceof ContentSchema && !$this->isReusableExtensionSchema($schema, $extension)) {
+                $this->restoreStagedSchemaState($stagedEntities, $schemaActiveVersionSnapshots);
+
+                return $this->invalid($extension, 'schema_identifier_collision', [
+                    'schema' => $definition->name(),
+                    'identifier' => $identifier,
+                    'existing_source' => $schema->source()->value,
+                ]);
+            }
+
             try {
-                $result = $this->upsert($extension, $definition, $identifier, $stagedEntities, $schemaActiveVersionSnapshots);
+                $result = $this->upsert($extension, $definition, $identifier, $schema, $stagedEntities, $schemaActiveVersionSnapshots);
             } catch (Throwable $error) {
                 return $this->failedSync($extension, $error, $stagedEntities, $schemaActiveVersionSnapshots);
             }
@@ -163,11 +174,11 @@ final readonly class ExtensionContentSchemaSynchronizer
         Extension $extension,
         ExtensionContentSchemaDefinition $definition,
         string $identifier,
+        ?ContentSchema $schema,
         array &$stagedEntities,
         array &$schemaActiveVersionSnapshots,
     ): array
     {
-        $schema = $this->entityManager->getRepository(ContentSchema::class)->findOneBy(['identifier' => $identifier]);
         $action = 'unchanged';
 
         if (!$schema instanceof ContentSchema) {
@@ -213,6 +224,12 @@ final readonly class ExtensionContentSchemaSynchronizer
         $stagedEntities[] = $version;
 
         return ['identifier' => $identifier, 'action' => 'created' === $action ? 'created' : 'versioned'];
+    }
+
+    private function isReusableExtensionSchema(ContentSchema $schema, Extension $extension): bool
+    {
+        return ContentSchemaSource::Module === $schema->source()
+            && $this->ownedBy($schema, $extension);
     }
 
     /**
