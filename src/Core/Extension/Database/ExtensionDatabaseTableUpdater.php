@@ -50,7 +50,31 @@ final readonly class ExtensionDatabaseTableUpdater
         }
 
         try {
-            foreach ($this->connection->getDatabasePlatform()->getAlterTableSQL($diff) as $sql) {
+            $statements = $this->connection->getDatabasePlatform()->getAlterTableSQL($diff);
+        } catch (Throwable $error) {
+            return WorkflowResult::failed([
+                Message::create(
+                    ExtensionMessageCode::EXTENSION_DATABASE_CONTRIBUTION_INVALID,
+                    ExtensionMessageKey::EXTENSION_DATABASE_CONTRIBUTION_INVALID,
+                    ['%reason%' => 'update_table_failed'],
+                    ['extension' => $extension->extensionName(), 'table' => $physicalName, 'exception' => $error::class, 'message' => $error->getMessage()],
+                    MessageLevel::Exception,
+                ),
+            ], [
+                'extension' => $extension->extensionName(),
+                'table' => $physicalName,
+            ]);
+        }
+
+        if (count($statements) > 1) {
+            return $this->invalid($extension, 'multi_statement_update_unsupported', [
+                'table' => $physicalName,
+                'statement_count' => count($statements),
+            ]);
+        }
+
+        try {
+            foreach ($statements as $sql) {
                 $this->connection->executeStatement($sql);
             }
         } catch (Throwable $error) {

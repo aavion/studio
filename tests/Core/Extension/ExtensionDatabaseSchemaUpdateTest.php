@@ -46,9 +46,7 @@ final class ExtensionDatabaseSchemaUpdateTest extends KernelTestCase
                 ExtensionDatabaseColumn::string('uid', 36),
                 ExtensionDatabaseColumn::string('label', 120),
                 ExtensionDatabaseColumn::string('summary', 255, false),
-            ], ['uid'], [
-                ExtensionDatabaseIndex::index('summary', ['summary']),
-            ]),
+            ], ['uid']),
         ]);
 
         self::assertTrue($result->isSuccess(), json_encode($result->toArray(), JSON_THROW_ON_ERROR));
@@ -56,7 +54,34 @@ final class ExtensionDatabaseSchemaUpdateTest extends KernelTestCase
 
         $table = $this->connection->createSchemaManager()->introspectTable('ext11_demo_module_entry');
         self::assertTrue($table->hasColumn('summary'));
-        self::assertTrue($table->hasIndex('ext11_demo_module_entry_summary'));
+    }
+
+    public function testItRejectsMultiStatementExistingTableUpdatesBeforeApplyingThem(): void
+    {
+        $synchronizer = new ExtensionDatabaseSchemaSynchronizer($this->connection);
+        self::assertTrue($synchronizer->apply($this->extension(), [
+            ExtensionDatabaseTable::create('entry', [
+                ExtensionDatabaseColumn::string('uid', 36),
+                ExtensionDatabaseColumn::string('label', 120),
+            ], ['uid']),
+        ])->isSuccess());
+
+        $result = $synchronizer->apply($this->extension(), [
+            ExtensionDatabaseTable::create('entry', [
+                ExtensionDatabaseColumn::string('uid', 36),
+                ExtensionDatabaseColumn::string('label', 120),
+                ExtensionDatabaseColumn::string('summary', 255, false),
+            ], ['uid'], [
+                ExtensionDatabaseIndex::index('summary', ['summary']),
+            ]),
+        ]);
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('multi_statement_update_unsupported', $result->firstIssue()?->parameters()['%reason%'] ?? null);
+
+        $table = $this->connection->createSchemaManager()->introspectTable('ext11_demo_module_entry');
+        self::assertFalse($table->hasColumn('summary'));
+        self::assertFalse($table->hasIndex('ext11_demo_module_entry_summary'));
     }
 
     public function testItRejectsRequiredAdditiveColumnsWithoutDefaults(): void
