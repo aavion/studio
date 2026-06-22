@@ -86,6 +86,25 @@ final class ExtensionDatabaseSchemaSynchronizer
             return $validation;
         }
 
+        $existingUpdates = [];
+        foreach ($existingTables as $physicalName => $table) {
+            $plan = $this->tableUpdater->planExistingTableSync($extension, $physicalName, $table);
+            if (!$plan->isSuccess()) {
+                return $plan;
+            }
+
+            if (($plan->value()['updated'] ?? false) === true) {
+                $existingUpdates[] = $physicalName;
+            }
+        }
+
+        if (count($existingUpdates) > 1) {
+            return $this->invalid($extension, 'multi_table_update_unsupported', [
+                'tables' => $existingUpdates,
+                'updated_count' => count($existingUpdates),
+            ]);
+        }
+
         $ordering = $this->tableOrderer->pendingTablesForCreation($extension, $pendingTables);
         if ($ordering instanceof WorkflowResult) {
             return $ordering;

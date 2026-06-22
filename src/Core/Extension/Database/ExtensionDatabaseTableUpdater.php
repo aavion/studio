@@ -24,9 +24,9 @@ final readonly class ExtensionDatabaseTableUpdater
     }
 
     /**
-     * @return WorkflowResult<null>
+     * @return WorkflowResult<array{updated: bool, statements: list<string>}>
      */
-    public function syncExistingTable(Extension $extension, string $physicalName, ExtensionDatabaseTable $definition): WorkflowResult
+    public function planExistingTableSync(Extension $extension, string $physicalName, ExtensionDatabaseTable $definition): WorkflowResult
     {
         try {
             $existingTable = $this->connection->createSchemaManager()->introspectTable($physicalName);
@@ -41,7 +41,10 @@ final readonly class ExtensionDatabaseTableUpdater
         $targetTable = $this->tableBuilder->table($extension, $physicalName, $definition);
         $diff = $this->connection->createSchemaManager()->createComparator()->compareTables($existingTable, $targetTable);
         if ($diff->isEmpty()) {
-            return WorkflowResult::success(null, ['extension' => $extension->extensionName(), 'table' => $physicalName, 'updated' => false]);
+            return WorkflowResult::success([
+                'updated' => false,
+                'statements' => [],
+            ], ['extension' => $extension->extensionName(), 'table' => $physicalName, 'updated' => false]);
         }
 
         $validation = $this->validateAdditiveDiff($extension, $physicalName, $diff);
@@ -73,8 +76,33 @@ final readonly class ExtensionDatabaseTableUpdater
             ]);
         }
 
+        return WorkflowResult::success([
+            'updated' => true,
+            'statements' => $statements,
+        ], [
+            'extension' => $extension->extensionName(),
+            'table' => $physicalName,
+            'updated' => true,
+            'statement_count' => count($statements),
+        ]);
+    }
+
+    /**
+     * @return WorkflowResult<null>
+     */
+    public function syncExistingTable(Extension $extension, string $physicalName, ExtensionDatabaseTable $definition): WorkflowResult
+    {
+        $plan = $this->planExistingTableSync($extension, $physicalName, $definition);
+        if (!$plan->isSuccess()) {
+            return $plan;
+        }
+
+        if (($plan->value()['updated'] ?? false) !== true) {
+            return WorkflowResult::success(null, ['extension' => $extension->extensionName(), 'table' => $physicalName, 'updated' => false]);
+        }
+
         try {
-            foreach ($statements as $sql) {
+            foreach ($plan->value()['statements'] as $sql) {
                 $this->connection->executeStatement($sql);
             }
         } catch (Throwable $error) {

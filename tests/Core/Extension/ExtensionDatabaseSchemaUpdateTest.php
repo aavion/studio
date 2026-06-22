@@ -84,6 +84,35 @@ final class ExtensionDatabaseSchemaUpdateTest extends KernelTestCase
         self::assertFalse($table->hasIndex('ext11_demo_module_entry_summary'));
     }
 
+    public function testItRejectsMultiTableExistingUpdatesBeforeApplyingThem(): void
+    {
+        $synchronizer = new ExtensionDatabaseSchemaSynchronizer($this->connection);
+        self::assertTrue($synchronizer->apply($this->extension(), [
+            ExtensionDatabaseTable::create('entry', [
+                ExtensionDatabaseColumn::string('uid', 36),
+            ], ['uid']),
+            ExtensionDatabaseTable::create('entry_meta', [
+                ExtensionDatabaseColumn::string('uid', 36),
+            ], ['uid']),
+        ])->isSuccess());
+
+        $result = $synchronizer->apply($this->extension(), [
+            ExtensionDatabaseTable::create('entry', [
+                ExtensionDatabaseColumn::string('uid', 36),
+                ExtensionDatabaseColumn::string('summary', 255, false),
+            ], ['uid']),
+            ExtensionDatabaseTable::create('entry_meta', [
+                ExtensionDatabaseColumn::string('uid', 36),
+                ExtensionDatabaseColumn::string('note', 255, false),
+            ], ['uid']),
+        ]);
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('multi_table_update_unsupported', $result->firstIssue()?->parameters()['%reason%'] ?? null);
+        self::assertFalse($this->connection->createSchemaManager()->introspectTable('ext11_demo_module_entry')->hasColumn('summary'));
+        self::assertFalse($this->connection->createSchemaManager()->introspectTable('ext11_demo_module_entry_meta')->hasColumn('note'));
+    }
+
     public function testItRejectsRequiredAdditiveColumnsWithoutDefaults(): void
     {
         $synchronizer = new ExtensionDatabaseSchemaSynchronizer($this->connection);
