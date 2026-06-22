@@ -289,15 +289,17 @@ PHP);
 <?php
 
 use App\Scheduler\SchedulerTaskDefinition;
+use App\Scheduler\SchedulerTaskType;
 
 return [
-    SchedulerTaskDefinition::command(
+    new SchedulerTaskDefinition(
         'demo-module.cleanup',
         'ext.demo_module.scheduler.cleanup.label',
         'ext.demo_module.scheduler.cleanup.description',
-        'demo:cleanup',
-        '*/20 * * * *',
         'demo-module',
+        SchedulerTaskType::Callable,
+        'demo-module.cleanup',
+        '*/20 * * * *',
         false,
     ),
 ];
@@ -324,7 +326,7 @@ PHP);
         self::assertCount(1, $tasks);
         self::assertSame('demo-module.cleanup', $tasks[0]->identifier());
         self::assertSame('demo-module', $tasks[0]->source());
-        self::assertSame(SchedulerTaskType::Command, $tasks[0]->type());
+        self::assertSame(SchedulerTaskType::Callable, $tasks[0]->type());
         self::assertSame('*/20 * * * *', $tasks[0]->cronExpression());
         self::assertFalse($tasks[0]->trusted());
 

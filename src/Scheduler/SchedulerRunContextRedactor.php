@@ -15,7 +15,10 @@ final readonly class SchedulerRunContextRedactor
         'command_line' => true,
         'cwd' => true,
         'error_excerpt' => true,
+        'exception_message' => true,
+        'message' => true,
         'output_excerpt' => true,
+        'previous_message' => true,
         'stderr' => true,
         'stdout' => true,
     ];
