@@ -128,6 +128,41 @@ final class ExtensionDatabaseSchemaUpdateTest extends KernelTestCase
         self::assertContains('ext11_demo_module_entry_v2', $this->connection->createSchemaManager()->listTableNames());
     }
 
+    public function testItDoesNotUpdateExistingTablesWhenNewTableCreationFails(): void
+    {
+        $synchronizer = new ExtensionDatabaseSchemaSynchronizer($this->connection);
+        self::assertTrue($synchronizer->apply($this->extension(), [
+            ExtensionDatabaseTable::create('entry', [
+                ExtensionDatabaseColumn::string('uid', 36),
+            ], ['uid']),
+        ])->isSuccess());
+
+        $this->connection->executeStatement('CREATE TABLE extension_update_collision_holder (label VARCHAR(120) NOT NULL)');
+        $this->connection->executeStatement('CREATE INDEX ext11_demo_module_entry_v2_label ON extension_update_collision_holder (label)');
+
+        try {
+            $result = $synchronizer->apply($this->extension(), [
+                ExtensionDatabaseTable::create('entry', [
+                    ExtensionDatabaseColumn::string('uid', 36),
+                    ExtensionDatabaseColumn::string('summary', 255, false),
+                ], ['uid']),
+                ExtensionDatabaseTable::create('entry_v2', [
+                    ExtensionDatabaseColumn::string('uid', 36),
+                    ExtensionDatabaseColumn::string('label', 120),
+                ], ['uid'], [
+                    ExtensionDatabaseIndex::index('label', ['label']),
+                ]),
+            ]);
+        } finally {
+            $this->dropTableIfExists('extension_update_collision_holder');
+        }
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('create_table_failed', $result->firstIssue()?->parameters()['%reason%'] ?? null);
+        self::assertFalse($this->connection->createSchemaManager()->introspectTable('ext11_demo_module_entry')->hasColumn('summary'));
+        self::assertNotContains('ext11_demo_module_entry_v2', $this->connection->createSchemaManager()->listTableNames());
+    }
+
     private function extension(): Extension
     {
         return new Extension(
@@ -141,6 +176,8 @@ final class ExtensionDatabaseSchemaUpdateTest extends KernelTestCase
 
     private function dropTestTables(): void
     {
+        $this->dropTableIfExists('extension_update_collision_holder');
+
         foreach ($this->connection->createSchemaManager()->listTableNames() as $tableName) {
             if (1 === preg_match('#^ext\d+_#', $tableName)) {
                 $this->dropTableIfExists($tableName);

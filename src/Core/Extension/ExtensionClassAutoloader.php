@@ -23,9 +23,9 @@ final class ExtensionClassAutoloader
     ) {
     }
 
-    public function register(Extension $extension): void
+    public function register(Extension $extension, bool $allowInactive = false): void
     {
-        if (ExtensionStatus::Active !== $extension->status()) {
+        if (!$allowInactive && ExtensionStatus::Active !== $extension->status()) {
             return;
         }
 

@@ -11,7 +11,7 @@ use Throwable;
 final class ExtensionVendorFacade
 {
     /**
-     * @var array<string, true>
+     * @var array<string, string>
      */
     private static array $loadedPackages = [];
 
@@ -38,8 +38,13 @@ final class ExtensionVendorFacade
             return false;
         }
 
-        if (isset(self::$loadedPackages[$package]) || self::composerPackageAvailable($package)) {
-            self::$loadedPackages[$package] = true;
+        $loadedSource = self::$loadedPackages[$package] ?? null;
+        if (null !== $loadedSource) {
+            return 'composer' === $loadedSource || $loadedSource === $extensionRoot;
+        }
+
+        if (self::composerPackageAvailable($package)) {
+            self::$loadedPackages[$package] = 'composer';
 
             return true;
         }
@@ -50,7 +55,7 @@ final class ExtensionVendorFacade
             return false;
         }
 
-        self::$loadedPackages[$package] = true;
+        self::$loadedPackages[$package] = $extensionRoot;
 
         return true;
     }
@@ -121,8 +126,6 @@ final class ExtensionVendorFacade
             spl_autoload_register(self::load(...));
             self::$registered = true;
         }
-
-        self::$loadedPackages[$package] = true;
 
         return true;
     }

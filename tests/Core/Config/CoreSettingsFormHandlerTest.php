@@ -95,7 +95,6 @@ final class CoreSettingsFormHandlerTest extends TestCase
         );
 
         $result = $handler->submit('security', [
-            'security.captcha.enabled' => '0',
             RateLimitPolicyCatalogue::MODE_KEY => RateLimitProfile::Strict->value,
             AutoBanPolicy::ENABLED_KEY => '1',
             AutoBanPolicy::TRUSTED_ACCESS_LEVEL_KEY => (string) AutoBanPolicy::DEFAULT_TRUSTED_ACCESS_LEVEL,
@@ -124,7 +123,6 @@ final class CoreSettingsFormHandlerTest extends TestCase
         );
 
         $result = $handler->submit('security', [
-            'security.captcha.enabled' => '0',
             RateLimitPolicyCatalogue::MODE_KEY => 'forever',
             AutoBanPolicy::ENABLED_KEY => '1',
             AutoBanPolicy::TRUSTED_ACCESS_LEVEL_KEY => (string) AutoBanPolicy::DEFAULT_TRUSTED_ACCESS_LEVEL,
@@ -152,7 +150,6 @@ final class CoreSettingsFormHandlerTest extends TestCase
         );
 
         $result = $handler->submit('security', [
-            'security.captcha.enabled' => '0',
             RateLimitPolicyCatalogue::MODE_KEY => RateLimitProfile::Strict->value,
             AutoBanPolicy::ENABLED_KEY => '1',
             AutoBanPolicy::TRUSTED_ACCESS_LEVEL_KEY => (string) AutoBanPolicy::DEFAULT_TRUSTED_ACCESS_LEVEL,

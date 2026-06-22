@@ -77,13 +77,10 @@ final readonly class CoreSettingsRegistry
             new CoreSettingDefinition('mail', 'mail.from_address', 'admin.settings.fields.mail_from_address.label', 'admin@localhost', ConfigValueType::String, validation: ['max_length' => 180], sortOrder: 20),
             new CoreSettingDefinition('mail', 'mail.from_name', 'admin.settings.fields.mail_from_name.label', $this->appName(), ConfigValueType::String, validation: ['max_length' => 120], sortOrder: 30),
 
-            new CoreSettingDefinition('security', 'security.captcha.enabled', 'admin.settings.fields.captcha_enabled.label', false, ConfigValueType::Boolean, metadata: [
-                'access_feature' => 'admin.settings.security',
-            ], sortOrder: 10),
             new CoreSettingDefinition('security', 'security.captcha.preview', 'admin.settings.fields.captcha_preview.label', null, ConfigValueType::String, FormInputType::Captcha, metadata: [
                 'persist' => false,
                 'access_feature' => 'admin.settings.security',
-            ], sortOrder: 20),
+            ], sortOrder: 10),
             new CoreSettingDefinition('security', RateLimitPolicyCatalogue::MODE_KEY, 'admin.settings.fields.rate_limit_mode.label', RateLimitProfile::Standard->value, ConfigValueType::String, FormInputType::Select, options: [
                 RateLimitProfile::Off->value => 'admin.settings.options.rate_limit_mode.off',
                 RateLimitProfile::Standard->value => 'admin.settings.options.rate_limit_mode.standard',
@@ -91,7 +88,7 @@ final readonly class CoreSettingsRegistry
                 RateLimitProfile::Panic->value => 'admin.settings.options.rate_limit_mode.panic',
             ], validation: ['required' => true], metadata: [
                 'access_feature' => 'admin.settings.security',
-            ], sortOrder: 35),
+            ], sortOrder: 20),
             new CoreSettingDefinition('security', AutoBanPolicy::ENABLED_KEY, 'admin.settings.fields.auto_ban_enabled.label', AutoBanPolicy::DEFAULT_ENABLED, ConfigValueType::Boolean, help: 'admin.settings.fields.auto_ban_enabled.help', metadata: [
                 'access_feature' => 'admin.settings.security',
                 'minimum_access_level' => AccessLevel::OWNER,

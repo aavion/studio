@@ -86,17 +86,6 @@ final class ExtensionDatabaseSchemaSynchronizer
             return $validation;
         }
 
-        foreach ($existingTables as $physicalName => $table) {
-            $sync = $this->tableUpdater->syncExistingTable($extension, $physicalName, $table);
-            if (!$sync->isSuccess()) {
-                return $sync;
-            }
-
-            if (($sync->context()['updated'] ?? false) === true) {
-                $updated[] = $physicalName;
-            }
-        }
-
         $ordering = $this->tableOrderer->pendingTablesForCreation($extension, $pendingTables);
         if ($ordering instanceof WorkflowResult) {
             return $ordering;
@@ -130,6 +119,26 @@ final class ExtensionDatabaseSchemaSynchronizer
 
             $created[] = $physicalName;
             $knownTables[] = strtolower($physicalName);
+        }
+
+        foreach ($existingTables as $physicalName => $table) {
+            $sync = $this->tableUpdater->syncExistingTable($extension, $physicalName, $table);
+            if (!$sync->isSuccess()) {
+                $cleanup = $this->dropTables($extension, $created);
+
+                return WorkflowResult::failed([...$sync->issues(), ...$cleanup->issues()], [
+                    'extension' => $extension->extensionName(),
+                    'table' => $physicalName,
+                    'created_before_failure' => $created,
+                    'cleanup_attempted' => $created,
+                    'cleanup_context' => $cleanup->context(),
+                    'update_context' => $sync->context(),
+                ], [...$sync->messages(), ...$cleanup->messages()]);
+            }
+
+            if (($sync->context()['updated'] ?? false) === true) {
+                $updated[] = $physicalName;
+            }
         }
 
         return WorkflowResult::success([

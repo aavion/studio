@@ -9,10 +9,13 @@ use App\Entity\Extension;
 
 final readonly class ExtensionContributionReader
 {
+    private ExtensionClassAutoloader $classAutoloader;
+
     public function __construct(
         private string $projectDir,
         private PathGuard $pathGuard = new PathGuard(),
     ) {
+        $this->classAutoloader = new ExtensionClassAutoloader($projectDir, $pathGuard);
     }
 
     public function read(Extension $extension): ExtensionRuntimeContributionRegistry
@@ -24,11 +27,17 @@ final readonly class ExtensionContributionReader
             return $registry;
         }
 
-        $result = (static function (string $loaderPath, Extension $extension): mixed {
-            return require $loaderPath;
-        })($loaderPath, $extension);
+        try {
+            $this->classAutoloader->register($extension, allowInactive: true);
 
-        $registry->add($extension, $this->activationContributions($extension, $result));
+            $result = (static function (string $loaderPath, Extension $extension): mixed {
+                return require $loaderPath;
+            })($loaderPath, $extension);
+
+            $registry->add($extension, $this->activationContributions($extension, $result));
+        } finally {
+            $this->classAutoloader->reset();
+        }
 
         return $registry;
     }

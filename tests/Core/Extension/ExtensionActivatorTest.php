@@ -148,6 +148,49 @@ PHP);
         self::assertFileDoesNotExist($this->temporaryProjectDir.'/extensions/demo-module/runtime-ran.txt');
     }
 
+    public function testItLoadsExtensionNamespaceBeforeReadingActivationFactories(): void
+    {
+        $this->temporaryProjectDir = $this->createTemporaryDirectory('system-extension-activation-namespace');
+        $this->insertExtension('demo-module', ['module', 'database'], 'inactive', manifest: [
+            'EXTENSION_NAMESPACE' => 'DemoModule',
+        ]);
+        $this->writeTestFile($this->temporaryProjectDir, 'extensions/demo-module/src/ActivationTables.php', <<<'PHP'
+<?php
+
+namespace DemoModule;
+
+use App\Core\Extension\Database\ExtensionDatabaseColumn;
+use App\Core\Extension\Database\ExtensionDatabaseTable;
+
+final class ActivationTables
+{
+    public static function tables(): array
+    {
+        return [
+            ExtensionDatabaseTable::create('entry', [
+                ExtensionDatabaseColumn::string('uid', 36),
+            ], ['uid']),
+        ];
+    }
+}
+PHP);
+        $this->writeTestFile($this->temporaryProjectDir, 'extensions/demo-module/extension.php', <<<'PHP'
+<?php
+
+use App\Core\Extension\ExtensionContributionContext;
+use App\Core\Extension\ExtensionContributions;
+use DemoModule\ActivationTables;
+
+return ExtensionContributions::create()
+    ->activation(static fn (ExtensionContributionContext $context): array => ActivationTables::tables());
+PHP);
+
+        $result = $this->activatorWithContributionApplier()->activate('demo-module', 'test', rebuildAssets: false);
+
+        self::assertTrue($result->isSuccess(), json_encode($result->toArray(), JSON_THROW_ON_ERROR));
+        self::assertContains('ext11_demo_module_entry', $this->connection->createSchemaManager()->listTableNames());
+    }
+
     public function testItRejectsNakedCallableActivationContributionsWithoutExecutingThem(): void
     {
         $this->temporaryProjectDir = $this->createTemporaryDirectory('system-extension-activation-callable');
@@ -886,6 +929,7 @@ PHP);
         string $status,
         string $dependencies = '[]',
         string $version = '1.0.0',
+        array $manifest = [],
     ): void {
         $this->connection->insert('extension', [
             'uid' => $this->uuid(),
@@ -899,6 +943,7 @@ PHP);
                 'registry_state' => 'available',
                 'manifest' => [
                     'EXTENSION_DEPENDENCIES' => $dependencies,
+                    ...$manifest,
                 ],
             ], JSON_THROW_ON_ERROR),
             'modified_at' => '2026-05-25 00:00:00',

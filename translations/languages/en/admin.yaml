@@ -801,8 +801,6 @@ admin:
         save_failed: 'The settings could not be saved.'
         default_acl_group_unavailable: 'Enter an existing ACL group with minimum role User or lower, or leave the field empty.'
     fields:
-      captcha_enabled:
-        label: 'Enable captcha'
       captcha_preview:
         label: 'Captcha preview'
       rate_limit_mode:
@@ -985,8 +983,6 @@ admin:
         label: 'Default sender email'
       mail_from_name:
         label: 'Default sender name'
-      captcha_enabled:
-        label: 'Enable captcha'
       captcha_preview:
         label: 'Captcha preview'
       rate_limit_mode:

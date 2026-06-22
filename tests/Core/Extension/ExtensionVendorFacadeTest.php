@@ -27,6 +27,7 @@ final class ExtensionVendorFacadeTest extends TestCase
     protected function tearDown(): void
     {
         $this->removeDirectory($this->extensionDir);
+        $this->removeDirectory($this->projectDir.'/extensions/vendor-facade-peer');
         ExtensionVendorFacade::reset();
     }
 
@@ -169,6 +170,54 @@ final class ExtensionVendorFacadeTest extends TestCase
 
         self::assertTrue(require $this->extensionDir.'/extension.php');
         self::assertSame('feature', \Acme\Feature\Widget::label());
+    }
+
+    public function testRequireVendorDoesNotShareExtensionLocalPackageSuccessAcrossExtensions(): void
+    {
+        $this->writeExtensionPackage('acme/tool', 'Acme\\FirstTool\\', 'src');
+        $this->writeProjectFile('extensions/vendor-facade-test/vendor/acme/tool/src/Widget.php', <<<'PHP'
+            <?php
+
+            namespace Acme\FirstTool;
+
+            final class Widget
+            {
+            }
+            PHP);
+        $this->writeProjectFile('extensions/vendor-facade-test/extension.php', <<<'PHP'
+            <?php
+
+            return require_vendor('acme/tool') && class_exists(\Acme\FirstTool\Widget::class);
+            PHP);
+
+        $this->writeProjectFile('extensions/vendor-facade-peer/vendor/composer/installed.json', json_encode([
+            'packages' => [[
+                'name' => 'acme/tool',
+                'version' => '2.0.0',
+                'autoload' => ['psr-4' => ['Acme\\PeerTool\\' => 'src']],
+                'install-path' => '../acme/tool',
+            ]],
+        ], JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
+        $this->writeProjectFile('extensions/vendor-facade-peer/vendor/acme/tool/src/Widget.php', <<<'PHP'
+            <?php
+
+            namespace Acme\PeerTool;
+
+            final class Widget
+            {
+            }
+            PHP);
+        $this->writeProjectFile('extensions/vendor-facade-peer/extension.php', <<<'PHP'
+            <?php
+
+            return [
+                require_vendor('acme/tool'),
+                class_exists(\Acme\PeerTool\Widget::class),
+            ];
+            PHP);
+
+        self::assertTrue(require $this->extensionDir.'/extension.php');
+        self::assertSame([false, false], require $this->projectDir.'/extensions/vendor-facade-peer/extension.php');
     }
 
     /**

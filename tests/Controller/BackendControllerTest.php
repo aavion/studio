@@ -27,6 +27,7 @@ use App\Security\AutoBan\AutoBanPolicy;
 use App\Security\AutoBan\AutoBanStore;
 use App\Security\AutoBan\AutoBanSubject;
 use App\Security\RateLimit\RateLimitPolicyCatalogue;
+use App\Security\RateLimit\RateLimitProfile;
 use App\Security\UserAccountStatus;
 use App\Security\UserFlowConfig;
 use App\Setup\SetupCompletionMarker;
@@ -1309,7 +1310,7 @@ final class BackendControllerTest extends WebTestCase
         $client->request('POST', '/admin/settings/security', [
             '_form_id' => 'admin-settings-security',
             '_csrf_token' => 'direct-post',
-            'security.captcha.enabled' => '0',
+            RateLimitPolicyCatalogue::MODE_KEY => RateLimitProfile::Strict->value,
         ]);
 
         self::assertResponseStatusCodeSame(401);
