@@ -21,6 +21,9 @@ final class ExtensionMessageKey
     public const EXTENSION_CSS_NAMESPACE_INVALID = 'message.extension.css_namespace_invalid';
     public const EXTENSION_JAVASCRIPT_SYNTAX_ERROR = 'message.extension.javascript_syntax_error';
     public const EXTENSION_SCOPE_INVALID = 'message.extension.scope_invalid';
+    public const EXTENSION_SCOPE_LIST_INVALID = 'message.extension.scope_list_invalid';
+    public const EXTENSION_SCOPE_LIST_EMPTY = 'message.extension.scope_list_empty';
+    public const EXTENSION_SCOPE_IDENTITY_MISSING = 'message.extension.scope_identity_missing';
     public const EXTENSION_TEMPLATE_PATH_INVALID = 'message.extension.template_path_invalid';
     public const EXTENSION_TEMPLATE_REFERENCE_INVALID = 'message.extension.template_reference_invalid';
     public const EXTENSION_POLICY_BLOCKED_PATH = 'message.extension.policy.blocked_path';
@@ -75,6 +78,11 @@ final class ExtensionMessageKey
     public const EXTENSION_LIFECYCLE_PHP_LOAD_FAILED = 'message.extension.lifecycle.php_load_failed';
     public const EXTENSION_LIFECYCLE_ROLLED_BACK = 'message.extension.lifecycle.rolled_back';
     public const EXTENSION_RUNTIME_CONTRIBUTION_UNSUPPORTED = 'message.extension.runtime.contribution_unsupported';
+    public const EXTENSION_RUNTIME_LOG = 'message.extension.runtime.log';
+    public const EXTENSION_RUNTIME_ALERT_FALLBACK = 'message.extension.runtime.alert_fallback';
+    public const EXTENSION_RUNTIME_MAIL_STUB = 'message.extension.runtime.mail_stub';
+    public const EXTENSION_OPERATION_IDENTIFIER_INVALID = 'message.extension.operation.identifier_invalid';
+    public const EXTENSION_OPERATION_TARGET_INVALID = 'message.extension.operation.target_invalid';
     public const EXTENSION_LIVE_ENDPOINT_PATH_INVALID = 'message.extension.live.endpoint_path_invalid';
     public const EXTENSION_LIVE_ENDPOINT_HANDLER_INVALID = 'message.extension.live.endpoint_handler_invalid';
     public const EXTENSION_LIVE_ENDPOINT_RESERVED = 'message.extension.live.endpoint_reserved';

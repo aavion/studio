@@ -9,6 +9,9 @@ use Symfony\Component\HttpFoundation\Request;
 
 final readonly class ApiJsonRequestParser
 {
+    public const REASON_INVALID_JSON = 'invalid_json';
+    public const REASON_EXPECTED_OBJECT = 'expected_object';
+
     /**
      * @return array<string, mixed>
      */
@@ -19,9 +22,14 @@ final readonly class ApiJsonRequestParser
             return [];
         }
 
-        $payload = json_decode($content, true, flags: JSON_THROW_ON_ERROR);
+        try {
+            $payload = json_decode($content, true, flags: JSON_THROW_ON_ERROR);
+        } catch (JsonException $error) {
+            throw new JsonException(self::REASON_INVALID_JSON, previous: $error);
+        }
+
         if (!is_array($payload) || array_is_list($payload)) {
-            throw new JsonException('API request body must be a JSON object.');
+            throw new JsonException(self::REASON_EXPECTED_OBJECT);
         }
 
         return $payload;

@@ -56,11 +56,22 @@
             errors: field.errors,
         } only %}
     {% elseif field.input_type == 'captcha' %}
+        {% set captcha_form_id = form_id|default(field.metadata.form_id|default('form-' ~ field.id)) %}
+        {% set captcha_field_name = field.metadata.captcha_field_name|default('captcha') %}
         {% include '@backend/partials/forms/_field.html.twig' with {
             id: field.id,
             label: field_label,
             required: field.required,
-            control: include('@provider/captcha/field.html.twig'),
+            control: include('@provider/captcha/field.html.twig', {
+                captcha: {
+                    provider: 'none',
+                    workflow: field.metadata.workflow|default('backend.dynamic'),
+                    form_id: captcha_form_id,
+                    field_name: captcha_field_name,
+                },
+                form_id: captcha_form_id,
+                name: captcha_field_name,
+            }),
             help: field_help,
             errors: field.errors,
         } only %}

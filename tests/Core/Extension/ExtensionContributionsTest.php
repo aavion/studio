@@ -5,6 +5,11 @@ declare(strict_types=1);
 namespace App\Tests\Core\Extension;
 
 use App\Core\Extension\ExtensionContributions;
+use App\Core\Extension\ExtensionEventListenerContribution;
+use App\Core\Extension\ExtensionProviderContribution;
+use App\Core\Extension\ExtensionRuntimeContributionFactory;
+use App\Core\Extension\ExtensionRuntimeBoot;
+use App\Core\Extension\ExtensionScope;
 use App\Core\Extension\Content\ExtensionContentSchemaDefinition;
 use App\Core\Extension\Database\ExtensionDatabaseColumn;
 use App\Core\Extension\Database\ExtensionDatabaseTable;
@@ -12,6 +17,7 @@ use App\Core\Extension\Settings\ExtensionSettingDefinition;
 use App\Scheduler\SchedulerTaskDefinition;
 use App\View\Injection\StaticViewInjection;
 use App\View\Injection\ViewSurface;
+use App\View\ViewContextEvent;
 use PHPUnit\Framework\TestCase;
 
 final class ExtensionContributionsTest extends TestCase
@@ -50,12 +56,26 @@ final class ExtensionContributionsTest extends TestCase
         ]);
 
         $contributions = ExtensionContributions::create()
+            ->runtime(static fn (): array => [])
+            ->runtimeBoot(static function (): void {
+            })
+            ->eventListener(ViewContextEvent::class, static function (): void {
+            })
+            ->captchaProvider(static function (): void {
+            })
             ->staticView($staticView)
             ->setting($setting)
             ->schedulerTask($schedulerTask)
             ->databaseTable($databaseTable)
             ->contentSchema($contentSchema);
 
-        self::assertSame([$staticView, $setting, $schedulerTask, $databaseTable, $contentSchema], iterator_to_array($contributions));
+        $items = iterator_to_array($contributions);
+
+        self::assertInstanceOf(ExtensionRuntimeContributionFactory::class, $items[0]);
+        self::assertInstanceOf(ExtensionRuntimeBoot::class, $items[1]);
+        self::assertInstanceOf(ExtensionEventListenerContribution::class, $items[2]);
+        self::assertInstanceOf(ExtensionProviderContribution::class, $items[3]);
+        self::assertSame(ExtensionScope::CaptchaProvider, $items[3]->scope());
+        self::assertSame([$staticView, $setting, $schedulerTask, $databaseTable, $contentSchema], array_slice($items, 4));
     }
 }

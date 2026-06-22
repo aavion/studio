@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core\Extension;
 
-use InvalidArgumentException;
+use App\Core\Message\MessageException;
 
 enum ExtensionScope: string
 {
@@ -17,6 +17,8 @@ enum ExtensionScope: string
     case EditorProvider = 'editor-provider';
     case Database = 'database';
     case ContentSchema = 'content-schema';
+    case SchedulerTasks = 'scheduler-tasks';
+    case Operations = 'operations';
 
     /**
      * @return list<self>
@@ -29,14 +31,22 @@ enum ExtensionScope: string
         foreach ($values as $scope) {
             $case = self::tryFrom($scope);
             if (null === $case) {
-                throw new InvalidArgumentException(sprintf('Invalid extension scope "%s".', $scope));
+                throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_SCOPE_INVALID, [
+                    '%scope%' => $scope,
+                ], [
+                    'scope' => $scope,
+                ]);
             }
 
             $scopes[$case->value] = $case;
         }
 
         if ([] === $scopes) {
-            throw new InvalidArgumentException('Extension scope list must not be empty.');
+            throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_SCOPE_LIST_EMPTY);
+        }
+
+        if (!self::hasIdentityScope($scopes)) {
+            throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_SCOPE_IDENTITY_MISSING);
         }
 
         return array_values($scopes);
@@ -54,8 +64,32 @@ enum ExtensionScope: string
     {
         return match ($this) {
             self::FrontendTheme, self::BackendTheme, self::SystemTemplate, self::CaptchaProvider, self::EditorProvider => true,
-            self::Module, self::Api, self::Database, self::ContentSchema => false,
+            self::Module, self::Api, self::Database, self::ContentSchema, self::SchedulerTasks, self::Operations => false,
         };
+    }
+
+    public function isProvider(): bool
+    {
+        return match ($this) {
+            self::CaptchaProvider, self::EditorProvider => true,
+            self::FrontendTheme, self::BackendTheme, self::SystemTemplate, self::Module, self::Api, self::Database, self::ContentSchema, self::SchedulerTasks, self::Operations => false,
+        };
+    }
+
+    public function isTheme(): bool
+    {
+        return match ($this) {
+            self::FrontendTheme, self::BackendTheme => true,
+            self::SystemTemplate, self::Module, self::Api,
+            self::CaptchaProvider, self::EditorProvider,
+            self::Database, self::ContentSchema,
+            self::SchedulerTasks, self::Operations => false,
+        };
+    }
+
+    public function isIdentity(): bool
+    {
+        return self::Module === $this || $this->isTheme() || $this->isProvider();
     }
 
     /**
@@ -71,7 +105,7 @@ enum ExtensionScope: string
 
         if (str_starts_with($value, '[') || str_ends_with($value, ']')) {
             if (!str_starts_with($value, '[') || !str_ends_with($value, ']')) {
-                throw new InvalidArgumentException('Extension scope list must use matching square brackets.');
+                throw MessageException::invalidArgument(ExtensionMessageKey::EXTENSION_SCOPE_LIST_INVALID);
             }
 
             $value = substr($value, 1, -1);
@@ -81,5 +115,19 @@ enum ExtensionScope: string
             static fn (string $scope): string => trim($scope, " \t\n\r\0\x0B'\""),
             explode(',', $value),
         ), static fn (string $scope): bool => '' !== $scope));
+    }
+
+    /**
+     * @param array<string, self> $scopes
+     */
+    private static function hasIdentityScope(array $scopes): bool
+    {
+        foreach ($scopes as $scope) {
+            if ($scope->isIdentity()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

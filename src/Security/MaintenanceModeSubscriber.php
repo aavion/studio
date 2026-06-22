@@ -43,7 +43,7 @@ final readonly class MaintenanceModeSubscriber implements EventSubscriberInterfa
             return;
         }
 
-        throw new ServiceUnavailableHttpException(message: 'Application maintenance mode is active.');
+        throw new ServiceUnavailableHttpException();
     }
 
     private function hasMaintenanceBypassAccess(): bool

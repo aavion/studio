@@ -55,6 +55,22 @@ final class AutoBanSignalEvaluatorTest extends TestCase
         self::assertNotNull($store->active($visitor));
     }
 
+    public function testCaptchaFailureSignalsUseLowModerateScore(): void
+    {
+        $scores = new AutoBanScoreCatalogue();
+
+        self::assertSame(
+            AutoBanScoreCatalogue::WEIGHT_CAPTCHA_FAILURE,
+            $scores->scoreFor('captcha', AutoBanScoreCatalogue::SIGNAL_CAPTCHA_FAILURE),
+        );
+        self::assertSame(10, AutoBanScoreCatalogue::WEIGHT_CAPTCHA_FAILURE);
+        self::assertSame(
+            AutoBanScoreCatalogue::WEIGHT_CAPTCHA_VISITOR_MISMATCH,
+            $scores->scoreFor('captcha', AutoBanScoreCatalogue::SIGNAL_CAPTCHA_VISITOR_MISMATCH),
+        );
+        self::assertSame(3, AutoBanScoreCatalogue::WEIGHT_CAPTCHA_VISITOR_MISMATCH);
+    }
+
     public function testIpSubjectUsesLaxerThresholdMultiplier(): void
     {
         [$recorder, $store] = $this->stack();

@@ -301,7 +301,8 @@ final class AdminAclGroupController extends AbstractController
                 'actor_uid' => $this->adminContext->actor($this->getUser())->userUid(),
                 'trigger' => 'admin_ui',
             ],
-            sprintf('ACL group %s %s', $group->identifier(), $action),
+            'admin.groups.operation.live_label',
+            ['%group%' => $group->identifier(), '%action%' => $action],
         );
         $this->adminContext->audit($this->getUser(), 'acl.group_'.$action.'_started', [
             'group' => $group->identifier(),

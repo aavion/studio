@@ -15,8 +15,10 @@ use App\Core\Extension\ExtensionScope;
 use App\Entity\Extension;
 use App\Entity\SchedulerTask;
 use App\Entity\SchedulerTaskRun;
-use App\Scheduler\SchedulerLockFactory;
+use App\Scheduler\CallableSchedulerTaskExecutor;
+use App\Scheduler\SchedulerCallableProviderInterface;
 use App\Scheduler\SchedulerDueTaskSelector;
+use App\Scheduler\SchedulerLockFactory;
 use App\Scheduler\SchedulerRunReporter;
 use App\Scheduler\SchedulerRunner;
 use App\Scheduler\SchedulerSettings;
@@ -169,7 +171,62 @@ final class SchedulerRunnerTest extends KernelTestCase
         self::assertSame(SchedulerTaskRunStatus::Success, $runs[0]->status());
     }
 
-    public function testItReplacesInvalidRunContextAfterFlushFailure(): void
+    public function testItRedactsSchedulerRunContextBeforePersisting(): void
+    {
+        $this->synchronizer()->synchronize();
+        $task = $this->entityManager->find(SchedulerTask::class, 'system.test_task');
+        self::assertInstanceOf(SchedulerTask::class, $task);
+        $task->activate('* * * * *');
+        $this->entityManager->flush();
+
+        $result = $this->runner(new TestSensitiveContextSchedulerTaskExecutor())->run('system.test_task', true);
+
+        self::assertSame('completed', $result->toArray()['status']);
+        $updated = $this->entityManager->find(SchedulerTask::class, 'system.test_task');
+        self::assertInstanceOf(SchedulerTask::class, $updated);
+        $runs = $this->entityManager->getRepository(SchedulerTaskRun::class)->findBy(['task' => $updated]);
+        self::assertCount(1, $runs);
+
+        $context = $runs[0]->context();
+        self::assertSame(SchedulerTaskRunStatus::Failed, $runs[0]->status());
+        self::assertSame('[redacted]', $context['command']);
+        self::assertSame('[redacted]', $context['command_line']);
+        self::assertSame('[redacted]', $context['cwd']);
+        self::assertSame('[redacted]', $context['message']);
+        self::assertSame('[redacted]', $context['exception_message']);
+        self::assertSame('[redacted]', $context['previous_message']);
+        self::assertSame('[redacted]', $context['output_excerpt']);
+        self::assertSame('[redacted]', $context['error_excerpt']);
+        self::assertSame('[redacted]', $context['headers']['authorization']);
+        self::assertSame(7, $context['exit_code']);
+        self::assertSame('failed', $context['reason']);
+    }
+
+    public function testItRedactsThrownCallableSchedulerMessagesBeforePersisting(): void
+    {
+        $this->synchronizer(new TestCallableSchedulerTaskProvider())->synchronize();
+        $task = $this->entityManager->find(SchedulerTask::class, 'system.callable_task');
+        self::assertInstanceOf(SchedulerTask::class, $task);
+        $task->activate('* * * * *');
+        $this->entityManager->flush();
+
+        $executor = new CallableSchedulerTaskExecutor([new TestThrowingSchedulerCallableProvider()]);
+        $result = $this->runner($executor, new TestCallableSchedulerTaskProvider())->run('system.callable_task', true);
+
+        self::assertSame('completed', $result->toArray()['status']);
+        $updated = $this->entityManager->find(SchedulerTask::class, 'system.callable_task');
+        self::assertInstanceOf(SchedulerTask::class, $updated);
+        $runs = $this->entityManager->getRepository(SchedulerTaskRun::class)->findBy(['task' => $updated]);
+        self::assertCount(1, $runs);
+
+        $context = $runs[0]->context();
+        self::assertSame(SchedulerTaskRunStatus::Failed, $runs[0]->status());
+        self::assertSame('system.secret_callable', $context['target']);
+        self::assertSame(\RuntimeException::class, $context['exception']);
+        self::assertSame('[redacted]', $context['message']);
+    }
+
+    public function testItRedactsUnsupportedRunContextBeforePersisting(): void
     {
         $this->synchronizer()->synchronize();
         $task = $this->entityManager->find(SchedulerTask::class, 'system.test_task');
@@ -182,15 +239,14 @@ final class SchedulerRunnerTest extends KernelTestCase
         self::assertInstanceOf(SchedulerTask::class, $updated);
 
         self::assertSame('completed', $payload['status']);
-        self::assertSame('failed', $payload['tasks'][0]['status']);
+        self::assertSame('success', $payload['tasks'][0]['status']);
         self::assertSame('active', $payload['tasks'][0]['task_status']);
-        self::assertSame(1, $updated->failureCount());
+        self::assertSame(0, $updated->failureCount());
 
         $runs = $this->entityManager->getRepository(SchedulerTaskRun::class)->findBy(['task' => $updated]);
         self::assertCount(1, $runs);
-        self::assertSame(SchedulerTaskRunStatus::Failed, $runs[0]->status());
-        self::assertArrayHasKey('exception', $runs[0]->context());
-        self::assertArrayNotHasKey('resource', $runs[0]->context());
+        self::assertSame(SchedulerTaskRunStatus::Success, $runs[0]->status());
+        self::assertSame('[unsupported]', $runs[0]->context()['resource']);
     }
 
     public function testItReportsForcedInactiveTaskAsSkipped(): void
@@ -577,6 +633,37 @@ final readonly class TestMixedSchedulerTaskProvider implements SchedulerTaskProv
     }
 }
 
+final readonly class TestCallableSchedulerTaskProvider implements SchedulerTaskProviderInterface
+{
+    public function schedulerTasks(): array
+    {
+        return [
+            new SchedulerTaskDefinition(
+                'system.callable_task',
+                'admin.scheduler.tasks.callable.label',
+                'admin.scheduler.tasks.callable.description',
+                'system',
+                SchedulerTaskType::Callable,
+                'system.secret_callable',
+                '* * * * *',
+                true,
+            ),
+        ];
+    }
+}
+
+final readonly class TestThrowingSchedulerCallableProvider implements SchedulerCallableProviderInterface
+{
+    public function schedulerCallable(string $target): ?callable
+    {
+        if ('system.secret_callable' !== $target) {
+            return null;
+        }
+
+        return static fn (): SchedulerTaskExecution => throw new \RuntimeException('/private/path failed with token abc');
+    }
+}
+
 final readonly class TestSchedulerTaskExecutor implements SchedulerTaskExecutorInterface
 {
     public function __construct(private bool $success)
@@ -623,6 +710,33 @@ final readonly class TestInvalidContextSchedulerTaskExecutor implements Schedule
     public function execute(SchedulerTask $task): SchedulerTaskExecution
     {
         return SchedulerTaskExecution::success(['resource' => fopen('php://memory', 'r')]);
+    }
+}
+
+final readonly class TestSensitiveContextSchedulerTaskExecutor implements SchedulerTaskExecutorInterface
+{
+    public function supports(SchedulerTask $task): bool
+    {
+        return true;
+    }
+
+    public function execute(SchedulerTask $task): SchedulerTaskExecution
+    {
+        return SchedulerTaskExecution::failed([
+            'command' => ['php', 'bin/console', 'secret:rotate', '--token=abc'],
+            'command_line' => "'php' 'bin/console' 'secret:rotate' '--token=abc'",
+            'cwd' => '/secret/path',
+            'message' => '/private/path failed with token abc',
+            'exception_message' => '/private/path failed with token abc',
+            'previous_message' => '/private/previous failed with token abc',
+            'output_excerpt' => 'secret stdout',
+            'error_excerpt' => 'secret stderr',
+            'headers' => [
+                'authorization' => 'Bearer abc',
+            ],
+            'exit_code' => 7,
+            'reason' => 'failed',
+        ]);
     }
 }
 

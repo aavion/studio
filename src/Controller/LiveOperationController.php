@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Core\Operation\Live\LiveOperationRunStore;
+use App\Core\Operation\Live\LiveOperationPresentationRedactor;
 use App\Core\Operation\Live\LiveOperationStarter;
 use App\Core\Output\JsonOutputRenderer;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -20,6 +21,7 @@ final class LiveOperationController extends AbstractController
         private readonly LiveOperationStarter $operationStarter,
         private readonly JsonOutputRenderer $json,
         private readonly TranslatorInterface $translator,
+        private readonly LiveOperationPresentationRedactor $redactor = new LiveOperationPresentationRedactor(),
     ) {
     }
 
@@ -55,7 +57,7 @@ final class LiveOperationController extends AbstractController
             $continuation['payload'],
             $continuation['label'],
         );
-        $payload = $result->toArray();
+        $payload = $this->redactor->workflowResult($result);
 
         if ($result->isSuccess() && is_array($result->value())) {
             $value = $result->value();

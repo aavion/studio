@@ -11,6 +11,14 @@ final class LiveOperationRunPresenter
     private const STATUS_REQUIRES_REVIEW = 'requires_review';
     private const STATUS_FAILED = 'failed';
     private const TERMINAL_STATUSES = [self::STATUS_SUCCESS, self::STATUS_REQUIRES_REVIEW, self::STATUS_FAILED];
+    private const DIAGNOSTIC_ENTRY_STATUSES = [
+        'failed' => true,
+        'warning' => true,
+    ];
+
+    public function __construct(private readonly LiveOperationPresentationRedactor $redactor = new LiveOperationPresentationRedactor())
+    {
+    }
 
     /**
      * @param array<string, mixed> $state
@@ -35,7 +43,7 @@ final class LiveOperationRunPresenter
             'cursor' => (int) ($state['cursor'] ?? 0),
             'progress' => is_array($state['progress'] ?? null) ? $state['progress'] : ['index' => 0, 'total' => 0],
             'result_status' => is_array($result) ? ($result['status'] ?? null) : null,
-            'issue' => is_array($firstIssue) ? $firstIssue : null,
+            'issue' => is_array($firstIssue) ? $this->redactor->message($firstIssue) : null,
         ];
     }
 
@@ -53,17 +61,7 @@ final class LiveOperationRunPresenter
                 continue;
             }
 
-            $entries[] = [
-                'cursor' => (int) ($entry['cursor'] ?? 0),
-                'index' => (int) ($entry['index'] ?? 0),
-                'total' => (int) ($entry['total'] ?? 0),
-                'name' => (string) ($entry['name'] ?? ''),
-                'status' => (string) ($entry['status'] ?? ''),
-                'started_at' => $entry['started_at'] ?? null,
-                'finished_at' => $entry['finished_at'] ?? null,
-                'issues' => $this->messageList($entry['issues'] ?? []),
-                'messages' => $this->messageList($entry['messages'] ?? []),
-            ];
+            $entries[] = $this->entry($entry);
         }
 
         $result = is_array($state['result'] ?? null) ? $state['result'] : null;
@@ -73,8 +71,8 @@ final class LiveOperationRunPresenter
             'entries' => $entries,
             'result' => null === $result ? null : [
                 'status' => is_string($result['status'] ?? null) ? $result['status'] : null,
-                'issues' => $this->messageList($result['issues'] ?? []),
-                'messages' => $this->messageList($result['messages'] ?? []),
+                'issues' => $this->redactor->messageList($result['issues'] ?? []),
+                'messages' => $this->redactor->messageList($result['messages'] ?? []),
                 'can_continue' => null !== $this->continuationFromResult($result),
             ],
         ];
@@ -87,10 +85,12 @@ final class LiveOperationRunPresenter
      */
     public function pollingPayload(array $state, int $cursor = 0): array
     {
-        $entries = array_values(array_filter(
-            is_array($state['entries'] ?? null) ? $state['entries'] : [],
-            static fn (mixed $entry): bool => is_array($entry) && (int) ($entry['cursor'] ?? 0) > $cursor,
-        ));
+        $entries = [];
+        foreach (is_array($state['entries'] ?? null) ? $state['entries'] : [] as $entry) {
+            if (is_array($entry) && (int) ($entry['cursor'] ?? 0) > $cursor) {
+                $entries[] = $this->entry($entry);
+            }
+        }
         $status = (string) ($state['status'] ?? self::STATUS_QUEUED);
         $terminal = in_array($status, self::TERMINAL_STATUSES, true);
 
@@ -107,7 +107,7 @@ final class LiveOperationRunPresenter
             'cursor_max' => (int) ($state['cursor'] ?? 0),
             'progress' => is_array($state['progress'] ?? null) ? $state['progress'] : ['index' => 0, 'total' => 0],
             'entries' => $entries,
-            'result' => $terminal ? ($state['result'] ?? null) : null,
+            'result' => $terminal ? $this->result($state['result'] ?? null) : null,
             'can_continue' => $terminal && self::STATUS_REQUIRES_REVIEW === $status && null !== $this->continuationFromResult($state['result'] ?? null),
             'next_poll_ms' => $terminal ? null : 750,
         ];
@@ -145,29 +145,62 @@ final class LiveOperationRunPresenter
     }
 
     /**
-     * @return list<array<string, mixed>>
+     * @param array<string, mixed> $entry
+     *
+     * @return array<string, mixed>
      */
-    private function messageList(mixed $messages): array
+    private function entry(array $entry): array
     {
-        if (!is_array($messages)) {
+        $presentedEntry = [
+            'cursor' => (int) ($entry['cursor'] ?? 0),
+            'index' => (int) ($entry['index'] ?? 0),
+            'total' => (int) ($entry['total'] ?? 0),
+            'name' => (string) ($entry['name'] ?? ''),
+            'status' => (string) ($entry['status'] ?? ''),
+            'started_at' => $entry['started_at'] ?? null,
+            'finished_at' => $entry['finished_at'] ?? null,
+            'issues' => $this->redactor->messageList($entry['issues'] ?? []),
+            'messages' => $this->redactor->messageList($entry['messages'] ?? []),
+        ];
+
+        $context = $this->entryContext($entry);
+        if ([] !== $context) {
+            $presentedEntry['context'] = $context;
+        }
+
+        return $presentedEntry;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function result(mixed $result): ?array
+    {
+        if (!is_array($result)) {
+            return null;
+        }
+
+        return [
+            'status' => is_string($result['status'] ?? null) ? $result['status'] : null,
+            'issues' => $this->redactor->messageList($result['issues'] ?? []),
+            'messages' => $this->redactor->messageList($result['messages'] ?? []),
+            'can_continue' => null !== $this->continuationFromResult($result),
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $entry
+     *
+     * @return array<string, mixed>
+     */
+    private function entryContext(array $entry): array
+    {
+        $status = is_string($entry['status'] ?? null) ? strtolower($entry['status']) : '';
+
+        if (!isset(self::DIAGNOSTIC_ENTRY_STATUSES[$status]) || !is_array($entry['context'] ?? null)) {
             return [];
         }
 
-        $list = [];
-
-        foreach ($messages as $message) {
-            if (!is_array($message)) {
-                continue;
-            }
-
-            $list[] = [
-                'level' => is_string($message['level'] ?? null) ? $message['level'] : null,
-                'code' => is_string($message['code'] ?? null) ? $message['code'] : null,
-                'translation_key' => is_string($message['translation_key'] ?? null) ? $message['translation_key'] : null,
-                'parameters' => is_array($message['parameters'] ?? null) ? $message['parameters'] : [],
-            ];
-        }
-
-        return $list;
+        return $this->redactor->redact($entry['context']);
     }
 }

@@ -334,6 +334,63 @@ final class UserControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Accept invitation');
         self::assertSelectorExists('input[name="username"]');
+        self::assertSelectorNotExists('input[name="captcha[provider]"]');
+    }
+
+    public function testRegistrationFormRendersCaptchaField(): void
+    {
+        $client = self::createClient();
+        $config = self::getContainer()->get(Config::class);
+        $config->set('user.registration.mode', 'auto_approval');
+
+        try {
+            $client->request('GET', '/user/register');
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorExists('form#user-registration-form[method="post"]');
+            self::assertSelectorExists('input[name="_captcha_instance"]');
+            self::assertSelectorNotExists('input[name="captcha[provider]"]');
+            self::assertSelectorNotExists('input[name="captcha[fallback_rendered]"]');
+            self::assertSelectorNotExists('input[name="captcha[form_id]"]');
+            self::assertSelectorNotExists('input[name="captcha[status]"][value="skipped"]');
+        } finally {
+            $config->set('user.registration.mode', 'disabled');
+        }
+    }
+
+    public function testRegistrationDirectPostWithoutRenderedCaptchaInstanceFails(): void
+    {
+        $client = self::createClient();
+        $config = self::getContainer()->get(Config::class);
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $originalSiteUrl = $config->get('site.url', 'http://localhost');
+        $config->set('site.url', 'https://example.test');
+        $config->set('user.registration.mode', 'auto_approval');
+
+        try {
+            $client->request('GET', '/user/register');
+            $token = $client->getCrawler()->filter('input[name="_csrf_token"]')->attr('value');
+            self::assertIsString($token);
+
+            $client->request('POST', '/user/register', [
+                '_csrf_token' => $token,
+                'email' => 'direct-registration@example.test',
+            ]);
+
+            self::assertResponseIsSuccessful();
+            self::assertSelectorTextContains('.system-form-errors', 'The captcha could not be verified. Please try again.');
+
+            $accountToken = $entityManager->getRepository(AccountToken::class)->findOneBy([
+                'email' => 'direct-registration@example.test',
+                'type' => AccountTokenType::Registration,
+            ]);
+
+            self::assertNull($accountToken);
+        } finally {
+            $config->set('site.url', (string) $originalSiteUrl);
+            $config->set('user.registration.mode', 'disabled');
+            $entityManager->flush();
+        }
     }
 
     public function testPasswordResetTokenRendersPasswordPolicyMeter(): void

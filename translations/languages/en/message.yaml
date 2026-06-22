@@ -26,6 +26,9 @@ message:
     css_namespace_invalid: 'CSS class "%class%" in "%path%" must use the extension-owned prefix "%expected_prefix%".'
     javascript_syntax_error: 'JavaScript syntax check failed for "%path%".'
     scope_invalid: 'Extension scope "%scope%" is not supported.'
+    scope_list_invalid: 'Extension scope list must use matching square brackets.'
+    scope_list_empty: 'Extension scope list must not be empty.'
+    scope_identity_missing: 'Extension scope list must include module, a theme scope, or a provider scope.'
     template_path_invalid: 'Extension template "%path%" is not allowed by root, provider, or macro namespace rules for extension scope "%scope%".'
     template_reference_invalid: 'Extension template "%path%" must not reference template "%reference%" outside its own template scope.'
     policy:
@@ -88,6 +91,12 @@ message:
       rolled_back: 'Extension lifecycle changes were rolled back for %count% extension(s).'
     runtime:
       contribution_unsupported: 'Extension "%extension%" returned unsupported runtime contribution type "%type%".'
+      log: '%message%'
+      alert_fallback: 'Extension alert.'
+      mail_stub: 'Extension "%extension%" queued mail workflow "%workflow%" through the development mail stub.'
+    operation:
+      identifier_invalid: 'Extension operation identifier "%identifier%" is invalid.'
+      target_invalid: 'Extension operation target "%target%" is invalid.'
     live:
       endpoint_path_invalid: 'Extension "%extension%" tried to register live endpoint path "%path%" outside its own /api/live/{extension}/ namespace.'
       endpoint_handler_invalid: 'Extension "%extension%" tried to register live endpoint handler "%handler%" outside its own handler namespace.'
@@ -135,6 +144,9 @@ message:
     request_rejected: 'The request could not be accepted.'
     storage_degraded: 'Rate-limit storage was unavailable; the request was allowed.'
     reset_degraded: 'Rate-limit reset storage was unavailable.'
+  captcha:
+    provider_runtime_failed: 'Captcha provider "%provider%" failed during %phase%.'
+    provider_result_invalid: 'Captcha provider "%provider%" returned an invalid %phase% result.'
   auto_ban:
     storage_degraded: 'Auto-ban storage was unavailable; enforcement failed open.'
     evaluation_degraded: 'Auto-ban score evaluation was unavailable; the request was allowed.'
@@ -173,6 +185,10 @@ message:
       render_failed: 'Dynamic view injection "%uid%" failed while rendering "%template%".'
     template_namespace:
       unsupported: 'Template namespace "%namespace%" is not supported.'
+    ui_alert:
+      topic_user_invalid: 'UI alert user topics require an account UID or resolvable username.'
+      topic_role_invalid: 'UI alert role topics require a non-public user role value.'
+      topic_acl_group_invalid: 'UI alert ACL group topics require a group UID.'
   lint:
     php_unreadable: 'PHP source cannot be read.'
     php_syntax_error: 'PHP syntax check failed.'

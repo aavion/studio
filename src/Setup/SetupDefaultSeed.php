@@ -10,6 +10,7 @@ use App\Core\AdminAcl\AdminFeatureDefaults;
 use App\Core\AdminAcl\AdminFeatureOverrideStore;
 use App\Core\Config\ConfigDefaultProviderInterface;
 use App\Core\Config\ConfigValueType;
+use App\Core\Extension\ExtensionHttpRequest;
 use App\Core\Geo\MaxMindGeoIpConfig;
 use App\Core\Log\ConfigAuditLogPolicy;
 use App\Core\Log\DatabaseLogRetentionPolicy;
@@ -67,6 +68,7 @@ final readonly class SetupDefaultSeed
             ['key' => ApiFeaturePolicy::ENABLED_KEY, 'value' => $this->setting($input, ApiFeaturePolicy::ENABLED_KEY, true), 'type' => ConfigValueType::Boolean],
             ['key' => ApiFeaturePolicy::CORS_ENABLED_KEY, 'value' => $this->setting($input, ApiFeaturePolicy::CORS_ENABLED_KEY, false), 'type' => ConfigValueType::Boolean],
             ['key' => ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY, 'value' => $this->setting($input, ApiFeaturePolicy::CORS_ALLOWED_ORIGINS_KEY, []), 'type' => ConfigValueType::Json],
+            ['key' => ExtensionHttpRequest::ALLOW_PRIVATE_NETWORKS_KEY, 'value' => $this->setting($input, ExtensionHttpRequest::ALLOW_PRIVATE_NETWORKS_KEY, false), 'type' => ConfigValueType::Boolean],
             ['key' => SchedulerSettings::ENABLED_KEY, 'value' => $this->setting($input, SchedulerSettings::ENABLED_KEY, true), 'type' => ConfigValueType::Boolean],
             ['key' => SchedulerSettings::GET_AUTH_ENABLED_KEY, 'value' => $this->setting($input, SchedulerSettings::GET_AUTH_ENABLED_KEY, false), 'type' => ConfigValueType::Boolean],
             ['key' => SchedulerSettings::EXTENSION_ACTION_QUEUES_ENABLED_KEY, 'value' => $this->setting($input, SchedulerSettings::EXTENSION_ACTION_QUEUES_ENABLED_KEY, false), 'type' => ConfigValueType::Boolean],

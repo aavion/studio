@@ -25,6 +25,7 @@ final readonly class SchedulerTaskRunRecorder
         private UuidFactory $uuidFactory,
         private SchedulerRunReporter $reporter,
         private SchedulerFailurePolicy $failurePolicy = new SchedulerFailurePolicy(),
+        private SchedulerRunContextRedactor $contextRedactor = new SchedulerRunContextRedactor(),
     ) {
     }
 
@@ -59,7 +60,7 @@ final readonly class SchedulerTaskRunRecorder
         try {
             $executor = $this->executorFor($task);
             $execution = $executor->execute($task);
-            $executionContext = $this->validatedContext($execution->context());
+            $executionContext = $this->validatedContext($this->contextRedactor->redact($execution->context()));
             $finishedAt = new DateTimeImmutable();
 
             if ($execution->isSuccess()) {
@@ -79,10 +80,10 @@ final readonly class SchedulerTaskRunRecorder
         } catch (Throwable $error) {
             $finishedAt = new DateTimeImmutable();
             $task->markFailure($finishedAt, $this->failurePolicy->disableAfterFailures());
-            $run->finish(SchedulerTaskRunStatus::Failed, $finishedAt, [
+            $run->finish(SchedulerTaskRunStatus::Failed, $finishedAt, $this->contextRedactor->redact([
                 'exception' => $error::class,
                 'message' => $error->getMessage(),
-            ], true);
+            ]), true);
             $this->entityManager->flush();
             $this->reporter->logSoftBudgetIfExceeded($task, $run, $softBudgetMs);
             $this->reporter->logTaskFailure($task, $run, [

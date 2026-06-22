@@ -7,6 +7,9 @@ namespace App\Backend;
 use App\Core\Access\AccessActor;
 use App\Core\AdminAcl\AdminFeatureAccessPolicy;
 use App\Core\AdminAcl\AdminPermissionState;
+use App\Core\Extension\ExtensionOperationRegistration;
+use App\Core\Extension\ExtensionPhpLoader;
+use App\Core\Extension\ExtensionRuntimeContributionRegistry;
 use App\Core\Extension\ExtensionStatus;
 use App\Entity\Extension;
 use App\Entity\UserAccount;
@@ -24,6 +27,8 @@ final readonly class ExtensionAdminDetailProvider
         private ExtensionDependencyLabelParser $dependencyLabelParser,
         private Security $security,
         private AdminFeatureAccessPolicy $adminAcl,
+        private ?ExtensionRuntimeContributionRegistry $runtimeContributions = null,
+        private ?ExtensionPhpLoader $extensionPhpLoader = null,
     ) {
     }
 
@@ -142,7 +147,7 @@ final readonly class ExtensionAdminDetailProvider
             $cleanupActions[] = $this->action($extension, ExtensionLifecycleAdmin::ACTION_DELETE, 'danger', $state);
         }
 
-        return [...$stateActions, ...$cleanupActions];
+        return [...$stateActions, ...$this->operationActions($extension, $state), ...$cleanupActions];
     }
 
     private function action(Extension $extension, string $action, string $variant, AdminPermissionState $state): array
@@ -154,6 +159,31 @@ final readonly class ExtensionAdminDetailProvider
             'variant' => $variant,
             'disabled' => !$state->isMutable(),
         ];
+    }
+
+    /**
+     * @return list<array{id: string, label_key: string, path: string, variant: string, disabled: bool, live: bool, target: string}>
+     */
+    private function operationActions(Extension $extension, AdminPermissionState $state): array
+    {
+        if (ExtensionStatus::Active !== $extension->status() || null === $this->runtimeContributions) {
+            return [];
+        }
+
+        $this->extensionPhpLoader?->loadActiveExtensions();
+
+        return array_map(
+            fn (ExtensionOperationRegistration $operation): array => [
+                'id' => 'operation-'.strtr($operation->target(), '.:', '__'),
+                'label_key' => $operation->definition()->labelKey(),
+                'path' => '/admin/extensions/'.rawurlencode($extension->extensionName()),
+                'variant' => 'secondary',
+                'disabled' => !$state->isMutable(),
+                'live' => true,
+                'target' => $operation->target(),
+            ],
+            $this->runtimeContributions->extensionOperations($extension->extensionName()),
+        );
     }
 
     private function actionPath(string $extensionName, string $action): string

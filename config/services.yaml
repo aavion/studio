@@ -89,6 +89,7 @@ services:
             - '../src/**/*Capability.php'
             - '../src/**/*Change.php'
             - '../src/Api/Http/ApiRequestContext.php'
+            - '../src/Core/Extension/extension_functions.php'
             - '../src/**/*Contribution.php'
             - '../src/**/*Definition.php'
             - '../src/**/*Descriptor.php'
@@ -165,7 +166,7 @@ services:
 
     App\Content\Api\ContentApiPath: ~
 
-    App\Core\Extension\ExtensionDependencyManifestValidator:
+    App\Core\Extension\ExtensionClassAutoloader:
         arguments:
             $projectDir: '%kernel.project_dir%'
 
@@ -272,6 +273,88 @@ services:
             $cache: '@cache.app'
             $lockFactory: '@lock.factory'
 
+    App\Core\Extension\ExtensionCache:
+        arguments:
+            $cache: '@cache.app'
+
+    App\Core\Extension\ExtensionCacheInterface:
+        alias: App\Core\Extension\ExtensionCache
+
+    App\Core\Extension\ExtensionFileReader:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    App\Core\Extension\ExtensionAssetReader:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    App\Core\Extension\ExtensionAssetUrlGenerator:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    App\Core\Extension\ExtensionAclGroupMemberProviderInterface:
+        alias: App\Core\Extension\DoctrineExtensionAclGroupMemberProvider
+
+    App\Core\Extension\ExtensionRuntimeServices:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+            $cache: '@App\Core\Extension\ExtensionCacheInterface'
+            $settings: '@App\Core\Extension\Settings\ExtensionSettings'
+            $files: '@App\Core\Extension\ExtensionFileReader'
+            $assets: '@App\Core\Extension\ExtensionAssetReader'
+            $assetUrls: '@App\Core\Extension\ExtensionAssetUrlGenerator'
+            $endpointUrls: '@App\Core\Extension\ExtensionEndpointUrlGenerator'
+            $httpRequests: '@App\Core\Extension\ExtensionHttpRequest'
+            $logs: '@App\Core\Extension\ExtensionLogFacade'
+            $alerts: '@App\Core\Extension\ExtensionAlertFacade'
+            $references: '@App\Core\Extension\ExtensionReferenceFacade'
+            $databases: '@App\Core\Extension\ExtensionDatabaseFacade'
+            $mail: '@App\Core\Extension\ExtensionMailFacade'
+            $storage: '@App\Core\Extension\ExtensionStorage'
+            $uploads: '@App\Core\Extension\ExtensionUploadStorage'
+            $requests: '@App\Core\Extension\ExtensionRequestSnapshot'
+            $content: '@App\Core\Extension\ExtensionContentFacade'
+            $permissions: '@App\Core\Extension\ExtensionPermissionFacade'
+            $csrf: '@App\Core\Extension\ExtensionCsrfFacade'
+            $cookies: '@App\Core\Extension\ExtensionCookieFacade'
+            $translations: '@App\Core\Extension\ExtensionTranslationFacade'
+
+    App\Core\Extension\ExtensionStorage:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+            $environment: '%kernel.environment%'
+
+    App\Core\Extension\ExtensionUploadStorage:
+        arguments:
+            $storage: '@App\Core\Extension\ExtensionStorage'
+
+    App\Core\Extension\ExtensionRequestSnapshot:
+        arguments:
+            $requestStack: '@request_stack'
+
+    App\Core\Extension\ExtensionContentFacade:
+        arguments:
+            $entityManager: '@doctrine.orm.entity_manager'
+            $contentResolver: '@App\Content\Read\PublishedContentResolver'
+            $contentAccess: '@App\Content\Read\ContentReadAccessPolicy'
+            $security: '@security.helper'
+
+    App\Core\Extension\ExtensionPermissionFacade:
+        arguments:
+            $entityManager: '@doctrine.orm.entity_manager'
+            $security: '@security.helper'
+
+    App\Core\Extension\ExtensionCsrfFacade:
+        arguments:
+            $tokens: '@security.csrf.token_manager'
+            $requestStack: '@request_stack'
+
+    App\Core\Extension\ExtensionCookieFacade:
+        arguments:
+            $requestStack: '@request_stack'
+            $consent: '@App\Privacy\Cookie\CookieConsentManager'
+            $runtimeContributions: '@App\Core\Extension\ExtensionRuntimeContributionRegistry'
+
     App\Security\AutoBan\AutoBanSignalEvaluator:
         arguments:
             $environment: '%kernel.environment%'
@@ -374,6 +457,7 @@ services:
             $projectDir: '%kernel.project_dir%'
             $environment: '%kernel.environment%'
             $runtimeContributions: '@App\Core\Extension\ExtensionRuntimeContributionRegistry'
+            $extensionRuntimeServices: '@App\Core\Extension\ExtensionRuntimeServices'
 
     App\Core\Extension\ExtensionRuntimeFailureHandler:
         arguments:
@@ -457,6 +541,14 @@ services:
     App\Core\Message\WorkflowResultMessageReporterInterface:
         alias: App\Core\Message\WorkflowResultMessageReporter
 
+    App\Security\Captcha\CaptchaProviderBridge:
+        arguments:
+            $messageReporter: '@App\Core\Message\MessageReporterInterface'
+
+    App\Security\Captcha\CaptchaRequestGuardSubscriber:
+        arguments:
+            $failureSignals: '@App\Security\Captcha\CaptchaFailureSignalRecorder'
+
     App\Core\Log\MonologMessageLogger:
         arguments:
             $logger: '@monolog.logger.message'
@@ -480,6 +572,10 @@ services:
         arguments:
             $cacheDir: '%kernel.project_dir%/var/cache'
             $environment: '%kernel.environment%'
+
+    App\Security\Captcha\CaptchaInstanceStore:
+        arguments:
+            $cache: '@cache.app'
 
     App\Security\Abuse\AbuseSubjectResolver:
         arguments:

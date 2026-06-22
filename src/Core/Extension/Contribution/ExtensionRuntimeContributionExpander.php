@@ -12,7 +12,13 @@ use App\Core\Extension\Content\ExtensionContentSchemaDefinition;
 use App\Core\Extension\Content\ExtensionContentSchemaProviderInterface;
 use App\Core\Extension\Database\ExtensionDatabaseProviderInterface;
 use App\Core\Extension\Database\ExtensionDatabaseTable;
+use App\Core\Extension\ExtensionContributionContext;
+use App\Core\Extension\ExtensionEventListenerContribution;
+use App\Core\Extension\ExtensionActionQueueProviderInterface;
 use App\Core\Extension\ExtensionMessageKey;
+use App\Core\Extension\ExtensionOperationDefinition;
+use App\Core\Extension\ExtensionProviderContribution;
+use App\Core\Extension\ExtensionRuntimeContributionFactory;
 use App\Core\Extension\Settings\ExtensionSettingDefinition;
 use App\Core\Extension\Settings\ExtensionSettingProviderInterface;
 use App\Core\Message\MessageException;
@@ -46,6 +52,12 @@ final readonly class ExtensionRuntimeContributionExpander
 
         if ($this->isDirectContribution($contribution)) {
             yield $contribution;
+
+            return;
+        }
+
+        if ($contribution instanceof ExtensionRuntimeContributionFactory) {
+            yield from $this->expand($extension, $contribution->contributions(new ExtensionContributionContext($extension)));
 
             return;
         }
@@ -88,7 +100,10 @@ final readonly class ExtensionRuntimeContributionExpander
             || $contribution instanceof LiveEndpointHandlerInterface
             || $contribution instanceof CookieConsentDefinition
             || $contribution instanceof ExtensionDatabaseTable
-            || $contribution instanceof ExtensionContentSchemaDefinition;
+            || $contribution instanceof ExtensionContentSchemaDefinition
+            || $contribution instanceof ExtensionOperationDefinition
+            || $contribution instanceof ExtensionEventListenerContribution
+            || $contribution instanceof ExtensionProviderContribution;
     }
 
     /**
@@ -186,7 +201,7 @@ final readonly class ExtensionRuntimeContributionExpander
             $providerHandled = true;
         }
 
-        if ($contribution instanceof SchedulerCallableProviderInterface || $contribution instanceof SchedulerActionQueueProviderInterface) {
+        if ($contribution instanceof SchedulerCallableProviderInterface || $contribution instanceof SchedulerActionQueueProviderInterface || $contribution instanceof ExtensionActionQueueProviderInterface) {
             yield $contribution;
             $providerHandled = true;
         }

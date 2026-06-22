@@ -27,6 +27,7 @@ use App\Security\AutoBan\AutoBanPolicy;
 use App\Security\AutoBan\AutoBanStore;
 use App\Security\AutoBan\AutoBanSubject;
 use App\Security\RateLimit\RateLimitPolicyCatalogue;
+use App\Security\RateLimit\RateLimitProfile;
 use App\Security\UserAccountStatus;
 use App\Security\UserFlowConfig;
 use App\Setup\SetupCompletionMarker;
@@ -1168,7 +1169,10 @@ final class BackendControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Security settings');
         self::assertSelectorExists('form#admin-settings-security');
-        self::assertSelectorExists('select[name="security.captcha.provider"]');
+        self::assertSelectorNotExists('select[name="security.captcha.provider"]');
+        self::assertStringNotContainsString('name="captcha[provider]"', (string) $client->getResponse()->getContent());
+        self::assertStringNotContainsString('name="captcha[form_id]"', (string) $client->getResponse()->getContent());
+        self::assertStringNotContainsString('name="security.captcha.preview[provider]"', (string) $client->getResponse()->getContent());
         self::assertSelectorExists(sprintf('select[name="%s"]', RateLimitPolicyCatalogue::MODE_KEY));
         self::assertSelectorExists(sprintf('input[name="%s"]', ConfigAuditLogPolicy::ENABLED_KEY));
         self::assertSelectorExists(sprintf('input[name="%s[]"]', ConfigAuditLogPolicy::EVENTS_KEY));
@@ -1306,8 +1310,7 @@ final class BackendControllerTest extends WebTestCase
         $client->request('POST', '/admin/settings/security', [
             '_form_id' => 'admin-settings-security',
             '_csrf_token' => 'direct-post',
-            'security.captcha.enabled' => '0',
-            'security.captcha.provider' => 'none',
+            RateLimitPolicyCatalogue::MODE_KEY => RateLimitProfile::Strict->value,
         ]);
 
         self::assertResponseStatusCodeSame(401);

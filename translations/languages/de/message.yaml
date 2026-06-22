@@ -26,6 +26,9 @@ message:
     css_namespace_invalid: 'CSS-Klasse "%class%" in "%path%" muss den extension-eigenen Prefix "%expected_prefix%" verwenden.'
     javascript_syntax_error: 'JavaScript-Syntaxprüfung für "%path%" fehlgeschlagen.'
     scope_invalid: 'Extension-Scope "%scope%" wird nicht unterstützt.'
+    scope_list_invalid: 'Extension-Scope-Liste muss passende eckige Klammern verwenden.'
+    scope_list_empty: 'Extension-Scope-Liste darf nicht leer sein.'
+    scope_identity_missing: 'Extension-Scope-Liste muss module, einen Theme-Scope oder einen Provider-Scope enthalten.'
     template_path_invalid: 'Extension-Template "%path%" ist durch Root-, Provider- oder Makro-Namespace-Regeln für Extension-Scope "%scope%" nicht erlaubt.'
     template_reference_invalid: 'Extension-Template "%path%" darf Template "%reference%" außerhalb des eigenen Template-Scopes nicht referenzieren.'
     policy:
@@ -88,6 +91,12 @@ message:
       rolled_back: 'Extension-Lifecycle-Änderungen wurden für %count% Extension(e) zurückgerollt.'
     runtime:
       contribution_unsupported: 'Extension "%extension%" hat einen nicht unterstützten Runtime-Contribution-Typ "%type%" zurückgegeben.'
+      log: '%message%'
+      alert_fallback: 'Extension-Alert.'
+      mail_stub: 'Extension "%extension%" hat Mail-Workflow "%workflow%" über den Entwicklungs-Mail-Stub eingereiht.'
+    operation:
+      identifier_invalid: 'Extension-Operation-Identifier "%identifier%" ist ungültig.'
+      target_invalid: 'Extension-Operation-Target "%target%" ist ungültig.'
     live:
       endpoint_path_invalid: 'Extension "%extension%" wollte den Live-Endpunkt-Pfad "%path%" außerhalb des eigenen /api/live/{extension}/-Namespace registrieren.'
       endpoint_handler_invalid: 'Extension "%extension%" wollte den Live-Endpunkt-Handler "%handler%" außerhalb des eigenen Handler-Namespace registrieren.'
@@ -135,6 +144,9 @@ message:
     request_rejected: 'Die Anfrage konnte nicht akzeptiert werden.'
     storage_degraded: 'Rate-Limit-Speicher war nicht verfügbar; die Anfrage wurde zugelassen.'
     reset_degraded: 'Rate-Limit-Reset-Speicher war nicht verfügbar.'
+  captcha:
+    provider_runtime_failed: 'Captcha-Provider "%provider%" ist während %phase% fehlgeschlagen.'
+    provider_result_invalid: 'Captcha-Provider "%provider%" hat ein ungültiges %phase%-Ergebnis zurückgegeben.'
   auto_ban:
     storage_degraded: 'Auto-Ban-Speicher war nicht verfügbar; Enforcement ist fail-open weitergelaufen.'
     evaluation_degraded: 'Auto-Ban-Score-Auswertung war nicht verfügbar; die Anfrage wurde zugelassen.'
@@ -173,6 +185,10 @@ message:
       render_failed: 'Dynamische View-Injection "%uid%" ist beim Rendern von "%template%" fehlgeschlagen.'
     template_namespace:
       unsupported: 'Template-Namespace "%namespace%" wird nicht unterstützt.'
+    ui_alert:
+      topic_user_invalid: 'UI-Alert-User-Topics benötigen eine Account-UID oder einen auflösbaren Benutzernamen.'
+      topic_role_invalid: 'UI-Alert-Rollen-Topics benötigen einen nicht-öffentlichen User-Role-Wert.'
+      topic_acl_group_invalid: 'UI-Alert-ACL-Gruppen-Topics benötigen eine Gruppen-UID.'
   lint:
     php_unreadable: 'PHP-Quelle kann nicht gelesen werden.'
     php_syntax_error: 'PHP-Syntaxprüfung fehlgeschlagen.'

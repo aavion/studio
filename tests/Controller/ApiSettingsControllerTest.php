@@ -170,7 +170,7 @@ final class ApiSettingsControllerTest extends WebTestCase
         $plainKey = $this->createPlainApiKey(ApiKeyStatus::ReadWrite, 'apisetsecadm', AccessLevel::ADMIN);
         $config = self::getContainer()->get(Config::class);
         self::assertInstanceOf(Config::class, $config);
-        $config->set('security.captcha.enabled', true, ConfigValueType::Boolean);
+        $config->set(RateLimitPolicyCatalogue::MODE_KEY, RateLimitProfile::Standard->value, ConfigValueType::String);
 
         $client->request('GET', '/api/v1/admin/settings/security', server: [
             'HTTP_AUTHORIZATION' => 'Bearer '.$plainKey,
@@ -183,14 +183,12 @@ final class ApiSettingsControllerTest extends WebTestCase
             'CONTENT_TYPE' => 'application/json',
         ], content: json_encode([
             'values' => [
-                'security.captcha.enabled' => false,
-                'security.captcha.provider' => 'none',
                 RateLimitPolicyCatalogue::MODE_KEY => RateLimitProfile::Panic->value,
             ],
         ], JSON_THROW_ON_ERROR));
 
         self::assertResponseStatusCodeSame(404);
-        self::assertTrue($config->get('security.captcha.enabled'));
+        self::assertSame(RateLimitProfile::Standard->value, $config->get(RateLimitPolicyCatalogue::MODE_KEY));
     }
 
     public function testSecuritySettingsCanBeReadAndPatchedByOwnerApiKeys(): void
@@ -204,16 +202,12 @@ final class ApiSettingsControllerTest extends WebTestCase
                 'CONTENT_TYPE' => 'application/json',
             ], content: json_encode([
                 'values' => [
-                    'security.captcha.enabled' => true,
-                    'security.captcha.provider' => 'none',
                     RateLimitPolicyCatalogue::MODE_KEY => RateLimitProfile::Strict->value,
                 ],
             ], JSON_THROW_ON_ERROR));
 
             self::assertResponseIsSuccessful();
             $payload = $this->jsonPayload($client->getResponse()->getContent());
-            self::assertContains('security.captcha.enabled', $payload['meta']['updated_keys']);
-            self::assertContains('security.captcha.provider', $payload['meta']['updated_keys']);
             self::assertContains(RateLimitPolicyCatalogue::MODE_KEY, $payload['meta']['updated_keys']);
         } finally {
             $this->removeApiKeyUser('apisetsecown');

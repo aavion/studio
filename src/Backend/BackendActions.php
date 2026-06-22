@@ -146,22 +146,22 @@ final readonly class BackendActions
             self::EXTENSION_DISCOVERY => $this->liveOperationStarter->start(
                 LiveOperationQueueFactory::EXTENSION_DISCOVERY,
                 ['environment' => $this->kernel->getEnvironment(), 'trigger' => 'admin_ui'],
-                'Extension discovery',
+                'admin.actions.extension_discovery.label',
             ),
             self::ASSET_REBUILD => $this->liveOperationStarter->start(
                 LiveOperationQueueFactory::EXTENSION_ASSET_REBUILD,
                 ['environment' => $this->kernel->getEnvironment(), 'trigger' => 'admin_ui'],
-                'Asset rebuild',
+                'admin.actions.asset_rebuild.label',
             ),
             self::CACHE_CLEAR => $this->liveOperationStarter->start(
                 LiveOperationQueueFactory::BACKEND_CACHE_CLEAR,
                 ['environment' => $this->kernel->getEnvironment(), 'trigger' => 'admin_ui'],
-                'Cache clear',
+                'admin.actions.cache_clear.label',
             ),
             self::GEOIP_DATABASE_UPDATE => $this->liveOperationStarter->start(
                 LiveOperationQueueFactory::GEOIP_DATABASE_UPDATE,
                 ['environment' => $this->kernel->getEnvironment(), 'trigger' => 'admin_ui'],
-                'GeoIP2 database update',
+                'admin.actions.geoip_database_update.label',
             ),
             default => WorkflowResult::invalid([
                 Message::warning(

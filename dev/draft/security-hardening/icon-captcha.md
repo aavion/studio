@@ -1,7 +1,7 @@
 # IconCaptcha branch plan
 
 > **Status**: Draft  
-> **Updated**: 2026-06-15  
+> **Updated**: 2026-06-21  
 > **Owner**: Core  
 > **Purpose:** Define the `feat-security-icon-captcha` implementation plan.  
 
@@ -19,7 +19,7 @@ Codex may create local commits for this branch when each commit has a clear them
 
 - `feat-security-captcha-contract`.
 - [Security policy defaults](policy-defaults.md).
-- Extension lifecycle, AssetMapper/Tailwind, translation aggregation, `/api/live/**`, and abuse passive signal foundations.
+- Extension runtime namespace loading, extension lifecycle, AssetMapper/Tailwind, translation aggregation, `/api/live/**`, and abuse passive signal foundations.
 
 ## Legacy inspiration
 
@@ -27,17 +27,19 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 
 ## Implementation sequence
 
-1. Add the first-party provider extension skeleton with captcha-provider scope, extension-owned services, templates, assets, translations, and JavaScript.
+1. Add the first-party provider extension skeleton with captcha-provider scope, extension-owned PHP classes, templates, assets, translations, live endpoint definitions/handlers, and JavaScript.
 2. Select or create a suitable asset set before challenge implementation. Prefer open-source-compatible licenses such as MIT, Apache-2.0, CC0, or similarly permissive licenses, and record asset provenance/license notes in the provider extension.
 3. Implement deterministic challenge generation from provider secret, challenge ID, timestamp, workflow key, route context, user agent, and optional existing session/visitor signal.
 4. Store one-shot challenge IDs and short-lived challenge metadata in a dedicated Symfony cache pool where practical, falling back to `cache.app` if the project has no dedicated pool yet.
 5. Implement validation for missing, expired, reused, invalid choice, wrong choice, context mismatch, asset error, and provider unavailable.
-6. Add lightweight refresh through `/api/live/**` or a provider-owned JSON route with no ordinary rate-limit rejection; record passive abuse signals for aggressive refreshes.
+6. Add lightweight refresh through an extension-owned `/api/live/{extension-slug}/...` endpoint with no ordinary rate-limit rejection; record passive abuse signals for aggressive refreshes.
 7. Add accessible, layout-stable UI with fixed button grid, translated labels, keyboard support, and back-forward-cache refresh handling.
 
 ## Public interfaces and data decisions
 
-- Provider key is `icon_captcha`.
+- Provider identity is the active extension slug, expected to be `icon-captcha` for the first-party package. Extension-owned internal keys may use snake-case, but core provider selection must not depend on a separate provider setting or hardcoded provider key.
+- IconCaptcha is self-contained extension code. Core must not ship IconCaptcha-specific JavaScript, CSS, challenge generators, polling endpoints, templates, or answer payload structures.
+- IconCaptcha participates only where a core or extension template explicitly renders the captcha field component. Ordinary login and token-protected account setup must remain captcha-free unless a future product decision changes their templates.
 - Public challenge payload contains only challenge ID, timestamp, render metadata, and button identifiers needed for display.
 - Provider secret is generated/configured outside manifests and public assets.
 - Default challenge TTL is 15 minutes, and validation invalidates the challenge after every attempt, successful or failed.
@@ -54,7 +56,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Challenge reuse fails after validation regardless of success or failure.
 - Expired challenges fail recoverably.
 - Context mismatch is suspicious but should not reveal internals.
-- Disabled provider falls back according to the generic resolver policy.
+- A missing or inactive provider falls back according to the generic captcha bridge policy. When the `icon-captcha` provider is active, submitted fallback or skipped markers are treated only as provider payload and must not bypass provider validation.
 - Asset loading failures produce safe diagnostics and recoverable user feedback where possible.
 - Asset license gaps or unclear provenance block the provider branch until the asset is replaced or the license is documented as acceptable.
 - Browser inspection should not reveal the correct answer through DOM order, source file names, SVG IDs, ARIA labels, visible hidden text, or static asset URLs.
@@ -70,7 +72,7 @@ The old Grav plugin `sec-lookup` at `/Volumes/Projekte/temp/sec-lookup` may be r
 - Test cache-pool fallback and secret absence from cached/public challenge payloads.
 - Test configured TTL bounds if challenge TTL becomes configurable.
 - Test refresh no-store behavior and passive signal recording.
-- Test extension asset/template/translation registration.
+- Test extension PHP namespace loading plus asset/template/translation/live endpoint registration.
 - Test keyboard/accessibility behavior where practical with JS tests.
 - Test that rendered DOM, inline SVG, ARIA labels, asset paths, and serialized challenge payloads do not expose answer-bearing names or reusable answer material.
 - Test accessible quiz-mode success, wrong answer, expiry, replay prevention, context mismatch, refresh behavior, and answer-leak resistance.

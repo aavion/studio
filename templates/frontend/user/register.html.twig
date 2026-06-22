@@ -20,13 +20,14 @@
                     {% endfor %}
                 </ul>
             {% endif %}
-            <form method="post" class="system-frontend-auth-form">
+            <form id="user-registration-form" method="post" class="system-frontend-auth-form">
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token('user_register') }}">
                 {% include '@frontend/partials/forms/fields/email.html.twig' with {
                     name: 'email',
                     label: 'ui.user.register.email'|trans,
                     required: true,
                 } only %}
+                <twig:root:CaptchaField form_id="user-registration-form" workflow="user.registration" name="captcha" />
                 {% include '@frontend/partials/forms/fields/submit.html.twig' with {label: 'ui.user.register.submit'|trans} only %}
             </form>
         {% endif %}

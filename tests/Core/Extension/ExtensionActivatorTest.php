@@ -116,6 +116,134 @@ PHP);
         self::assertContains('ext11_demo_module_entry', $this->connection->createSchemaManager()->listTableNames());
     }
 
+    public function testItAppliesActivationFactoriesWithoutRunningRuntimeFactories(): void
+    {
+        $this->temporaryProjectDir = $this->createTemporaryDirectory('system-extension-activation-factory');
+        $this->insertExtension('demo-module', ['module', 'database'], 'inactive');
+        $this->writeTestFile($this->temporaryProjectDir, 'extensions/demo-module/extension.php', <<<'PHP'
+<?php
+
+use App\Core\Extension\Database\ExtensionDatabaseColumn;
+use App\Core\Extension\Database\ExtensionDatabaseTable;
+use App\Core\Extension\ExtensionContributionContext;
+use App\Core\Extension\ExtensionContributions;
+
+return ExtensionContributions::create()
+    ->runtime(static function (ExtensionContributionContext $context): array {
+        file_put_contents(__DIR__.'/runtime-ran.txt', 'yes');
+
+        return [];
+    })
+    ->activation(static fn (ExtensionContributionContext $context): array => [
+        ExtensionDatabaseTable::create('entry', [
+            ExtensionDatabaseColumn::string('uid', 36),
+        ], ['uid']),
+    ]);
+PHP);
+
+        $result = $this->activatorWithContributionApplier()->activate('demo-module', 'test', rebuildAssets: false);
+
+        self::assertTrue($result->isSuccess());
+        self::assertContains('ext11_demo_module_entry', $this->connection->createSchemaManager()->listTableNames());
+        self::assertFileDoesNotExist($this->temporaryProjectDir.'/extensions/demo-module/runtime-ran.txt');
+    }
+
+    public function testItLoadsExtensionNamespaceBeforeReadingActivationFactories(): void
+    {
+        $this->temporaryProjectDir = $this->createTemporaryDirectory('system-extension-activation-namespace');
+        $this->insertExtension('demo-module', ['module', 'database'], 'inactive', manifest: [
+            'EXTENSION_NAMESPACE' => 'DemoModule',
+        ]);
+        $this->writeTestFile($this->temporaryProjectDir, 'extensions/demo-module/src/ActivationTables.php', <<<'PHP'
+<?php
+
+namespace DemoModule;
+
+use App\Core\Extension\Database\ExtensionDatabaseColumn;
+use App\Core\Extension\Database\ExtensionDatabaseTable;
+
+final class ActivationTables
+{
+    public static function tables(): array
+    {
+        return [
+            ExtensionDatabaseTable::create('entry', [
+                ExtensionDatabaseColumn::string('uid', 36),
+            ], ['uid']),
+        ];
+    }
+}
+PHP);
+        $this->writeTestFile($this->temporaryProjectDir, 'extensions/demo-module/extension.php', <<<'PHP'
+<?php
+
+use App\Core\Extension\ExtensionContributionContext;
+use App\Core\Extension\ExtensionContributions;
+use DemoModule\ActivationTables;
+
+return ExtensionContributions::create()
+    ->activation(static fn (ExtensionContributionContext $context): array => ActivationTables::tables());
+PHP);
+
+        $result = $this->activatorWithContributionApplier()->activate('demo-module', 'test', rebuildAssets: false);
+
+        self::assertTrue($result->isSuccess(), json_encode($result->toArray(), JSON_THROW_ON_ERROR));
+        self::assertContains('ext11_demo_module_entry', $this->connection->createSchemaManager()->listTableNames());
+    }
+
+    public function testItRejectsNakedCallableActivationContributionsWithoutExecutingThem(): void
+    {
+        $this->temporaryProjectDir = $this->createTemporaryDirectory('system-extension-activation-callable');
+        $this->insertExtension('demo-module', ['module', 'database'], 'inactive');
+        $this->writeTestFile($this->temporaryProjectDir, 'extensions/demo-module/extension.php', <<<'PHP'
+<?php
+
+return static function ($extension): array {
+    file_put_contents(__DIR__.'/activation-ran.txt', $extension->extensionName());
+
+    return [];
+};
+PHP);
+
+        $result = $this->activatorWithContributionApplier()->activate('demo-module', 'test', rebuildAssets: false);
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('inactive', $this->extensionStatus('demo-module'));
+        self::assertFileDoesNotExist($this->temporaryProjectDir.'/extensions/demo-module/activation-ran.txt');
+        self::assertSame('message.extension.runtime.contribution_unsupported', $result->firstIssue()?->translationKey());
+    }
+
+    public function testItIgnoresRuntimeBootDuringActivationContributionReads(): void
+    {
+        $this->temporaryProjectDir = $this->createTemporaryDirectory('system-extension-activation-runtime-boot');
+        $this->insertExtension('demo-module', ['module', 'database'], 'inactive');
+        $this->writeTestFile($this->temporaryProjectDir, 'extensions/demo-module/extension.php', <<<'PHP'
+<?php
+
+use App\Core\Extension\Database\ExtensionDatabaseColumn;
+use App\Core\Extension\Database\ExtensionDatabaseTable;
+use App\Core\Extension\ExtensionContributionContext;
+use App\Core\Extension\ExtensionContributions;
+use App\Core\Extension\ExtensionRuntimeContext;
+
+return ExtensionContributions::create()
+    ->activation(static fn (ExtensionContributionContext $context): array => [
+        ExtensionDatabaseTable::create('entry', [
+            ExtensionDatabaseColumn::string('uid', 36),
+        ], ['uid']),
+    ])
+    ->runtimeBoot(static function (ExtensionRuntimeContext $context): void {
+        file_put_contents(__DIR__.'/runtime-boot-ran.txt', 'yes');
+    });
+PHP);
+
+        $result = $this->activatorWithContributionApplier()->activate('demo-module', 'test', rebuildAssets: false);
+
+        self::assertTrue($result->isSuccess());
+        self::assertContains('ext11_demo_module_entry', $this->connection->createSchemaManager()->listTableNames());
+        self::assertFileDoesNotExist($this->temporaryProjectDir.'/extensions/demo-module/runtime-boot-ran.txt');
+    }
+
     public function testItDoesNotReloadAlreadyActiveDependenciesWhenApplyingActivationContributions(): void
     {
         $this->temporaryProjectDir = $this->createTemporaryDirectory('system-extension-active-dependency');
@@ -199,20 +327,22 @@ PHP);
     public function testActivatedExtensionSchedulerTaskCanBeRegisteredAndEnabled(): void
     {
         $this->temporaryProjectDir = $this->createTemporaryDirectory('system-extension-scheduler');
-        $this->insertExtension('demo-module', ['module'], 'inactive');
+        $this->insertExtension('demo-module', ['module', 'scheduler-tasks'], 'inactive');
         $this->writeTestFile($this->temporaryProjectDir, 'extensions/demo-module/extension.php', <<<'PHP'
 <?php
 
 use App\Scheduler\SchedulerTaskDefinition;
+use App\Scheduler\SchedulerTaskType;
 
 return [
-    SchedulerTaskDefinition::command(
+    new SchedulerTaskDefinition(
         'demo-module.cleanup',
         'ext.demo_module.scheduler.cleanup.label',
         'ext.demo_module.scheduler.cleanup.description',
-        'demo:cleanup',
-        '*/20 * * * *',
         'demo-module',
+        SchedulerTaskType::Callable,
+        'demo-module.cleanup',
+        '*/20 * * * *',
         false,
     ),
 ];
@@ -239,7 +369,7 @@ PHP);
         self::assertCount(1, $tasks);
         self::assertSame('demo-module.cleanup', $tasks[0]->identifier());
         self::assertSame('demo-module', $tasks[0]->source());
-        self::assertSame(SchedulerTaskType::Command, $tasks[0]->type());
+        self::assertSame(SchedulerTaskType::Callable, $tasks[0]->type());
         self::assertSame('*/20 * * * *', $tasks[0]->cronExpression());
         self::assertFalse($tasks[0]->trusted());
 
@@ -799,6 +929,7 @@ PHP);
         string $status,
         string $dependencies = '[]',
         string $version = '1.0.0',
+        array $manifest = [],
     ): void {
         $this->connection->insert('extension', [
             'uid' => $this->uuid(),
@@ -812,6 +943,7 @@ PHP);
                 'registry_state' => 'available',
                 'manifest' => [
                     'EXTENSION_DEPENDENCIES' => $dependencies,
+                    ...$manifest,
                 ],
             ], JSON_THROW_ON_ERROR),
             'modified_at' => '2026-05-25 00:00:00',

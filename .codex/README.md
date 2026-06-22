@@ -13,6 +13,7 @@
 - Reference: [Grav Plugin Inspiration Notes](grav-plugin-inspiration-notes.md)
 
 ### Historical Plans And Audits
+- Review history: [Past Review Findings](past-review-findings.md) - historic evidence of past review findings.
 - Plan: [Branding-Neutral Naming Migration Plan 2026-06-06](branding-naming-migration-plan-2026-06-06.md) - completed naming migration context.
 - Audit: [Test Suite Performance Audit 2026-06-01](test-suite-performance-audit-2026-06-01.md) - closed/deferred reference.
 - Audit: [Project Readiness Drift Audit 2026-06-05](audit-project-readiness-2026-06-05.md) - first broad audit context and finding catalogue.

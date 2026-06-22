@@ -14,6 +14,7 @@ final readonly class LiveOperationHttpResponder
     public function __construct(
         private JsonOutputRenderer $json,
         private UrlGeneratorInterface $urlGenerator,
+        private LiveOperationPresentationRedactor $redactor = new LiveOperationPresentationRedactor(),
     ) {
     }
 
@@ -22,7 +23,7 @@ final readonly class LiveOperationHttpResponder
      */
     public function render(WorkflowResult $result): Response
     {
-        $payload = $result->toArray();
+        $payload = $this->redactor->workflowResult($result);
 
         if ($result->isSuccess() && is_array($result->value())) {
             $value = $result->value();

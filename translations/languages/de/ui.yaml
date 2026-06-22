@@ -63,6 +63,7 @@ ui:
       forgot_password: 'Passwort vergessen?'
       invalid_credentials: 'Username oder Passwort ist nicht gültig.'
       account_closed: 'Dein Account wurde geschlossen.'
+      captcha_failed: 'Das Captcha konnte nicht bestätigt werden. Bitte versuche es erneut.'
     register:
       title: 'Account erstellen'
       link: 'Account erstellen'
@@ -73,6 +74,7 @@ ui:
       success_approval: 'Deine Registrierungsanfrage wird geprüft. Wenn sie freigegeben wird, erhältst du eine E-Mail mit Anweisungen zum Account-Setup.'
       errors:
         invalid_csrf: 'Das Registrierungsformular ist abgelaufen. Bitte versuche es erneut.'
+        captcha: 'Das Captcha konnte nicht bestätigt werden. Bitte versuche es erneut.'
         email: 'Gib eine gültige E-Mail-Adresse ein.'
         delivery_failed: 'Die Account-E-Mail konnte nicht erstellt werden. Bitte versuche es später erneut.'
     password_reset:

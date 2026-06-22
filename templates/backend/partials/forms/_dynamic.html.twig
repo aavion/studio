@@ -4,7 +4,7 @@
         <input type="hidden" name="_csrf_token" value="{{ csrf_token(form.id) }}">
         {% include '@backend/partials/forms/_errors.html.twig' with {errors: form.errors|default([])} only %}
 
-        {% include '@backend/partials/forms/_dynamic_fields.html.twig' with {fields: form.fields} only %}
+        {% include '@backend/partials/forms/_dynamic_fields.html.twig' with {fields: form.fields, form_id: form.id} only %}
 
         {% if not form.metadata.read_only|default(false) %}
             {% include '@backend/partials/forms/fields/submit.html.twig' with {

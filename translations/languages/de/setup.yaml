@@ -36,6 +36,8 @@ setup:
     next: 'Weiter'
   message:
     title: 'Setup-Route'
+  operation:
+    apply: 'Setup anwenden'
   preflight:
     title: 'Vorabprüfung'
     text: 'Setup prüft die wichtigsten Voraussetzungen, bevor Datenbankdetails abgefragt werden.'

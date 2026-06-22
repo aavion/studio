@@ -21,6 +21,7 @@ use App\Security\AccountTokenLookup;
 use App\Security\AccountTokenMaintenance;
 use App\Security\AccountTokenStatus;
 use App\Security\AccountTokenType;
+use App\Security\Captcha\CaptchaFormValidator;
 use App\Security\PasswordPolicyErrorMapper;
 use App\Security\UserAccountStatus;
 use App\Security\UserFlowConfig;
@@ -48,6 +49,7 @@ final class UserRegistrationController extends AbstractController
         private readonly AccountReactivationAccessResolver $reactivationAccess,
         private readonly PasswordPolicyErrorMapper $passwordErrors,
         private readonly AccountLinkAcceptanceService $accountLinkAcceptance,
+        private readonly CaptchaFormValidator $captchaForms,
     ) {
     }
 
@@ -69,6 +71,10 @@ final class UserRegistrationController extends AbstractController
 
             if (!$this->isCsrfTokenValid('user_register', $this->stringField($request, '_csrf_token'))) {
                 $errors[] = 'ui.user.register.errors.invalid_csrf';
+            }
+
+            if ([] === $errors && !$this->captchaForms->acceptsRequired($request)) {
+                $errors[] = 'ui.user.register.errors.captcha';
             }
 
             $email = EmailAddress::normalize($this->stringField($request, 'email'));

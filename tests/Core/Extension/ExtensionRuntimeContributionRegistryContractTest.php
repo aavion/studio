@@ -8,10 +8,18 @@ use App\Api\Endpoint\ApiEndpointDefinition;
 use App\Core\Extension\Content\ExtensionContentSchemaDefinition;
 use App\Core\Extension\Database\ExtensionDatabaseColumn;
 use App\Core\Extension\Database\ExtensionDatabaseTable;
+use App\Core\Extension\ExtensionContributionContext;
+use App\Core\Extension\ExtensionActionQueueProviderInterface;
+use App\Core\Extension\ExtensionContributions;
+use App\Core\Extension\ExtensionEventListenerContribution;
+use App\Core\Extension\ExtensionOperationDefinition;
+use App\Core\Extension\ExtensionProviderContribution;
+use App\Core\Extension\ExtensionRuntimeBoot;
 use App\Core\Extension\ExtensionRuntimeContributionRegistry;
 use App\Core\Extension\ExtensionScope;
 use App\Core\Extension\ExtensionStatus;
 use App\Core\Extension\Settings\ExtensionSettingDefinition;
+use App\Core\Event\PublicEventInterface;
 use App\Core\Operation\ActionQueue;
 use App\Entity\Extension;
 use App\Scheduler\SchedulerActionQueueProviderInterface;
@@ -25,10 +33,113 @@ use App\View\Injection\DynamicViewInjection;
 use App\View\Injection\DynamicViewInjectionSlot;
 use App\View\Injection\StaticViewInjection;
 use App\View\Injection\ViewSurface;
+use App\View\ViewContextEvent;
 use PHPUnit\Framework\TestCase;
+use Symfony\Contracts\EventDispatcher\Event;
 
 final class ExtensionRuntimeContributionRegistryContractTest extends TestCase
 {
+    public function testItExpandsRuntimeContributionFactoriesWithExtensionContext(): void
+    {
+        $extension = $this->extension([ExtensionScope::Module]);
+        $registry = new ExtensionRuntimeContributionRegistry();
+
+        $registry->add($extension, ExtensionContributions::create()
+            ->runtime(static fn (ExtensionContributionContext $context): array => [
+                new ExtensionSettingDefinition(
+                    $context->extensionName(),
+                    'display.mode',
+                    'extension.demo_module.display_mode.label',
+                    'compact',
+                ),
+            ]));
+
+        self::assertSame('demo-module', $registry->extensionSettings()[0]->extensionName());
+        self::assertSame('display.mode', $registry->extensionSettings()[0]->key());
+    }
+
+    public function testItRejectsActivationFactoriesInRuntimeRegistryWithoutPartialState(): void
+    {
+        $extension = $this->extension([ExtensionScope::Module]);
+        $registry = new ExtensionRuntimeContributionRegistry();
+
+        try {
+            $registry->add($extension, ExtensionContributions::create()
+                ->setting(new ExtensionSettingDefinition(
+                    'demo-module',
+                    'display.mode',
+                    'extension.demo_module.display_mode.label',
+                    'compact',
+                ))
+                ->activation(static fn (): array => []));
+
+            self::fail('Expected activation factories to be rejected by the runtime registry.');
+        } catch (\Throwable $error) {
+            self::assertStringContainsString('message.extension.runtime.contribution_unsupported', $error->getMessage());
+        }
+
+        self::assertSame([], $registry->extensionSettings());
+    }
+
+    public function testItRejectsRuntimeBootsInRuntimeRegistryWithoutPartialState(): void
+    {
+        $extension = $this->extension([ExtensionScope::Module]);
+        $registry = new ExtensionRuntimeContributionRegistry();
+
+        try {
+            $registry->add($extension, [
+                new ExtensionSettingDefinition(
+                    'demo-module',
+                    'display.mode',
+                    'extension.demo_module.display_mode.label',
+                    'compact',
+                ),
+                new ExtensionRuntimeBoot(static function (): void {
+                }),
+            ]);
+
+            self::fail('Expected runtime boots to be handled by the extension loader before registry insertion.');
+        } catch (\Throwable $error) {
+            self::assertStringContainsString('message.extension.runtime.contribution_unsupported', $error->getMessage());
+        }
+
+        self::assertSame([], $registry->extensionSettings());
+    }
+
+    public function testStagedContributionsAreVisibleDuringAfterValidationAndRolledBackOnFailure(): void
+    {
+        $extension = $this->extension([ExtensionScope::Module]);
+        $registry = new ExtensionRuntimeContributionRegistry();
+        $setting = new ExtensionSettingDefinition(
+            'demo-module',
+            'display.mode',
+            'extension.demo_module.display_mode.label',
+            'compact',
+        );
+
+        $registry->addStaged($extension, $setting, static function () use ($registry): void {
+            self::assertSame('display.mode', $registry->extensionSettings()[0]->key());
+        });
+
+        self::assertSame([$setting], $registry->extensionSettings());
+
+        try {
+            $registry->addStaged($extension, new ExtensionSettingDefinition(
+                'demo-module',
+                'display.color',
+                'extension.demo_module.display_color.label',
+                'blue',
+            ), static function (): void {
+                throw new \RuntimeException('boot failed');
+            });
+
+            self::fail('Expected after-validation failures to roll back the staged registry.');
+        } catch (\RuntimeException) {
+        }
+
+        self::assertSame([$setting], $registry->extensionSettings());
+    }
+
     public function testItAcceptsDatabaseAndContentSchemaContributionsForMatchingScopes(): void
     {
         $extension = $this->extension([ExtensionScope::Module, ExtensionScope::Database, ExtensionScope::ContentSchema]);
@@ -45,6 +156,121 @@ final class ExtensionRuntimeContributionRegistryContractTest extends TestCase
 
         self::assertSame([$table], $registry->extensionDatabaseTables());
         self::assertSame([$schema], $registry->extensionContentSchemas());
+    }
+
+    public function testItAcceptsPublicEventListenerContributionsWithStablePriorityOrdering(): void
+    {
+        $registry = new ExtensionRuntimeContributionRegistry();
+
+        $registry->add($this->extension([ExtensionScope::Module]), [
+            new ExtensionEventListenerContribution(ViewContextEvent::class, static function (): void {
+            }, priority: 0),
+            new ExtensionEventListenerContribution(ViewContextEvent::class, static function (): void {
+            }, priority: 20),
+            new ExtensionEventListenerContribution(ViewContextEvent::class, static function (): void {
+            }, priority: 20),
+        ]);
+
+        $listeners = $registry->extensionEventListeners(ViewContextEvent::class);
+
+        self::assertSame([20, 20, 0], array_map(static fn ($listener): int => $listener->priority(), $listeners));
+        self::assertSame([1, 2, 0], array_map(static fn ($listener): int => $listener->sequence(), $listeners));
+        self::assertSame('demo-module', $listeners[0]->extensionName());
+    }
+
+    public function testItRejectsUnregisteredPublicEventListenersWithoutPartialState(): void
+    {
+        $registry = new ExtensionRuntimeContributionRegistry();
+
+        try {
+            $registry->add($this->extension([ExtensionScope::Module]), [
+                new ExtensionSettingDefinition(
+                    'demo-module',
+                    'display.mode',
+                    'extension.demo_module.display_mode.label',
+                    'compact',
+                ),
+                new ExtensionEventListenerContribution(ExtensionRuntimeContributionRegistryContractTestEvent::class, static function (): void {
+                }),
+            ]);
+
+            self::fail('Expected unregistered public events to be rejected.');
+        } catch (\Throwable $error) {
+            self::assertStringContainsString('message.extension.runtime.contribution_unsupported', $error->getMessage());
+        }
+
+        self::assertSame([], $registry->extensionSettings());
+        self::assertSame([], $registry->extensionEventListeners(ExtensionRuntimeContributionRegistryContractTestEvent::class));
+    }
+
+    public function testItAcceptsProviderContributionsForMatchingProviderScopes(): void
+    {
+        $registry = new ExtensionRuntimeContributionRegistry();
+        $provider = static fn (): string => 'verified';
+
+        $registry->add($this->extension([ExtensionScope::CaptchaProvider]), new ExtensionProviderContribution(ExtensionScope::CaptchaProvider, $provider));
+
+        self::assertSame('demo-module', $registry->provider(ExtensionScope::CaptchaProvider)?->extensionName());
+        self::assertSame('verified', ($registry->provider(ExtensionScope::CaptchaProvider)?->provider())());
+    }
+
+    public function testItRejectsProviderContributionsWithoutMatchingProviderScope(): void
+    {
+        $registry = new ExtensionRuntimeContributionRegistry();
+
+        try {
+            $registry->add($this->extension([ExtensionScope::Module]), [
+                new ExtensionSettingDefinition(
+                    'demo-module',
+                    'display.mode',
+                    'extension.demo_module.display_mode.label',
+                    'compact',
+                ),
+                new ExtensionProviderContribution(ExtensionScope::CaptchaProvider, static fn (): string => 'verified'),
+            ]);
+
+            self::fail('Expected provider contributions to require the matching provider scope.');
+        } catch (\Throwable $error) {
+            self::assertStringContainsString('message.extension.runtime.contribution_unsupported', $error->getMessage());
+        }
+
+        self::assertSame([], $registry->extensionSettings());
+        self::assertNull($registry->provider(ExtensionScope::CaptchaProvider));
+    }
+
+    public function testItRejectsProviderContributionsForNonProviderScopes(): void
+    {
+        $this->expectExceptionMessage('message.extension.runtime.contribution_unsupported');
+
+        (new ExtensionRuntimeContributionRegistry())->add(
+            $this->extension([ExtensionScope::Module]),
+            new ExtensionProviderContribution(ExtensionScope::Module, static fn (): string => 'verified'),
+        );
+    }
+
+    public function testItRejectsDuplicateProviderContributionsWithoutReplacingExistingProvider(): void
+    {
+        $registry = new ExtensionRuntimeContributionRegistry();
+        $registry->add($this->extension([ExtensionScope::CaptchaProvider]), new ExtensionProviderContribution(ExtensionScope::CaptchaProvider, static fn (): string => 'first'));
+
+        try {
+            $registry->add($this->extension([ExtensionScope::CaptchaProvider]), [
+                new ExtensionSettingDefinition(
+                    'demo-module',
+                    'display.mode',
+                    'extension.demo_module.display_mode.label',
+                    'compact',
+                ),
+                new ExtensionProviderContribution(ExtensionScope::CaptchaProvider, static fn (): string => 'second'),
+            ]);
+
+            self::fail('Expected duplicate provider contributions to be rejected.');
+        } catch (\Throwable $error) {
+            self::assertStringContainsString('message.extension.runtime.contribution_unsupported', $error->getMessage());
+        }
+
+        self::assertSame([], $registry->extensionSettings());
+        self::assertSame('first', ($registry->provider(ExtensionScope::CaptchaProvider)?->provider())());
     }
 
     public function testItRejectsDatabaseContributionsWithoutDatabaseScope(): void
@@ -209,12 +435,30 @@ final class ExtensionRuntimeContributionRegistryContractTest extends TestCase
         );
     }
 
-    public function testItRejectsSchedulerTaskIdentifiersOutsideExtensionNamespace(): void
+    public function testItRejectsSchedulerTasksWithoutSchedulerScope(): void
     {
         $this->expectExceptionMessage('message.extension.runtime.contribution_unsupported');
 
         (new ExtensionRuntimeContributionRegistry())->add(
             $this->extension([ExtensionScope::Module]),
+            new SchedulerTaskDefinition(
+                'demo-module.cleanup',
+                'extension.demo_module.cleanup.label',
+                'extension.demo_module.cleanup.description',
+                'demo-module',
+                SchedulerTaskType::Callable,
+                'demo-module.cleanup',
+                '*/15 * * * *',
+            ),
+        );
+    }
+
+    public function testItRejectsSchedulerTaskIdentifiersOutsideExtensionNamespace(): void
+    {
+        $this->expectExceptionMessage('message.extension.runtime.contribution_unsupported');
+
+        (new ExtensionRuntimeContributionRegistry())->add(
+            $this->extension([ExtensionScope::Module, ExtensionScope::SchedulerTasks]),
             new SchedulerTaskDefinition(
                 'other-module.cleanup',
                 'extension.demo_module.cleanup.label',
@@ -232,7 +476,7 @@ final class ExtensionRuntimeContributionRegistryContractTest extends TestCase
         $registry = new ExtensionRuntimeContributionRegistry();
 
         $registry->add(
-            $this->extension([ExtensionScope::Module]),
+            $this->extension([ExtensionScope::Module, ExtensionScope::SchedulerTasks]),
             new SchedulerTaskDefinition(
                 'demo-module.cleanup',
                 'extension.demo_module.cleanup.label',
@@ -247,12 +491,24 @@ final class ExtensionRuntimeContributionRegistryContractTest extends TestCase
         self::assertSame('demo-module.cleanup', $registry->schedulerTasks()[0]->identifier());
     }
 
+    public function testItRejectsSchedulerRuntimeProvidersWithoutSchedulerScope(): void
+    {
+        $this->expectExceptionMessage('message.extension.runtime.contribution_unsupported');
+
+        (new ExtensionRuntimeContributionRegistry())->add($this->extension([ExtensionScope::Module]), new class implements SchedulerCallableProviderInterface {
+            public function schedulerCallable(string $target): ?callable
+            {
+                return static fn (): SchedulerTaskExecution => SchedulerTaskExecution::success(['target' => $target]);
+            }
+        });
+    }
+
     public function testItRejectsSchedulerTaskTargetsOutsideExtensionNamespace(): void
     {
         $this->expectExceptionMessage('message.extension.runtime.contribution_unsupported');
 
         (new ExtensionRuntimeContributionRegistry())->add(
-            $this->extension([ExtensionScope::Module]),
+            $this->extension([ExtensionScope::Module, ExtensionScope::SchedulerTasks]),
             new SchedulerTaskDefinition(
                 'demo-module.cleanup',
                 'extension.demo_module.cleanup.label',
@@ -268,7 +524,7 @@ final class ExtensionRuntimeContributionRegistryContractTest extends TestCase
     public function testItScopesSchedulerRuntimeProvidersToExtensionTargets(): void
     {
         $registry = new ExtensionRuntimeContributionRegistry();
-        $registry->add($this->extension([ExtensionScope::Module]), new class implements SchedulerCallableProviderInterface, SchedulerActionQueueProviderInterface {
+        $registry->add($this->extension([ExtensionScope::Module, ExtensionScope::SchedulerTasks]), new class implements SchedulerCallableProviderInterface, SchedulerActionQueueProviderInterface {
             public function schedulerCallable(string $target): ?callable
             {
                 return static fn (): SchedulerTaskExecution => SchedulerTaskExecution::success(['target' => $target]);
@@ -286,6 +542,95 @@ final class ExtensionRuntimeContributionRegistryContractTest extends TestCase
         self::assertNull($registry->schedulerActionQueue('other-module.queue'));
     }
 
+    public function testItRejectsExtensionOperationDefinitionsWithoutOperationsScope(): void
+    {
+        $this->expectExceptionMessage('message.extension.runtime.contribution_unsupported');
+
+        (new ExtensionRuntimeContributionRegistry())->add(
+            $this->extension([ExtensionScope::Module]),
+            new ExtensionOperationDefinition(
+                'demo-module.cleanup',
+                'ext.demo-module.cleanup.label',
+                'ext.demo-module.cleanup.description',
+            ),
+        );
+    }
+
+    public function testItRejectsExtensionActionQueueProvidersWithoutOperationsScope(): void
+    {
+        $this->expectExceptionMessage('message.extension.runtime.contribution_unsupported');
+
+        (new ExtensionRuntimeContributionRegistry())->add($this->extension([ExtensionScope::Module]), new class implements ExtensionActionQueueProviderInterface {
+            public function extensionActionQueue(string $target, array $payload = []): ?ActionQueue
+            {
+                return ActionQueue::create($target, context: ['payload' => $payload]);
+            }
+        });
+    }
+
+    public function testItRegistersExtensionOperationQueuesForLiveAndSchedulerUse(): void
+    {
+        $registry = new ExtensionRuntimeContributionRegistry();
+        $registry->add($this->extension([ExtensionScope::Module, ExtensionScope::Operations]), ExtensionContributions::create()
+            ->operation(new ExtensionOperationDefinition(
+                'demo-module.cleanup',
+                'ext.demo-module.cleanup.label',
+                'ext.demo-module.cleanup.description',
+            ))
+            ->actionQueueProvider(new class implements ExtensionActionQueueProviderInterface {
+                public function extensionActionQueue(string $target, array $payload = []): ?ActionQueue
+                {
+                    if ('demo-module.cleanup' !== $target) {
+                        return null;
+                    }
+
+                    return ActionQueue::create('extension cleanup', context: [
+                        'target' => $target,
+                        'payload' => $payload,
+                    ]);
+                }
+            }));
+
+        self::assertSame('demo-module.cleanup', $registry->extensionOperations('demo-module')[0]->target());
+        self::assertSame('extension cleanup', $registry->extensionActionQueue('demo-module.cleanup', ['mode' => 'fast'])?->name());
+        self::assertSame('fast', $registry->extensionActionQueue('demo-module.cleanup', ['mode' => 'fast'])?->context()['payload']['mode']);
+        self::assertSame('extension cleanup', $registry->schedulerActionQueue('demo-module.cleanup')?->name());
+        self::assertNull($registry->extensionActionQueue('other-module.cleanup'));
+    }
+
+    public function testItRejectsForeignExtensionOperationDefinitions(): void
+    {
+        $this->expectExceptionMessage('message.extension.runtime.contribution_unsupported');
+
+        (new ExtensionRuntimeContributionRegistry())->add(
+            $this->extension([ExtensionScope::Module, ExtensionScope::Operations]),
+            new ExtensionOperationDefinition(
+                'demo-module.cleanup',
+                'ext.other.cleanup.label',
+                'ext.demo-module.cleanup.description',
+            ),
+        );
+    }
+
+    public function testItRejectsDuplicateExtensionOperationTargets(): void
+    {
+        $this->expectExceptionMessage('message.extension.runtime.contribution_unsupported');
+
+        (new ExtensionRuntimeContributionRegistry())->add($this->extension([ExtensionScope::Module, ExtensionScope::Operations]), [
+            new ExtensionOperationDefinition(
+                'demo-module.cleanup',
+                'ext.demo-module.cleanup.label',
+                'ext.demo-module.cleanup.description',
+            ),
+            new ExtensionOperationDefinition(
+                'demo-module.cleanup_alias',
+                'ext.demo-module.cleanup_alias.label',
+                'ext.demo-module.cleanup_alias.description',
+                'demo-module.cleanup',
+            ),
+        ]);
+    }
+
     /**
      * @param list<ExtensionScope> $scopes
      */
@@ -299,4 +644,8 @@ final class ExtensionRuntimeContributionRegistryContractTest extends TestCase
             ExtensionStatus::Active,
         );
     }
+}
+
+final class ExtensionRuntimeContributionRegistryContractTestEvent extends Event implements PublicEventInterface
+{
 }

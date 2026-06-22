@@ -1,1 +1,5 @@
-{% include '@provider/captcha/field.html.twig' %}
+<twig:root:CaptchaField
+    :form_id="form_id|default('captcha-form')"
+    :workflow="workflow|default('form')"
+    :name="name|default('captcha')"
+/>

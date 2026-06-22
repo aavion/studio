@@ -74,8 +74,6 @@ final class CoreSettingsRegistryTest extends TestCase
         ], $users[8]->formField()->validation());
 
         self::assertSame([
-            'security.captcha.enabled',
-            'security.captcha.provider',
             'security.captcha.preview',
             RateLimitPolicyCatalogue::MODE_KEY,
             AutoBanPolicy::ENABLED_KEY,
@@ -87,37 +85,37 @@ final class CoreSettingsRegistryTest extends TestCase
             DatabaseLogRetentionPolicy::SECURITY_SIGNAL_RETENTION_DAYS_KEY,
             SuspiciousProbePathMatcher::PATTERNS_KEY,
         ], array_map(static fn (CoreSettingDefinition $definition): string => $definition->key(), $security));
-        self::assertSame(FormInputType::Captcha, $security[2]->formField()->inputType());
-        self::assertSame(FormInputType::Select, $security[3]->formField()->inputType());
-        self::assertSame(RateLimitProfile::Standard->value, $security[3]->defaultValue());
+        self::assertSame(FormInputType::Captcha, $security[0]->formField()->inputType());
+        self::assertSame(FormInputType::Select, $security[1]->formField()->inputType());
+        self::assertSame(RateLimitProfile::Standard->value, $security[1]->defaultValue());
         self::assertSame([
             RateLimitProfile::Off->value => 'admin.settings.options.rate_limit_mode.off',
             RateLimitProfile::Standard->value => 'admin.settings.options.rate_limit_mode.standard',
             RateLimitProfile::Strict->value => 'admin.settings.options.rate_limit_mode.strict',
             RateLimitProfile::Panic->value => 'admin.settings.options.rate_limit_mode.panic',
-        ], $security[3]->formField()->options());
-        self::assertSame('admin.settings.security', $security[3]->metadata()['access_feature']);
-        self::assertFalse($security[4]->defaultValue());
-        self::assertSame(AutoBanPolicy::DEFAULT_TRUSTED_ACCESS_LEVEL, $security[5]->defaultValue());
-        self::assertSame(FormInputType::Select, $security[5]->formField()->inputType());
+        ], $security[1]->formField()->options());
+        self::assertSame('admin.settings.security', $security[1]->metadata()['access_feature']);
+        self::assertFalse($security[2]->defaultValue());
+        self::assertSame(AutoBanPolicy::DEFAULT_TRUSTED_ACCESS_LEVEL, $security[3]->defaultValue());
+        self::assertSame(FormInputType::Select, $security[3]->formField()->inputType());
         self::assertSame([
             'required' => true,
             'min' => AutoBanPolicy::MIN_TRUSTED_ACCESS_LEVEL,
             'max' => AutoBanPolicy::MAX_TRUSTED_ACCESS_LEVEL,
-        ], $security[5]->formField()->validation());
-        self::assertSame(AutoBanPolicy::DEFAULT_SCORE_THRESHOLD, $security[6]->defaultValue());
+        ], $security[3]->formField()->validation());
+        self::assertSame(AutoBanPolicy::DEFAULT_SCORE_THRESHOLD, $security[4]->defaultValue());
         self::assertSame([
             'required' => true,
             'min' => AutoBanPolicy::MIN_SCORE_THRESHOLD,
             'max' => AutoBanPolicy::MAX_SCORE_THRESHOLD,
-        ], $security[6]->formField()->validation());
-        self::assertTrue($security[7]->defaultValue());
-        self::assertSame(FormInputType::MultiSelect, $security[9]->formField()->inputType());
-        self::assertSame(ConfigAuditLogPolicy::DEFAULT_CATEGORIES, $security[9]->defaultValue());
-        self::assertSame(DatabaseLogRetentionPolicy::defaultSecuritySignalRetentionDays(), $security[10]->defaultValue());
-        self::assertSame(['min' => AutoBanPolicy::maxTtlDays(), 'max' => DatabaseLogRetentionPolicy::MAX_RETENTION_DAYS], $security[10]->formField()->validation());
-        self::assertSame(SuspiciousProbePathMatcher::defaultPatternText(), $security[11]->defaultValue());
-        self::assertSame(FormInputType::Textarea, $security[11]->formField()->inputType());
+        ], $security[4]->formField()->validation());
+        self::assertTrue($security[5]->defaultValue());
+        self::assertSame(FormInputType::MultiSelect, $security[7]->formField()->inputType());
+        self::assertSame(ConfigAuditLogPolicy::DEFAULT_CATEGORIES, $security[7]->defaultValue());
+        self::assertSame(DatabaseLogRetentionPolicy::defaultSecuritySignalRetentionDays(), $security[8]->defaultValue());
+        self::assertSame(['min' => AutoBanPolicy::maxTtlDays(), 'max' => DatabaseLogRetentionPolicy::MAX_RETENTION_DAYS], $security[8]->formField()->validation());
+        self::assertSame(SuspiciousProbePathMatcher::defaultPatternText(), $security[9]->defaultValue());
+        self::assertSame(FormInputType::Textarea, $security[9]->formField()->inputType());
 
         self::assertSame([
             DatabaseLogRetentionPolicy::MESSAGE_LOG_RETENTION_DAYS_KEY,

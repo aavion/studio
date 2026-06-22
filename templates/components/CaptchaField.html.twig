@@ -1,0 +1,11 @@
+{% set captcha_form_id = form_id|default('captcha-form') %}
+{% set captcha_field_name = name|default('captcha') %}
+{% set captcha_policy = policy|default('require') %}
+{% set captcha_render = captcha_field(
+    workflow|default('form'),
+    captcha_form_id,
+    captcha_field_name,
+    captcha_policy
+) %}
+<input type="hidden" name="{{ captcha_render.instance_field }}" value="{{ captcha_render.instance_id }}">
+{% include captcha_render.template with captcha_render.context only %}

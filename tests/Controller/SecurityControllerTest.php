@@ -24,8 +24,13 @@ final class SecurityControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Sign in');
-        self::assertSelectorExists('form[action="/user/login"][method="post"]');
+        self::assertSelectorExists('form#user-login-form[action="/user/login"][method="post"]');
         self::assertSelectorExists('input[name="_csrf_token"]');
+        self::assertSelectorNotExists('input[name="captcha[provider]"][value="none"]');
+        self::assertSelectorNotExists('input[name="captcha[fallback_rendered]"][value="1"]');
+        self::assertSelectorNotExists('input[name="captcha[form_id]"][value="user-login-form"]');
+        self::assertSelectorNotExists('input[name="captcha[status]"][value="skipped"]');
+        self::assertSelectorNotExists('input[name="_captcha_instance"]');
         self::assertSelectorNotExists('input[name="_auto_ban_recovery_token"]');
         self::assertSelectorTextContains('a[href="/user/reset-password"]', 'Forgot password?');
         self::assertSelectorNotExists('.system-frontend-error-reference');
@@ -40,6 +45,15 @@ final class SecurityControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorExists('form[action="/user/login"][method="post"]');
         self::assertSelectorExists('input[name="_auto_ban_recovery_token"]');
+        self::assertSelectorExists('input[name="_captcha_instance"]');
+        self::assertSelectorNotExists('input[name="captcha[provider]"]');
+        self::assertSelectorNotExists('input[name="captcha[fallback_rendered]"]');
+        self::assertSelectorNotExists('input[name="captcha[form_id]"]');
+
+        $client->request('GET', '/user/login?bypass=1&captcha=failed');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('.system-frontend-auth-notice', 'The captcha could not be verified. Please try again.');
     }
 
     public function testLoginFormAuthenticatesUserAccount(): void

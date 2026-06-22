@@ -14,6 +14,7 @@ use App\Core\Extension\Database\ExtensionDatabaseProviderInterface;
 use App\Core\Extension\Database\ExtensionDatabaseTable;
 use App\Core\Extension\Settings\ExtensionSettingDefinition;
 use App\Core\Extension\Settings\ExtensionSettingProviderInterface;
+use App\Core\Event\PublicEventInterface;
 use App\Live\LiveEndpointDefinition;
 use App\Live\LiveEndpointHandlerInterface;
 use App\Live\LiveEndpointHandlerProviderInterface;
@@ -48,11 +49,44 @@ final class ExtensionContributions implements \IteratorAggregate
     }
 
     public function add(
-        StaticViewInjection|ConfigurableStaticViewInjectionSet|DynamicViewInjection|ExtensionSettingDefinition|SchedulerTaskDefinition|ApiEndpointDefinition|ApiEndpointHandlerInterface|LiveEndpointDefinition|LiveEndpointHandlerInterface|CookieConsentDefinition|ExtensionDatabaseTable|ExtensionContentSchemaDefinition|StaticViewInjectionProviderInterface|DynamicViewInjectionProviderInterface|ExtensionSettingProviderInterface|ApiEndpointProviderInterface|ApiEndpointHandlerProviderInterface|LiveEndpointProviderInterface|LiveEndpointHandlerProviderInterface|CookieConsentProviderInterface|SchedulerTaskProviderInterface|SchedulerCallableProviderInterface|SchedulerActionQueueProviderInterface|ExtensionDatabaseProviderInterface|ExtensionContentSchemaProviderInterface $contribution,
+        StaticViewInjection|ConfigurableStaticViewInjectionSet|DynamicViewInjection|ExtensionSettingDefinition|SchedulerTaskDefinition|ApiEndpointDefinition|ApiEndpointHandlerInterface|LiveEndpointDefinition|LiveEndpointHandlerInterface|CookieConsentDefinition|ExtensionDatabaseTable|ExtensionContentSchemaDefinition|ExtensionOperationDefinition|ExtensionRuntimeContributionFactory|ExtensionActivationContributionFactory|ExtensionRuntimeBoot|ExtensionEventListenerContribution|ExtensionProviderContribution|StaticViewInjectionProviderInterface|DynamicViewInjectionProviderInterface|ExtensionSettingProviderInterface|ApiEndpointProviderInterface|ApiEndpointHandlerProviderInterface|LiveEndpointProviderInterface|LiveEndpointHandlerProviderInterface|CookieConsentProviderInterface|SchedulerTaskProviderInterface|SchedulerCallableProviderInterface|SchedulerActionQueueProviderInterface|ExtensionActionQueueProviderInterface|ExtensionDatabaseProviderInterface|ExtensionContentSchemaProviderInterface $contribution,
     ): self {
         $this->items[] = $contribution;
 
         return $this;
+    }
+
+    public function runtime(callable $factory): self
+    {
+        return $this->add(new ExtensionRuntimeContributionFactory($factory));
+    }
+
+    public function activation(callable $factory): self
+    {
+        return $this->add(new ExtensionActivationContributionFactory($factory));
+    }
+
+    public function runtimeBoot(callable $boot): self
+    {
+        return $this->add(new ExtensionRuntimeBoot($boot));
+    }
+
+    /**
+     * @param class-string<PublicEventInterface> $eventClass
+     */
+    public function eventListener(string $eventClass, callable $listener, int $priority = 0): self
+    {
+        return $this->add(new ExtensionEventListenerContribution($eventClass, $listener, $priority));
+    }
+
+    public function provider(ExtensionScope $scope, callable $provider): self
+    {
+        return $this->add(new ExtensionProviderContribution($scope, $provider));
+    }
+
+    public function captchaProvider(callable $provider): self
+    {
+        return $this->provider(ExtensionScope::CaptchaProvider, $provider);
     }
 
     public function staticView(StaticViewInjection $injection): self
@@ -166,6 +200,16 @@ final class ExtensionContributions implements \IteratorAggregate
     }
 
     public function schedulerActionQueueProvider(SchedulerActionQueueProviderInterface $provider): self
+    {
+        return $this->add($provider);
+    }
+
+    public function operation(ExtensionOperationDefinition $definition): self
+    {
+        return $this->add($definition);
+    }
+
+    public function actionQueueProvider(ExtensionActionQueueProviderInterface $provider): self
     {
         return $this->add($provider);
     }

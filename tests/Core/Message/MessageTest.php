@@ -46,6 +46,14 @@ final class MessageTest extends TestCase
         self::assertSame(MessageLevel::Success, $message->level());
     }
 
+    public function testItAcceptsExtensionOwnedTranslationKeys(): void
+    {
+        $message = Message::info('extension.runtime.log', 'ext.demo-module.runtime.ready');
+
+        self::assertSame('ext.demo-module.runtime.ready', $message->translationKey());
+        self::assertSame(MessageLevel::Info, $message->level());
+    }
+
     public function testItCreatesInvalidArgumentMessages(): void
     {
         $message = Message::invalidArgument(ContentMessageKey::CONTENT_SLUG_INVALID, [

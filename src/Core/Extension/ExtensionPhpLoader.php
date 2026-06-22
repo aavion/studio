@@ -31,6 +31,8 @@ final class ExtensionPhpLoader implements EventSubscriberInterface
      */
     private array $loadedExtensions = [];
     private ExtensionDependentDeactivator $dependentDeactivator;
+    private ExtensionClassAutoloader $classAutoloader;
+    private ExtensionDependencyMetadataReader $dependencyReader;
 
     public function __construct(
         private readonly ActiveExtensionProviderInterface $extensionProvider,
@@ -44,8 +46,16 @@ final class ExtensionPhpLoader implements EventSubscriberInterface
         private readonly ?DatabaseReadyState $databaseReadyState = null,
         private readonly ?ExtensionContentSchemaImpact $contentSchemaImpact = null,
         ?ExtensionDependentDeactivator $dependentDeactivator = null,
+        ?ExtensionClassAutoloader $classAutoloader = null,
+        ?ExtensionRuntimeServices $extensionRuntimeServices = null,
+        ?ExtensionDependencyMetadataReader $dependencyReader = null,
     ) {
         $this->dependentDeactivator = $dependentDeactivator ?? new ExtensionDependentDeactivator($entityManager);
+        $this->classAutoloader = $classAutoloader ?? new ExtensionClassAutoloader($projectDir, $pathGuard);
+        $this->dependencyReader = $dependencyReader ?? new ExtensionDependencyMetadataReader();
+        if (null !== $extensionRuntimeServices) {
+            ExtensionRuntime::configure($extensionRuntimeServices);
+        }
     }
 
     public static function getSubscribedEvents(): array
@@ -82,7 +92,7 @@ final class ExtensionPhpLoader implements EventSubscriberInterface
         }
 
         try {
-            $extensions = $this->extensionProvider->extensions();
+            $extensions = $this->dependencyOrderedExtensions($this->extensionProvider->extensions());
         } catch (Throwable $error) {
             return WorkflowResult::failed([$this->exceptionIssue($error, ['stage' => 'active_extension_lookup'])]);
         }
@@ -94,9 +104,31 @@ final class ExtensionPhpLoader implements EventSubscriberInterface
         $dependentChanges = [];
         $assetRebuildNeeded = false;
 
+        $this->classAutoloader->reset();
+
         foreach ($extensions as $extension) {
             if (ExtensionStatus::Active !== $extension->status()) {
                 $skipped[] = $extension->extensionName();
+                continue;
+            }
+
+            try {
+                $this->classAutoloader->register($extension);
+            } catch (Throwable $error) {
+                $issue = $this->phpLoadIssue($extension, $extension->path().'/src', $error);
+                $issues[] = $issue;
+                $messages[] = Message::exception(
+                    ExtensionMessageCode::EXTENSION_LIFECYCLE_PHP_LOAD_FAILED,
+                    ExtensionMessageKey::EXTENSION_LIFECYCLE_PHP_LOAD_FAILED,
+                    ['%extension%' => $extension->extensionName()],
+                    $issue->context(),
+                );
+                $fault = $this->markFaulty($extension, $extension->path().'/src', $error);
+                array_push($issues, ...$fault['issues']);
+                array_push($messages, ...$fault['messages']);
+                array_push($dependentChanges, ...$fault['dependent_changes']);
+                $assetRebuildNeeded = $assetRebuildNeeded || ([] === $fault['issues'] && ($fault['changed'] || [] !== $fault['dependent_changes']));
+
                 continue;
             }
 
@@ -114,12 +146,17 @@ final class ExtensionPhpLoader implements EventSubscriberInterface
 
             try {
                 $result = $this->includeLoader($loaderPath, $extension);
+                $runtime = $this->runtimeContributionsAndBoots($extension, $result);
 
-                if (is_callable($result)) {
-                    $result = $result($extension);
+                if (null !== $this->runtimeContributions) {
+                    $this->runtimeContributions->addStaged(
+                        $extension,
+                        $runtime['contributions'],
+                        fn (): null => $this->executeRuntimeBoots($extension, $runtime['boots']),
+                    );
+                } else {
+                    $this->executeRuntimeBoots($extension, $runtime['boots']);
                 }
-
-                $this->runtimeContributions?->add($extension, $result);
 
                 $this->loadedExtensions[$extension->extensionName()] = true;
                 $loaded[] = $extension->extensionName();
@@ -166,6 +203,65 @@ final class ExtensionPhpLoader implements EventSubscriberInterface
         ]);
     }
 
+    /**
+     * @param list<Extension> $extensions
+     *
+     * @return list<Extension>
+     */
+    private function dependencyOrderedExtensions(array $extensions): array
+    {
+        $byName = [];
+        foreach ($extensions as $extension) {
+            $byName[$extension->extensionName()] = $extension;
+        }
+
+        $ordered = [];
+        $visiting = [];
+        $visited = [];
+
+        foreach ($extensions as $extension) {
+            $this->visitDependencyOrderedExtension($extension, $byName, $ordered, $visiting, $visited);
+        }
+
+        return array_values($ordered);
+    }
+
+    /**
+     * @param array<string, Extension> $byName
+     * @param array<string, Extension> $ordered
+     * @param array<string, true> $visiting
+     * @param array<string, true> $visited
+     */
+    private function visitDependencyOrderedExtension(
+        Extension $extension,
+        array $byName,
+        array &$ordered,
+        array &$visiting,
+        array &$visited,
+    ): void {
+        $name = $extension->extensionName();
+        if (isset($visited[$name])) {
+            return;
+        }
+
+        if (isset($visiting[$name])) {
+            return;
+        }
+
+        $visiting[$name] = true;
+        foreach ($this->dependencyReader->dependencies($extension) as [$dependencyName]) {
+            if ('system' === $dependencyName || !isset($byName[$dependencyName])) {
+                continue;
+            }
+
+            $this->visitDependencyOrderedExtension($byName[$dependencyName], $byName, $ordered, $visiting, $visited);
+        }
+
+        unset($visiting[$name]);
+        $visited[$name] = true;
+        $ordered[$name] = $extension;
+    }
+
     private function loaderPath(Extension $extension): ?string
     {
         try {
@@ -180,6 +276,58 @@ final class ExtensionPhpLoader implements EventSubscriberInterface
         return (static function (string $loaderPath, Extension $extension): mixed {
             return require $loaderPath;
         })($loaderPath, $extension);
+    }
+
+    /**
+     * @return array{contributions: list<mixed>, boots: list<ExtensionRuntimeBoot>}
+     */
+    private function runtimeContributionsAndBoots(Extension $extension, mixed $contribution): array
+    {
+        if (null === $contribution) {
+            return ['contributions' => [], 'boots' => []];
+        }
+
+        if ($contribution instanceof ExtensionRuntimeBoot) {
+            return ['contributions' => [], 'boots' => [$contribution]];
+        }
+
+        if ($contribution instanceof ExtensionActivationContributionFactory) {
+            return ['contributions' => [], 'boots' => []];
+        }
+
+        if ($contribution instanceof ExtensionRuntimeContributionFactory) {
+            return $this->runtimeContributionsAndBoots(
+                $extension,
+                $contribution->contributions(new ExtensionContributionContext($extension)),
+            );
+        }
+
+        if (is_iterable($contribution)) {
+            $contributions = [];
+            $boots = [];
+
+            foreach ($contribution as $item) {
+                $expanded = $this->runtimeContributionsAndBoots($extension, $item);
+                array_push($contributions, ...$expanded['contributions']);
+                array_push($boots, ...$expanded['boots']);
+            }
+
+            return ['contributions' => $contributions, 'boots' => $boots];
+        }
+
+        return ['contributions' => [$contribution], 'boots' => []];
+    }
+
+    /**
+     * @param list<ExtensionRuntimeBoot> $boots
+     */
+    private function executeRuntimeBoots(Extension $extension, array $boots): null
+    {
+        foreach ($boots as $boot) {
+            $boot->boot(new ExtensionRuntimeContext($extension, $this->environment));
+        }
+
+        return null;
     }
 
     /**

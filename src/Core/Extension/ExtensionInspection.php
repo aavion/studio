@@ -31,7 +31,6 @@ final readonly class ExtensionInspection
         private array $cssFiles,
         private array $javaScriptFiles,
         private array $staticAssetFiles,
-        private bool $hasComposerDependencies = false,
         private bool $hasNodeDependencies = false,
         private bool $hasEnglishTranslations = false,
     ) {
@@ -173,11 +172,6 @@ final readonly class ExtensionInspection
     public function hasStaticAssetFiles(): bool
     {
         return [] !== $this->staticAssetFiles;
-    }
-
-    public function hasComposerDependencies(): bool
-    {
-        return $this->hasComposerDependencies;
     }
 
     public function hasNodeDependencies(): bool

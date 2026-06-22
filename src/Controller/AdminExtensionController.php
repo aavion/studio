@@ -112,7 +112,7 @@ final class AdminExtensionController extends AbstractController
                 'install_id' => $stage->value()['install_id'],
                 'trigger' => 'admin_ui',
             ],
-            'Verify extension ZIP',
+            'admin.extensions.install.live_label',
         );
         $this->auditResult('extension.install_verify_started', $result, [
             'operation' => LiveOperationQueueFactory::EXTENSION_INSTALL_VERIFY,
@@ -145,6 +145,10 @@ final class AdminExtensionController extends AbstractController
         }
 
         if ($request->isMethod('POST')) {
+            if ('' !== $this->stringField($request, '_extension_operation')) {
+                return $this->handleExtensionOperation($request, $extensionName);
+            }
+
             if ($this->backendActionResponder->supports($request)) {
                 return $this->backendActionResponder->respond($request, $this->getUser());
             }
@@ -261,11 +265,11 @@ final class AdminExtensionController extends AbstractController
             return $this->liveOperationResponder->render($this->accessDeniedResult('extension_lifecycle_'.$action));
         }
 
-        $label = sprintf('Extension %s %s', $extensionName, $action);
         $result = $this->liveOperationStarter->start(
             LiveOperationQueueFactory::EXTENSION_LIFECYCLE,
             ['extension' => $extensionName, 'action' => $action, 'trigger' => 'admin_ui'],
-            $label,
+            'admin.extensions.lifecycle.live_label',
+            ['%extension%' => $extensionName, '%action%' => $action],
         );
         $this->auditResult('extension.lifecycle.'.$action, $result, [
             'extension' => $extensionName,
@@ -274,6 +278,55 @@ final class AdminExtensionController extends AbstractController
         ]);
 
         return $this->liveOperationResponder->render($result);
+    }
+
+    private function handleExtensionOperation(Request $request, string $extensionName): Response
+    {
+        $target = $this->stringField($request, '_extension_operation');
+        $live = '1' === $this->stringField($request, '_operation_live');
+
+        if (
+            !$this->adminAcl->isMutable(self::EXTENSION_LIFECYCLE_FEATURE, $this->actor())
+            || !str_starts_with($target, $extensionName.'.')
+        ) {
+            $result = $this->accessDeniedResult('extension_operation');
+            $this->flashResult($result);
+
+            return $live ? $this->liveOperationResponder->render($result) : $this->redirect('/admin/extensions/'.rawurlencode($extensionName));
+        }
+
+        if (!$this->formTokenValidator->isValid('extension-operation-'.$target, $this->stringField($request, '_form_id'), $this->stringField($request, '_csrf_token'))) {
+            $result = WorkflowResult::invalid([
+                Message::warning(
+                    CommonMessageCode::E_INVALID_ARGUMENT,
+                    BackendMessageKey::BACKEND_ACTION_INVALID_CSRF,
+                    context: ['action' => 'extension_operation', 'extension' => $extensionName, 'target' => $target],
+                ),
+            ]);
+            $this->flashResult($result);
+
+            return $live ? $this->liveOperationResponder->render($result) : $this->redirect('/admin/extensions/'.rawurlencode($extensionName));
+        }
+
+        $result = $this->liveOperationStarter->start(
+            LiveOperationQueueFactory::EXTENSION_OPERATION,
+            ['extension' => $extensionName, 'target' => $target, 'trigger' => 'admin_ui'],
+            'admin.extensions.operation.live_label',
+            ['%target%' => $target],
+        );
+        $this->auditResult('extension.operation', $result, [
+            'extension' => $extensionName,
+            'target' => $target,
+            'operation' => LiveOperationQueueFactory::EXTENSION_OPERATION,
+        ]);
+
+        if ($live) {
+            return $this->liveOperationResponder->render($result);
+        }
+
+        $this->flashResult($result);
+
+        return $this->redirect('/admin/operations');
     }
 
     /**

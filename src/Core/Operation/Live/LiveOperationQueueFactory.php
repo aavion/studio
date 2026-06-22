@@ -18,6 +18,7 @@ final readonly class LiveOperationQueueFactory
     public const EXTENSION_LIFECYCLE = 'extension.lifecycle';
     public const EXTENSION_INSTALL_VERIFY = 'extension.install.verify';
     public const EXTENSION_INSTALL_APPLY = 'extension.install.apply';
+    public const EXTENSION_OPERATION = 'extension.operation';
     public const ACL_GROUP_APPLY = 'acl.group.apply';
     public const SETUP_APPLY = 'setup.apply';
     public const GEOIP_DATABASE_UPDATE = 'geoip.database_update';

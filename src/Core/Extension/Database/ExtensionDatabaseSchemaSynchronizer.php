@@ -11,7 +11,6 @@ use App\Core\Extension\ExtensionMessageKey;
 use App\Core\Workflow\WorkflowResult;
 use App\Entity\Extension;
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Schema\Table;
 use Throwable;
 
 final class ExtensionDatabaseSchemaSynchronizer
@@ -22,29 +21,39 @@ final class ExtensionDatabaseSchemaSynchronizer
 
     private readonly ExtensionDatabaseTableOrderer $tableOrderer;
 
+    private readonly ExtensionDatabaseTableBuilder $tableBuilder;
+
+    private readonly ExtensionDatabaseTableUpdater $tableUpdater;
+
     public function __construct(
         private readonly Connection $connection,
         ?ExtensionDatabaseTableNameResolver $names = null,
         ?ExtensionDatabaseReferenceValidator $referenceValidator = null,
         ?ExtensionDatabaseTableOrderer $tableOrderer = null,
+        ?ExtensionDatabaseTableBuilder $tableBuilder = null,
+        ?ExtensionDatabaseTableUpdater $tableUpdater = null,
     ) {
         $this->names = $names ?? new ExtensionDatabaseTableNameResolver($connection);
         $this->referenceValidator = $referenceValidator ?? new ExtensionDatabaseReferenceValidator($connection, $this->names);
         $this->tableOrderer = $tableOrderer ?? new ExtensionDatabaseTableOrderer($connection, $this->names);
+        $this->tableBuilder = $tableBuilder ?? new ExtensionDatabaseTableBuilder($this->names);
+        $this->tableUpdater = $tableUpdater ?? new ExtensionDatabaseTableUpdater($connection, $this->tableBuilder);
     }
 
     /**
      * @param iterable<ExtensionDatabaseTable> $tables
      *
-     * @return WorkflowResult<array{created: list<string>, existing: list<string>}>
+     * @return WorkflowResult<array{created: list<string>, existing: list<string>, updated: list<string>}>
      */
     public function apply(Extension $extension, iterable $tables): WorkflowResult
     {
         $created = [];
         $existing = [];
+        $updated = [];
         $schemaManager = $this->connection->createSchemaManager();
         $knownTables = array_map('strtolower', $schemaManager->listTableNames());
         $pendingTables = [];
+        $existingTables = [];
 
         foreach ($tables as $table) {
             if (!$table instanceof ExtensionDatabaseTable) {
@@ -65,13 +74,14 @@ final class ExtensionDatabaseSchemaSynchronizer
 
             if (in_array(strtolower($physicalName), $knownTables, true)) {
                 $existing[] = $physicalName;
+                $existingTables[$physicalName] = $table;
                 continue;
             }
 
             $pendingTables[$physicalName] = $table;
         }
 
-        $validation = $this->referenceValidator->validatePendingTables($extension, $pendingTables, $knownTables);
+        $validation = $this->referenceValidator->validatePendingTables($extension, [...$pendingTables, ...$existingTables], $knownTables);
         if (!$validation->isSuccess()) {
             return $validation;
         }
@@ -111,19 +121,41 @@ final class ExtensionDatabaseSchemaSynchronizer
             $knownTables[] = strtolower($physicalName);
         }
 
+        foreach ($existingTables as $physicalName => $table) {
+            $sync = $this->tableUpdater->syncExistingTable($extension, $physicalName, $table);
+            if (!$sync->isSuccess()) {
+                $cleanup = $this->dropTables($extension, $created);
+
+                return WorkflowResult::failed([...$sync->issues(), ...$cleanup->issues()], [
+                    'extension' => $extension->extensionName(),
+                    'table' => $physicalName,
+                    'created_before_failure' => $created,
+                    'cleanup_attempted' => $created,
+                    'cleanup_context' => $cleanup->context(),
+                    'update_context' => $sync->context(),
+                ], [...$sync->messages(), ...$cleanup->messages()]);
+            }
+
+            if (($sync->context()['updated'] ?? false) === true) {
+                $updated[] = $physicalName;
+            }
+        }
+
         return WorkflowResult::success([
             'created' => $created,
             'existing' => $existing,
+            'updated' => $updated,
         ], [
             'extension' => $extension->extensionName(),
             'created' => $created,
             'existing' => $existing,
+            'updated' => $updated,
         ], [
             Message::debug(
                 ExtensionMessageCode::EXTENSION_DATABASE_SYNC_COMPLETED,
                 ExtensionMessageKey::EXTENSION_DATABASE_SYNC_COMPLETED,
                 ['%extension%' => $extension->extensionName(), '%count%' => count($created)],
-                ['extension' => $extension->extensionName(), 'created' => $created, 'existing' => $existing],
+                ['extension' => $extension->extensionName(), 'created' => $created, 'existing' => $existing, 'updated' => $updated],
             ),
         ]);
     }
@@ -223,35 +255,7 @@ final class ExtensionDatabaseSchemaSynchronizer
 
     private function createTable(Extension $extension, string $physicalName, ExtensionDatabaseTable $definition): void
     {
-        $table = new Table($physicalName);
-
-        foreach ($definition->columns() as $column) {
-            $table->addColumn($column->name(), $column->type(), $column->options());
-        }
-
-        if ([] !== $definition->primaryKey()) {
-            $table->setPrimaryKey($definition->primaryKey(), $this->names->shortName('pk_'.$physicalName));
-        }
-
-        foreach ($definition->indexes() as $index) {
-            $name = $this->names->shortName($physicalName.'_'.$index->name());
-            if ($index->unique()) {
-                $table->addUniqueIndex($index->columns(), $name);
-                continue;
-            }
-
-            $table->addIndex($index->columns(), $name);
-        }
-
-        foreach ($definition->foreignKeys() as $foreignKey) {
-            $table->addForeignKeyConstraint(
-                $this->names->referencedTableName($extension, $foreignKey),
-                $foreignKey->localColumns(),
-                $foreignKey->referencedColumns(),
-                $foreignKey->options(),
-                $this->names->shortName($physicalName.'_'.$foreignKey->name()),
-            );
-        }
+        $table = $this->tableBuilder->table($extension, $physicalName, $definition);
 
         foreach ($this->connection->getDatabasePlatform()->getCreateTableSQL($table) as $sql) {
             $this->connection->executeStatement($sql);
