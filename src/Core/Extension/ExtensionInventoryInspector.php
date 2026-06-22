@@ -34,7 +34,6 @@ final readonly class ExtensionInventoryInspector
             $cssFiles,
             $javaScriptFiles,
             array_values(array_filter($assetFiles, static fn (string $path): bool => !in_array($path, [...$cssFiles, ...$javaScriptFiles], true))),
-            $this->hasComposerDependencies($inventory->entries()),
             $this->hasNodeDependencies($inventory->entries()),
             $this->hasEnglishTranslations($inventory->entries()),
         );
@@ -48,14 +47,6 @@ final readonly class ExtensionInventoryInspector
     private function filesWhere(array $files, callable $filter): array
     {
         return array_values(array_filter($files, $filter));
-    }
-
-    /**
-     * @param list<string> $entries
-     */
-    private function hasComposerDependencies(array $entries): bool
-    {
-        return in_array('composer.json', $entries, true) && in_array('composer.lock', $entries, true);
     }
 
     /**

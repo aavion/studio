@@ -25,7 +25,6 @@ final class ExtensionValidator
         private readonly ExtensionCssNamespaceValidator $cssNamespaceValidator = new ExtensionCssNamespaceValidator(),
         private readonly ExtensionSourceNamespaceValidator $sourceNamespaceValidator = new ExtensionSourceNamespaceValidator(),
         private readonly ExtensionTranslationNamespaceValidator $translationNamespaceValidator = new ExtensionTranslationNamespaceValidator(),
-        private readonly ExtensionDependencyManifestValidator $dependencyManifestValidator = new ExtensionDependencyManifestValidator(),
         private readonly ExtensionSchedulerCronValidator $schedulerCronValidator = new ExtensionSchedulerCronValidator(),
         private readonly ExtensionDependencyParser $dependencyParser = new ExtensionDependencyParser(),
     ) {
@@ -54,7 +53,6 @@ final class ExtensionValidator
         array_push($issues, ...$this->phpCapabilityPolicy->validate($candidate, $inspection));
         array_push($issues, ...$this->schedulerCronValidator->validate($candidate, $inspection->phpFiles()));
         array_push($issues, ...$this->fileSyntaxValidator->validate($candidate, $inspection, $spec));
-        array_push($issues, ...$this->dependencyManifestValidator->validate($candidate, $inspection));
         array_push($issues, ...$this->cssNamespaceValidator->validate($candidate, $inspection->cssFiles()));
         array_push($issues, ...$this->sourceNamespaceValidator->validate($candidate, $inspection->sourcePhpFiles()));
         array_push($issues, ...$this->translationNamespaceValidator->validate($candidate, $inspection->yamlFiles()));

@@ -462,6 +462,46 @@ final class ExtensionZipInstallerTest extends KernelTestCase
         $this->removePath($root);
     }
 
+    public function testItRejectsComposerDependencyPayloads(): void
+    {
+        if (!class_exists(ZipArchive::class)) {
+            self::markTestSkipped('ZipArchive is required for extension ZIP installer tests.');
+        }
+
+        $installId = '101010101010101010101010';
+        $slug = 'zip-install-composer';
+        $root = $this->installRoot($installId);
+        $this->removePath($root);
+        mkdir($root, 0775, true);
+
+        $zip = new ZipArchive();
+        self::assertTrue(true === $zip->open($root.'/upload.zip', ZipArchive::CREATE | ZipArchive::OVERWRITE));
+        $zip->addFromString($slug.'/.manifest', <<<MANIFEST
+            EXTENSION_AUTHOR=Aavion Test
+            EXTENSION_SLUG={$slug}
+            EXTENSION_NAME=ZIP Install Test
+            EXTENSION_DESCRIPTION=Extension ZIP installer test fixture.
+            EXTENSION_VERSION=1.0.0
+            EXTENSION_SCOPE=module
+            EXTENSION_DEPENDENCIES=[]
+            MANIFEST);
+        $zip->addFromString($slug.'/composer.json', '{"name": "aavion/demo-extension"}');
+        $zip->addFromString($slug.'/composer.lock', '{}');
+        $zip->addFromString($slug.'/vendor/autoload.php', '<?php return true;');
+        $zip->close();
+
+        $verify = $this->installer()->verify(['install_id' => $installId]);
+
+        self::assertSame(WorkflowStatus::Invalid, $verify->status());
+        self::assertSame('extension.policy.blocked_path', $verify->firstIssue()?->code());
+        self::assertContains($verify->firstIssue()?->context()['reason'], [
+            'composer_dependency_payload_unsupported',
+            'reserved_project_path',
+        ]);
+
+        $this->removePath($root);
+    }
+
     public function testItSkipsDevelopmentArtifactsWhenApplyingZip(): void
     {
         if (!class_exists(ZipArchive::class)) {

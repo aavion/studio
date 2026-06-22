@@ -1229,7 +1229,6 @@ TWIG);
         $reasons = array_values(array_unique(array_map(static fn ($issue): string => $issue->context()['reason'], $result->issues())));
         self::assertContains('environment_file', $reasons);
         self::assertContains('reserved_project_path', $reasons);
-        self::assertContains('composer_dependency_manifest_missing', $reasons);
     }
 
     public function testItIgnoresDevelopmentOnlyExtensionPaths(): void
@@ -1328,11 +1327,25 @@ TWIG);
         self::assertSame(['private-assets/index.json'], $inspection->jsonFiles());
     }
 
-    public function testItAllowsCommittedDependencyPayloadsWithMatchingManifests(): void
+    public function testItRejectsExtensionComposerDependencyPayloads(): void
     {
         $this->writeFile('composer.json', '{"name": "aavion/demo-extension", "type": "library", "require": {"php": ">=8.4"}}');
-        $this->writeFile('composer.lock', $this->emptyComposerLock());
+        $this->writeFile('composer.lock', '{}');
         $this->writeFile('vendor/vendor/extension/src/Broken.php', '<?php class Broken {');
+
+        $result = (new ExtensionValidator())->validate(
+            $this->candidate(),
+            ExtensionSpec::create()->withInventoryDepth(6),
+        );
+
+        self::assertFalse($result->isSuccess());
+        $reasons = array_map(static fn ($issue): string => $issue->context()['reason'], $result->issues());
+        self::assertContains('composer_dependency_payload_unsupported', $reasons);
+        self::assertContains('reserved_project_path', $reasons);
+    }
+
+    public function testItAllowsCommittedBrowserDependencyPayloadsWithMatchingManifests(): void
+    {
         $this->writeFile('assets/package.json', '{"dependencies": {"library": "1.0.0"}}');
         $this->writeFile('assets/package-lock.json', '{"lockfileVersion": 3}');
         $this->writeFile('assets/node_modules/library/broken.js', 'const = ;');
@@ -1345,11 +1358,9 @@ TWIG);
         self::assertTrue($result->isSuccess(), json_encode($result->toArray(), JSON_THROW_ON_ERROR));
     }
 
-    public function testItValidatesExtensionComposerManifestWhenPresent(): void
+    public function testItRejectsExtensionComposerManifestWithoutValidatingIt(): void
     {
         $this->writeFile('composer.json', '{"name": "Invalid Name"}');
-        $this->writeFile('composer.lock', $this->emptyComposerLock());
-        $this->writeFile('vendor/autoload.php', '<?php return true;');
 
         $result = (new ExtensionValidator())->validate(
             $this->candidate(),
@@ -1358,7 +1369,7 @@ TWIG);
 
         self::assertFalse($result->isSuccess());
         self::assertSame('extension.policy.blocked_path', $result->firstIssue()?->code());
-        self::assertSame('composer_manifest_invalid', $result->firstIssue()?->context()['reason']);
+        self::assertSame('composer_dependency_payload_unsupported', $result->firstIssue()?->context()['reason']);
     }
 
     public function testItBlocksDirectPhpCapabilitiesForInstallableExtensions(): void
@@ -1599,23 +1610,4 @@ TWIG);
         $this->writeTestFile($this->extensionDir, $relativePath, $contents);
     }
 
-    private function emptyComposerLock(): string
-    {
-        return <<<'JSON'
-{
-    "_readme": [],
-    "content-hash": "test",
-    "packages": [],
-    "packages-dev": [],
-    "aliases": [],
-    "minimum-stability": "stable",
-    "stability-flags": {},
-    "prefer-stable": false,
-    "prefer-lowest": false,
-    "platform": {},
-    "platform-dev": {},
-    "plugin-api-version": "2.6.0"
-}
-JSON;
-    }
 }

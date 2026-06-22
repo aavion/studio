@@ -166,10 +166,6 @@ services:
 
     App\Content\Api\ContentApiPath: ~
 
-    App\Core\Extension\ExtensionDependencyManifestValidator:
-        arguments:
-            $projectDir: '%kernel.project_dir%'
-
     App\Core\Extension\ExtensionClassAutoloader:
         arguments:
             $projectDir: '%kernel.project_dir%'

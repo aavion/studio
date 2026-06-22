@@ -36,7 +36,8 @@ final readonly class ExtensionFilePolicy
      */
     private const BLOCKED_PATHS = [
         ['pattern' => '#^\.env(?:\.|$)#', 'reason' => 'environment_file'],
-        ['pattern' => '#^(?:bin|node_modules|public|var)(?:/|$)#', 'reason' => 'reserved_project_path'],
+        ['pattern' => '#^(?:composer\.json|composer\.lock)$#', 'reason' => 'composer_dependency_payload_unsupported'],
+        ['pattern' => '#^(?:bin|node_modules|public|var|vendor)(?:/|$)#', 'reason' => 'reserved_project_path'],
     ];
 
     /**
@@ -99,9 +100,7 @@ final readonly class ExtensionFilePolicy
     {
         $path = self::normalizedPath($path);
 
-        return str_starts_with($path, 'vendor/')
-            || 'vendor' === $path
-            || str_starts_with($path, 'assets/node_modules/')
+        return str_starts_with($path, 'assets/node_modules/')
             || 'assets/node_modules' === $path;
     }
 
@@ -114,8 +113,7 @@ final readonly class ExtensionFilePolicy
     {
         $path = self::normalizedPath($path);
 
-        return str_starts_with($path, 'vendor/')
-            || str_starts_with($path, 'assets/node_modules/');
+        return str_starts_with($path, 'assets/node_modules/');
     }
 
     private function issue(ExtensionCandidate $candidate, string $path, string $reason, bool $blocked): Message
@@ -167,10 +165,6 @@ final readonly class ExtensionFilePolicy
 
     private function directoryBoundaryViolation(string $path, ExtensionInspection $inspection): ?string
     {
-        if ('vendor' === $path && !$inspection->hasComposerDependencies()) {
-            return 'composer_dependency_manifest_missing';
-        }
-
         if ('assets/node_modules' === $path && !$inspection->hasNodeDependencies()) {
             return 'node_dependency_manifest_missing';
         }
