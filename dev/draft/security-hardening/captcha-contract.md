@@ -373,6 +373,7 @@ At every checkpoint and again before opening review, verify these edges explicit
 - Extension listener dispatch order, priority, duplicate handling, and failure conversion are centrally defined and covered by tests.
 - Runtime provider/handler exceptions do not leak raw errors to public users.
 - True invariant failures mark the owning extension `faulty`; ordinary catchable provider failures become structured result failures.
+- Runtime loader faulting is intentional health enforcement. Any main request that first observes broken active extension code may mark the extension `faulty`, deactivate reverse dependents, and run the shared asset cleanup path so faulty runtime code is not kept active; read-model renderers must not add separate Admin-only mutations beyond invoking this central loader.
 - Removed `security.captcha.provider` state cannot leave stale settings, UI choices, translation labels, tests, or docs behind.
 - Captcha skipped/fallback success cannot reset rate limits or satisfy recovery.
 - Captcha verified success cannot reset unrelated buckets or unbounded subjects.
