@@ -1349,6 +1349,7 @@ TWIG);
         $this->writeFile('assets/package.json', '{"dependencies": {"library": "1.0.0"}}');
         $this->writeFile('assets/package-lock.json', '{"lockfileVersion": 3}');
         $this->writeFile('assets/node_modules/library/broken.js', 'const = ;');
+        $this->writeFile('assets/node_modules/library/examples/stub.php', '<?php class Stub {');
 
         $result = (new ExtensionValidator())->validate(
             $this->candidate(),
@@ -1356,6 +1357,19 @@ TWIG);
         );
 
         self::assertTrue($result->isSuccess(), json_encode($result->toArray(), JSON_THROW_ON_ERROR));
+    }
+
+    public function testItAppliesNormalAssetPolicyToAssetsVendorPayloads(): void
+    {
+        $this->writeFile('assets/vendor/library/examples/stub.php', '<?php class Stub {}');
+
+        $result = (new ExtensionValidator())->validate(
+            $this->candidate(),
+            ExtensionSpec::create()->withInventoryDepth(6),
+        );
+
+        self::assertFalse($result->isSuccess());
+        self::assertSame('asset_executable_file', $result->firstIssue()?->context()['reason']);
     }
 
     public function testItRejectsExtensionComposerManifestWithoutValidatingIt(): void
