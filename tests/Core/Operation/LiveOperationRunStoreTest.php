@@ -161,8 +161,8 @@ final class LiveOperationRunStoreTest extends TestCase
         $issue = Message::warning(
             OperationMessageCode::OPERATION_EXCEPTION,
             OperationMessageKey::OPERATION_EXCEPTION,
-            ['%operation%' => 'Clear cache'],
-            ['database_password' => 'db-secret'],
+            ['%operation%' => 'Clear cache', '%message%' => '/tmp/private/path is unreadable'],
+            ['database_password' => 'db-secret', 'message' => '/tmp/private/path is unreadable'],
         );
 
         $store->appendEntry(
@@ -187,14 +187,19 @@ final class LiveOperationRunStoreTest extends TestCase
         self::assertSame('failed', $payload['result']['status']);
         self::assertSame('message.operation.exception', $payload['result']['issues'][0]['translation_key']);
         self::assertSame('[redacted]', $payload['entries'][0]['context']['database_password']);
-        self::assertSame('manual review', $payload['entries'][0]['context']['reason']);
+        self::assertSame('[redacted]', $payload['entries'][0]['context']['reason']);
         self::assertSame('[redacted]', $payload['entries'][0]['issues'][0]['context']['database_password']);
+        self::assertSame('[redacted]', $payload['entries'][0]['issues'][0]['context']['message']);
+        self::assertSame('[redacted]', $payload['entries'][0]['issues'][0]['parameters']['%message%']);
         self::assertSame('[redacted]', $payload['result']['issues'][0]['context']['database_password']);
+        self::assertSame('[redacted]', $payload['result']['issues'][0]['context']['message']);
+        self::assertSame('[redacted]', $payload['result']['issues'][0]['parameters']['%message%']);
         self::assertArrayNotHasKey('context', $payload['result']);
         self::assertArrayNotHasKey('value', $payload['result']);
         self::assertStringNotContainsString('db-secret', $encoded);
         self::assertStringNotContainsString('hidden', $encoded);
         self::assertStringNotContainsString('admin-secret', $encoded);
+        self::assertStringNotContainsString('/tmp/private/path', $encoded);
     }
 
     public function testItBuildsSanitizedOperationSummaries(): void
@@ -205,8 +210,8 @@ final class LiveOperationRunStoreTest extends TestCase
         $issue = Message::warning(
             OperationMessageCode::OPERATION_EXCEPTION,
             OperationMessageKey::OPERATION_EXCEPTION,
-            ['%operation%' => 'Clear cache'],
-            ['database_password' => 'db-secret'],
+            ['%operation%' => 'Clear cache', '%message%' => '/tmp/private/path is unreadable'],
+            ['database_password' => 'db-secret', 'message' => '/tmp/private/path is unreadable'],
         );
 
         $store->finish($run['operation_id'], false, WorkflowResult::failed([$issue], ['secret' => 'hidden'])->toArray());
@@ -219,8 +224,11 @@ final class LiveOperationRunStoreTest extends TestCase
         self::assertSame('failed', $summaries[0]['result_status']);
         self::assertSame('message.operation.exception', $summaries[0]['issue']['translation_key']);
         self::assertSame('[redacted]', $summaries[0]['issue']['context']['database_password']);
+        self::assertSame('[redacted]', $summaries[0]['issue']['context']['message']);
+        self::assertSame('[redacted]', $summaries[0]['issue']['parameters']['%message%']);
         self::assertStringNotContainsString('db-secret', $encoded);
         self::assertStringNotContainsString('hidden', $encoded);
+        self::assertStringNotContainsString('/tmp/private/path', $encoded);
     }
 
     public function testItMarksReviewRequiredRunsAsTerminalAndExposesContinuationState(): void

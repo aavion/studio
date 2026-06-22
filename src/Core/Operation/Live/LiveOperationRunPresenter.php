@@ -15,11 +15,6 @@ final class LiveOperationRunPresenter
         'failed' => true,
         'warning' => true,
     ];
-    private const DIAGNOSTIC_MESSAGE_LEVELS = [
-        'ERROR' => true,
-        'EXCEPTION' => true,
-        'WARN' => true,
-    ];
 
     public function __construct(private readonly LiveOperationPresentationRedactor $redactor = new LiveOperationPresentationRedactor())
     {
@@ -48,7 +43,7 @@ final class LiveOperationRunPresenter
             'cursor' => (int) ($state['cursor'] ?? 0),
             'progress' => is_array($state['progress'] ?? null) ? $state['progress'] : ['index' => 0, 'total' => 0],
             'result_status' => is_array($result) ? ($result['status'] ?? null) : null,
-            'issue' => is_array($firstIssue) ? $this->message($firstIssue) : null,
+            'issue' => is_array($firstIssue) ? $this->redactor->message($firstIssue) : null,
         ];
     }
 
@@ -76,8 +71,8 @@ final class LiveOperationRunPresenter
             'entries' => $entries,
             'result' => null === $result ? null : [
                 'status' => is_string($result['status'] ?? null) ? $result['status'] : null,
-                'issues' => $this->messageList($result['issues'] ?? []),
-                'messages' => $this->messageList($result['messages'] ?? []),
+                'issues' => $this->redactor->messageList($result['issues'] ?? []),
+                'messages' => $this->redactor->messageList($result['messages'] ?? []),
                 'can_continue' => null !== $this->continuationFromResult($result),
             ],
         ];
@@ -150,28 +145,6 @@ final class LiveOperationRunPresenter
     }
 
     /**
-     * @return list<array<string, mixed>>
-     */
-    private function messageList(mixed $messages): array
-    {
-        if (!is_array($messages)) {
-            return [];
-        }
-
-        $list = [];
-
-        foreach ($messages as $message) {
-            if (!is_array($message)) {
-                continue;
-            }
-
-            $list[] = $this->message($message);
-        }
-
-        return $list;
-    }
-
-    /**
      * @param array<string, mixed> $entry
      *
      * @return array<string, mixed>
@@ -186,8 +159,8 @@ final class LiveOperationRunPresenter
             'status' => (string) ($entry['status'] ?? ''),
             'started_at' => $entry['started_at'] ?? null,
             'finished_at' => $entry['finished_at'] ?? null,
-            'issues' => $this->messageList($entry['issues'] ?? []),
-            'messages' => $this->messageList($entry['messages'] ?? []),
+            'issues' => $this->redactor->messageList($entry['issues'] ?? []),
+            'messages' => $this->redactor->messageList($entry['messages'] ?? []),
         ];
 
         $context = $this->entryContext($entry);
@@ -209,36 +182,10 @@ final class LiveOperationRunPresenter
 
         return [
             'status' => is_string($result['status'] ?? null) ? $result['status'] : null,
-            'issues' => $this->messageList($result['issues'] ?? []),
-            'messages' => $this->messageList($result['messages'] ?? []),
+            'issues' => $this->redactor->messageList($result['issues'] ?? []),
+            'messages' => $this->redactor->messageList($result['messages'] ?? []),
             'can_continue' => null !== $this->continuationFromResult($result),
         ];
-    }
-
-    /**
-     * @param array<string, mixed> $message
-     *
-     * @return array<string, mixed>
-     */
-    private function message(array $message): array
-    {
-        $presented = [
-            'level' => is_string($message['level'] ?? null) ? $message['level'] : null,
-            'code' => is_string($message['code'] ?? null) ? $message['code'] : null,
-            'translation_key' => is_string($message['translation_key'] ?? null) ? $message['translation_key'] : null,
-            'parameters' => is_array($message['parameters'] ?? null) ? $message['parameters'] : [],
-        ];
-
-        $level = is_string($message['level'] ?? null) ? strtoupper($message['level']) : '';
-        $context = is_array($message['context'] ?? null) && isset(self::DIAGNOSTIC_MESSAGE_LEVELS[$level])
-            ? $this->redactor->redact($message['context'])
-            : [];
-
-        if ([] !== $context) {
-            $presented['context'] = $context;
-        }
-
-        return $presented;
     }
 
     /**
